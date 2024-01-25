@@ -426,6 +426,7 @@ Usage: $0 [image] [ -f ] [ -w ] [ -ip <ip> ] [ -map <hex> ] [ -ali <kb> ] [ -ram
 
 [image]           When no 'image' file is given, images/latest.image will be tried.
 -f                Disable safety prompt, force instant flash.
+-F                Disable network check and related warning message.
 -w                The device is yet halted in the bootloader, don't wait for shutdown.
 -ip <ip>          Bootloader IP address or hostname, default 192.168.178.1
 -map <hex>        Only ram-boot and fit-boot mode: Start of mapped memory (PHYS_OFFSET).
@@ -457,6 +458,9 @@ while [ $# -ge 1 ]; do
 	case "$1" in
 		(-f|-force)
 			ISFORCE=true
+			;;
+		(-F|-force_net)
+			ISFORCE_NET=true
 			;;
 		(-w|-waits)
 			ISWAITS=true
@@ -522,6 +526,7 @@ done
 # environment
 [ "$FREETZ_FORCEPF" == "true" ] && ISFORCE=true
 [ "$FREETZ_WAITSPF" == "true" ] && ISWAITS=true
+[ "$FREETZ_FORCE_NETPF" == "true" ] && ISFORCE_NET=true
 
 # file checks
 [ -z "$file" ] && [ -e images/latest.image ] && file="images/latest.image"
@@ -575,7 +580,7 @@ oa="unknown"
 for horst in $(ip -4 -o addr show scope global up | grep -Po 'inet \K[\d.]+'); do
 	[ ${horst%.*} == ${ip%.*} ] && oa=$horst
 done
-if [ "$oa" == "unknown" ]; then
+if [ "$oa" == "unknown" -a ! "$ISFORCE_NET" ]; then
 	echo -ne "\n * Warning: It seems your network is not able to reach\n   $ip directly."
 	case $(ls /sys/class/net/ | grep -v "^lo$" | wc -w) in
 		0)	echo ;;
@@ -767,4 +772,3 @@ fi
 echo
 echo done
 exit 0
-
