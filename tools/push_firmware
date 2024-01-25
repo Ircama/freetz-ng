@@ -669,6 +669,7 @@ if [ -n "$ISRAM$ISFIT" ]; then
 			Fritz_Box_HW272*)	MAPSTART=0x40000000 ;;  # 5590
 #			Fritz_Box_HW275*)	MAPSTART=0x40000000 ;;  # 1240 AX
 			*)
+                NOT_FOUND_FIT=true
 				[ $ISRAM ] &&   MAPSTART=0x80000000
 				[ $ISFIT ] &&   MAPSTART=0x40000000
 			;;
@@ -721,6 +722,7 @@ if [ -n "$ISRAM$ISFIT" ]; then
 			Fritz_Box_HW272*)	FULLSIZE=0x40000000 ;;  # 5590      (1.0 GB)
 			Fritz_Box_HW275*)	FULLSIZE=0x10000000 ;;  # 1240 AX   (256 MB)
 			*)
+                NOT_FOUND_RAM=true
 				[ $ISRAM ] &&   FULLSIZE=0x0D000000     #           (208 MB)
 				[ $ISFIT ] &&   FULLSIZE=0x18000000     #           (384 MB)
 			;;
@@ -746,6 +748,8 @@ if [ ! $ISSINGLE ]; then
 	echo " * Designated linux_fs_start: $OUTVAL"
 fi
 
+[ "$NOT_FOUND_RAM" -a "$NOT_FOUND_FIT" ] && echo " * NOTE: your device might not be currently supported."
+
 #
 if [ $ISFORCE ]; then
 	echo -e " * File: \033[4m$file\033[0m"
@@ -767,4 +771,3 @@ fi
 echo
 echo done
 exit 0
-
