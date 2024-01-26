@@ -100,6 +100,7 @@ function push_fw() {
 		[ $ISFIT ] && FILESIZE="$(stat --printf='%s' "$fitimage")"
 		[ "$ALIBYTES" != "0" ] && ALIBYTES="$(( $ALIBYTES - ( $FILESIZE % $ALIBYTES ) ))"
 		FILESIZE="0x$(printf '%.8x' $(( $FILESIZE )) )"
+		[ -n "$FORCE_FILE_SIZE" ] && FILESIZE="$FORCE_FILE_SIZE"
 		ALIBYTES="0x$(printf '%.8x' $(( $ALIBYTES )) )"
 		MAPSTART="0x$(printf '%.8x' $(( $MAPSTART )) )"
 		MAPLIMIT="0x$(printf '%.8x' $(( $MAPSTART + $FULLSIZE                         )) )"
@@ -116,6 +117,18 @@ function push_fw() {
 		echo -e
 
 		FILESIZE="0x$(printf '%.4x' $(( $FILESIZE )) )"
+
+		if [ -n "$ISDRYRUN" ]; then
+			[ $ISRAM ] && ls -l "$mtdram1"
+			[ $ISFIT ] && ls -l "$fitimage"
+			echo " @ FILESIZE = $(printf '%d' $FILESIZE) bytes"
+			echo " @ MAPLIMIT = MAPSTART + FULLSIZE"
+			echo " @ FREESIZE = FULLSIZE - FILESIZE - ALIBYTES"
+			echo " @ MTDSTART = MAPSTART + FULLSIZE - FILESIZE - ALIBYTES"
+			echo " @ quote SETENV memsize FREESIZE"
+			echo " @ put fitimage MTDSTART MAPLIMIT"
+			echo
+		fi
 	fi
 
 	if [ ! $ISSINGLE ]; then
@@ -427,6 +440,8 @@ Usage: $0 [image] [ -f ] [ -w ] [ -ip <ip> ] [ -map <hex> ] [ -ali <kb> ] [ -ram
 [image]           When no 'image' file is given, images/latest.image will be tried.
 -f                Disable safety prompt, force instant flash.
 -w                The device is yet halted in the bootloader, don't wait for shutdown.
+-d                Dry-run FTP commands without connecting to the device (for test/dev).
+-s <size>         Force computing a specific file size for testing purpose. Imply dry-run.
 -ip <ip>          Bootloader IP address or hostname, default 192.168.178.1
 -map <hex>        Only ram-boot and fit-boot mode: Start of mapped memory (PHYS_OFFSET).
 -ali <kb>         Only ram-boot and fit-boot mode: Alignment in kB of the uploaded file.
@@ -455,6 +470,18 @@ exit 1
 
 while [ $# -ge 1 ]; do
 	case "$1" in
+		(-d|-dry-run)
+			ISDRYRUN=true
+			;;
+		(-s|-size)
+			re='^[0-9xa-fA-F]+$'
+			if ! [[ "$2" =~ $re ]] ; then
+			   echo "Error: argument '$2' of '-s' option is not a number."; usage
+			fi
+			FORCE_FILE_SIZE="$2"
+			ISDRYRUN=true
+			shift
+			;;
 		(-f|-force)
 			ISFORCE=true
 			;;
@@ -651,6 +678,21 @@ else
 fi
 echo " * Flash mode: $OUTVAL-boot"
 
+if [ -n "$ISDRYRUN" ]; then
+	function ncftpput() {
+		echo "-------------------------------"
+		echo "Dry-run 'ncftpput $*' command:"
+		cat
+		echo "-------------------------------"
+	}
+	function ftp() {
+		echo "-------------------------------"
+		echo "Dry-run 'ftp $*' command:"
+		cat
+		echo "-------------------------------"
+	}
+fi
+
 if [ -n "$ISRAM$ISFIT" ]; then
 	if [ -z "$MAPSTART" ]; then
 		case "$PRODUCT" in
@@ -767,4 +809,3 @@ fi
 echo
 echo done
 exit 0
-
