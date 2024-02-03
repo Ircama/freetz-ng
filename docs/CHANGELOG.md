@@ -47,50 +47,59 @@ Latest changes
 ### devel
 
  - Build system:
+   * Ccache 4.9
    * uClibc 0.9.28/0.9.29/0.9.32.1/0.9.33.2/1.0.14/1.0.45
 
  - Host tools:
-   * cmake 3.27.9
+   * cmake 3.28.2
    * fakeroot 1.33
    * kconfig 6.7
    * meson 1.3.1
+   * ncftp 3.2.7
    * netkit-ftp 0.17-35
-   * precompiled host-tools 2024-01-24
+   * openssl 3.0.13
+   * precompiled host-tools 2024-01-31
    * precompiled toolchains r22972
    * python 3.11.7
    * tar 1.35
+   * xz 5.4.6
 
  - Packages:
    * BIND 9.11.37/9.16.45
    * CA-bundle 2023-12-12
    * CCID 1.5.4
-   * Curl 8.5.0
+   * Curl 8.6.0
    * Git 2.43.0
    * htop 1.0.3/3.3.0
    * Lua 5.1.5/5.4.6
    * minicom 2.9
+   * NcFTP 3.2.7
    * OpenSSH 9.3p2/9.6p1
+   * OpenSSL 0.9.8zh/1.0.2u/1.1.1w/3.0.13
    * OpenVPN 2.4.12/2.5.9/2.6.8
-   * PCSC-lite 2.0.1
+   * PCSC-lite 1.9.5/2.0.1
    * ProxyChains-NG 4.17
    * pyLoad 0.4.20/78162d75
    * socat 1.7.4.4
    * Subversion 1.9.12/1.14.3
    * SQLite 3.45.0
+   * strace 4.9/5.0/6.7
    * Tor 0.4.8.10
    * Transmission 3.00/4.0.5
    * Unbound 1.19.0
    * Vim 9.1.0000
    * xsltproc 1.1.39
+   * XZ Utils 5.4.6
 
  - Libraries:
    * cairo 1.18.0
    * harfbuzz 8.3.0
    * libmaxminddb 1.9.1
    * libtirpc 1.3.4
+   * libusb1 1.0.23/1.0.27
    * libuv 1.44.2/1.47.0
    * libxml2 2.12.4
-   * mbedTLS 2.7.19/2.28.6
+   * mbedTLS 2.7.19/2.28.7
    * zlib 1.3.1
 
  - Firmware updates:

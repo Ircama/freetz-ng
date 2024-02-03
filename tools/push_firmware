@@ -621,7 +621,7 @@ fi
 [ -x "$(command -v ncftpput)" ] && FOUND_NCFTP=true
 [ "$(uname -s)" == "Linux" -a -x "$(command -v ftp)" ] && FOUND_FTP=true
 if [ -z "$FOUND_NCFTP" -a -z "$FOUND_FTP" ]; then
-	echo "You have to install 'ncftp' or 'ftp' in order to use this script."
+	echo "You have to install 'ncftp' or 'ftp' in order to use this script.	Run 'make netkit-ftp-host' first."
 	exit 1
 fi
 if [ -z "$FOUND_FTP" ]; then
@@ -645,8 +645,14 @@ fi
 [ -n "$FOUND_NCFTP" ] && UCMD="ncftpput" || UCMD="ftp"
 
 # logging
+function relpath() {
+	local ARG="$1"
+	local URI="$(realpath $(command -v "$ARG"))"
+	echo "${URI#$PWD/}"
+}
 [ -n "$PRODUCT" ] && echo " * Product: $PRODUCT"
-echo " * Using command: $UCMD"
+echo " * Using tar binary: $(relpath tar)"
+echo " * Using ftp binary: $(relpath $UCMD)"
 echo " * Target host: $ip"
 echo " * Outgoing IP: $oa"
 

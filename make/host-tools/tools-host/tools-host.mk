@@ -1,6 +1,6 @@
-$(call TOOLS_INIT, 2024-01-24)
+$(call TOOLS_INIT, 2024-01-31)
 $(PKG)_SOURCE:=tools-$($(PKG)_VERSION).tar.xz
-$(PKG)_HASH:=0072ef2dbbecc0cb34309e07982de5bba909ab95cac5bd49b56ba4c48c5d3905
+$(PKG)_HASH:=a9d9e22ff8b80c4a3aa6e175eb3fb73827af589830d89e69a26ac3fb4a929a8c
 $(PKG)_SITE:=@MIRROR/
 
 $(PKG)_DEPENDS_ON:=kconfig-host
