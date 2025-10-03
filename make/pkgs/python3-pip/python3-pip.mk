@@ -2,7 +2,7 @@ $(call PKG_INIT_BIN, 24.3.1)
 $(PKG)_SOURCE:=pip-py3-$($(PKG)_VERSION).tar.gz
 $(PKG)_SOURCE_DOWNLOAD_NAME:=pip-$($(PKG)_VERSION).tar.gz
 $(PKG)_SITE:=https://files.pythonhosted.org/packages/source/p/pip
-$(PKG)_HASH:=ebcb60557f2aefabc2e0f918751cd24ea0d56d8ec5445c7e4a24a0e9d75e7a7c
+$(PKG)_HASH:=ebcb60557f2aefabc2e0f918751cd24ea0d56d8ec5445fe1807f1d2109660b99
 ### WEBSITE:=https://pip.pypa.io/
 ### MANPAGE:=https://pip.pypa.io/en/stable/
 ### CHANGES:=https://pip.pypa.io/en/stable/news/
@@ -17,7 +17,7 @@ $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
 $($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
-	$(call Build/Py3Mod/PKG, PYTHON3_PIP, , )
+	$(call Build/Py3Mod/Pip, PYTHON3_PIP, , )
 	@touch $@
 
 $(pkg):

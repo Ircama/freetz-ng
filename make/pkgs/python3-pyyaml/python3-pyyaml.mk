@@ -1,7 +1,7 @@
 $(call PKG_INIT_BIN, 6.0.2)
 $(PKG)_SOURCE:=pyyaml-py3-$($(PKG)_VERSION).tar.gz
-$(PKG)_SOURCE_DOWNLOAD_NAME:=PyYAML-$($(PKG)_VERSION).tar.gz
-$(PKG)_SITE:=https://files.pythonhosted.org/packages/source/p/pyyaml
+$(PKG)_SOURCE_DOWNLOAD_NAME:=pyyaml-$($(PKG)_VERSION).tar.gz
+$(PKG)_SITE:=https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17
 $(PKG)_HASH:=d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e
 ### WEBSITE:=https://pyyaml.org/
 ### MANPAGE:=https://pyyaml.org/wiki/PyYAMLDocumentation

@@ -1,11 +1,14 @@
 config FREETZ_PACKAGE_PYTHON3_PANDAS
-	bool "pandas 2.2.3 (for Python 3)"
+	bool "pandas 2.2.3 (for Python 3) - DEVELOPER ONLY"
 	depends on FREETZ_PACKAGE_PYTHON3
 	depends on FREETZ_PACKAGE_PYTHON3_NUMPY
 	depends on EXTERNAL_ENABLED
+	depends on FREETZ_DL_TOOL_developer
 	default n
 	help
 		pandas is a powerful data analysis and manipulation library.
+		
+		WARNING: Requires NumPy (currently developer-only).
 		
 		Provides:
 		- DataFrame and Series data structures

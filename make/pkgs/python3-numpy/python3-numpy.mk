@@ -1,14 +1,16 @@
-$(call PKG_INIT_BIN, 2.1.3)
+$(call PKG_INIT_BIN, 2.3.3)
 $(PKG)_SOURCE:=numpy-py3-$($(PKG)_VERSION).tar.gz
 $(PKG)_SOURCE_DOWNLOAD_NAME:=numpy-$($(PKG)_VERSION).tar.gz
-$(PKG)_SITE:=https://files.pythonhosted.org/packages/source/n/numpy
-$(PKG)_HASH:=aa08e04e08aaf974d4458def539dece0d28146d866a39da5639596f4921fd761
+$(PKG)_SITE:=https://files.pythonhosted.org/packages/d0/19/95b3d357407220ed24c139018d2518fab0a61a948e68286a25f1a4d049ff
+$(PKG)_HASH:=ddc7c39727ba62b80dfdbedf400d1c10ddfa8eefbd7ec8dcb118be8b56d31029
 ### WEBSITE:=https://numpy.org/
 ### MANPAGE:=https://numpy.org/doc/stable/
 ### CHANGES:=https://numpy.org/doc/stable/release.html
 ### CVSREPO:=https://github.com/numpy/numpy
 
 $(PKG)_DEPENDS_ON += python3
+$(PKG)_DEPENDS_ON += meson-host
+$(PKG)_DEPENDS_ON += ninja-host
 $(PKG)_DEPENDS_ON += python3-setuptools-host
 
 
@@ -17,7 +19,7 @@ $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
 $($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
-	$(call Build/Py3Mod/PKG, PYTHON3_NUMPY, , )
+	$(call Build/Py3Mod/Pip, PYTHON3_NUMPY, , )
 	@touch $@
 
 $(pkg):
