@@ -1,0 +1,80 @@
+config FREETZ_PACKAGE_GCC
+	bool "GCC (Native Compiler Toolchain)"
+	depends on EXTERNAL_ENABLED
+	select FREETZ_PACKAGE_GNU_MAKE
+	select FREETZ_LIB_libgcc_s
+	default n
+	help
+		GCC (GNU Compiler Collection) - Native compiler toolchain for on-device
+		compilation. Perfect for building Python wheels, C/C++ programs, and
+		development directly on Fritz!Box.
+		
+		WARNING: This package is ~250 MB and MUST be externalized to USB storage.
+		
+		Includes:
+		- GCC (C compiler)
+		- G++ (C++ compiler)
+		- Binutils (ld, as, ar, ranlib, etc.)
+		- Standard C/C++ headers
+		- Runtime libraries (libgcc, libstdc++)
+		- GNU Make
+		
+		Use cases:
+		- Build Python C extension modules (cffi, pycrypto, etc.)
+		- Compile C/C++ programs on-device
+		- On-the-fly development without cross-compilation
+		
+		After installation, externalize to USB:
+		  Files in: /tmp/flash/gcc/
+		  Move to:  /var/media/ftp/uStor01/freetz-external/gcc/
+
+if FREETZ_PACKAGE_GCC
+
+	config FREETZ_PACKAGE_GCC_CPP
+		bool "Include C++ compiler (g++)"
+		default y
+		help
+			Include g++ C++ compiler and libstdc++ library.
+			Adds ~50 MB to package size.
+			
+			Disable if you only need C compilation.
+
+	config FREETZ_PACKAGE_GCC_FORTRAN
+		bool "Include Fortran compiler (gfortran)"
+		default n
+		help
+			Include gfortran Fortran compiler.
+			Adds ~30 MB to package size.
+			
+			Only needed for scientific computing packages.
+
+	config FREETZ_PACKAGE_GCC_PYTHON_HEADERS
+		bool "Include Python development headers"
+		default y
+		depends on FREETZ_PACKAGE_PYTHON
+		help
+			Include Python.h and development headers.
+			Required for building Python C extension modules.
+			
+			Size: ~3 MB
+
+	config FREETZ_PACKAGE_GCC_STRIP_BINARIES
+		bool "Strip compiler binaries"
+		default y
+		help
+			Strip debug symbols from GCC binaries to reduce size.
+			Reduces size by ~40% but makes debugging GCC itself harder.
+			
+			Recommended: Yes
+
+	config FREETZ_PACKAGE_GCC_DEBUG_SYMBOLS
+		bool "Include debug symbols"
+		default n
+		depends on !FREETZ_PACKAGE_GCC_STRIP_BINARIES
+		help
+			Keep debug symbols in compiler binaries.
+			Increases size significantly (~100 MB extra).
+			
+			Only for GCC development/debugging.
+
+endif # FREETZ_PACKAGE_GCC
