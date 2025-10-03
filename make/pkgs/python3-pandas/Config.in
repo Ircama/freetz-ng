@@ -1,0 +1,28 @@
+config FREETZ_PACKAGE_PYTHON3_PANDAS
+	bool "pandas 2.2.3 (for Python 3)"
+	depends on FREETZ_PACKAGE_PYTHON3
+	depends on FREETZ_PACKAGE_PYTHON3_NUMPY
+	depends on EXTERNAL_ENABLED
+	default n
+	help
+		pandas is a powerful data analysis and manipulation library.
+		
+		Provides:
+		- DataFrame and Series data structures
+		- Data alignment and integrated handling of missing data
+		- Reshaping and pivoting of data sets
+		- Label-based slicing, indexing, and subsetting
+		- Time series functionality
+		- Data I/O (CSV, Excel, SQL, HDF5, JSON, Parquet)
+		
+		Common uses:
+		- Data cleaning and preparation
+		- Statistical analysis
+		- Time series analysis
+		- Data visualization (with matplotlib)
+		
+		WARNING: pandas is large (~10-15 MB) and REQUIRES NumPy.
+		Both MUST be externalized to USB storage.
+		
+		Website: https://pandas.pydata.org/
+		Docs: https://pandas.pydata.org/docs/

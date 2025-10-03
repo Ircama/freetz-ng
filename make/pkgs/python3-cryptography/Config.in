@@ -1,0 +1,48 @@
+config FREETZ_PACKAGE_PYTHON3_CRYPTOGRAPHY
+	bool "cryptography 43.0.3 (UNSUPPORTED on MIPS - use PyCryptodome)"
+	depends on FREETZ_PACKAGE_PYTHON3
+	depends on FREETZ_SHOW_DEVELOPER
+	select FREETZ_PACKAGE_PYTHON3_CFFI
+	select FREETZ_LIB_libcrypto if !FREETZ_PACKAGE_OPENSSL
+	select FREETZ_LIB_libssl if !FREETZ_PACKAGE_OPENSSL
+	default n
+	help
+		*** WARNING: NOT SUPPORTED ON MIPS ARCHITECTURE ***
+		
+		cryptography requires Rust compiler for building.
+		Rust removed MIPS support in version 1.72+ (year 2023).
+		
+		THIS PACKAGE WILL FAIL TO BUILD ON MIPS DEVICES.
+		
+		ALTERNATIVE: Use python3-pycryptodome instead!
+		PyCryptodome provides the same cryptographic functionality
+		(AES, RSA, SHA, SSL/TLS) without requiring Rust.
+		
+		See PYTHON3_CRYPTOGRAPHY_UNSUPPORTED.md for migration guide.
+		
+		---
+		
+		cryptography is a package which provides cryptographic recipes and
+		primitives to Python developers.
+		
+		Features:
+		  - SSL/TLS support
+		  - X.509 certificate handling
+		  - Symmetric encryption (AES, ChaCha20, etc.)
+		  - Asymmetric encryption (RSA, ECDSA, etc.)
+		  - Message digests and signatures
+		  - Key derivation functions
+		
+		Dependencies:
+		  - Python 3.x
+		  - cffi (Python C Foreign Function Interface)
+		  - OpenSSL >= 1.1.1 (for cryptographic operations)
+		  - Rust compiler (build-time only, on host system) ← NOT AVAILABLE FOR MIPS
+		
+		Build complexity: IMPOSSIBLE on MIPS
+		  - Requires Rust compiler with MIPS target (removed from Rust 1.72+)
+		  - Will fail with error: "can't find crate for 'core'"
+		
+		Size: N/A (build will fail)
+		
+		WWW: https://cryptography.io/
