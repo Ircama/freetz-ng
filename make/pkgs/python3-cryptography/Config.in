@@ -1,5 +1,5 @@
 config FREETZ_PACKAGE_PYTHON3_CRYPTOGRAPHY
-	bool "cryptography 43.0.3 (UNSUPPORTED on MIPS - use PyCryptodome)"
+	bool "cryptography 3.3.2 (last version without Rust)"
 	depends on FREETZ_PACKAGE_PYTHON3
 	depends on FREETZ_SHOW_DEVELOPER
 	select FREETZ_PACKAGE_PYTHON3_CFFI
@@ -7,17 +7,17 @@ config FREETZ_PACKAGE_PYTHON3_CRYPTOGRAPHY
 	select FREETZ_LIB_libssl if !FREETZ_PACKAGE_OPENSSL
 	default n
 	help
-		*** WARNING: NOT SUPPORTED ON MIPS ARCHITECTURE ***
+		cryptography 3.3.2 - Last version compatible with embedded targets
 		
-		cryptography requires Rust compiler for building.
-		Rust removed MIPS support in version 1.72+ (year 2023).
+		This is the last version of cryptography (3.3.2, released 2020)
+		that doesn't require Rust compiler.
+		Rust dropped support for many embedded architectures in version 1.72+ (2023),
+		including MIPS, older ARM variants, and other targets.
 		
-		THIS PACKAGE WILL FAIL TO BUILD ON MIPS DEVICES.
+		For newer cryptographic features, consider using
+		python3-pycryptodome as an alternative.
 		
-		ALTERNATIVE: Use python3-pycryptodome instead!
-		PyCryptodome provides the same cryptographic functionality
-		(AES, RSA, SHA, SSL/TLS) without requiring Rust.
-		
+
 		See PYTHON3_CRYPTOGRAPHY_UNSUPPORTED.md for migration guide.
 		
 		---
@@ -37,12 +37,12 @@ config FREETZ_PACKAGE_PYTHON3_CRYPTOGRAPHY
 		  - Python 3.x
 		  - cffi (Python C Foreign Function Interface)
 		  - OpenSSL >= 1.1.1 (for cryptographic operations)
-		  - Rust compiler (build-time only, on host system) ← NOT AVAILABLE FOR MIPS
 		
-		Build complexity: IMPOSSIBLE on MIPS
-		  - Requires Rust compiler with MIPS target (removed from Rust 1.72+)
-		  - Will fail with error: "can't find crate for 'core'"
+		Build: Uses setuptools (no Rust required for 3.3.2)
 		
-		Size: N/A (build will fail)
+		Note: Version 43+ requires Rust compiler which no longer supports
+		many embedded targets. Stick to 3.3.2 for embedded systems.
+		
+		Size: ~2-3 MB installed
 		
 		WWW: https://cryptography.io/

@@ -1,5 +1,5 @@
 config FREETZ_PACKAGE_PYTHON3_MARKUPSAFE
-	bool "MarkupSafe 3.0.2 (for Python 3)"
+	bool "markupsafe 3.0.2"
 	depends on FREETZ_PACKAGE_PYTHON3
 	default n
 	help

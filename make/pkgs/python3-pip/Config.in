@@ -1,5 +1,5 @@
 config FREETZ_PACKAGE_PYTHON3_PIP
-	bool "pip 24.3.1 (for Python 3)"
+	bool "pip 24.3.1"
 	depends on FREETZ_PACKAGE_PYTHON3
 	select FREETZ_PACKAGE_PYTHON3_SETUPTOOLS
 	default n

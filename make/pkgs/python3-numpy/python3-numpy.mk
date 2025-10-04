@@ -18,7 +18,7 @@ $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
 $($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
-	$(call Build/Py3Mod/Pip, PYTHON3_NUMPY, , )
+	$(call Build/Py3Mod/Pip, PYTHON3_NUMPY, , , isolated)
 	@touch $@
 
 $(pkg):

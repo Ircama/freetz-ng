@@ -65,6 +65,7 @@ endef
 # $(1) => PKG value
 # $(2) => additional pip install arguments
 # $(3) => additional environment variables
+# $(4) => if set to "isolated", allows build isolation (default: no isolation)
 define Build/Py3Mod/Pip
         $(call HostPython3, \
                 cd $($(strip $(1))_DIR); \
@@ -74,7 +75,7 @@ define Build/Py3Mod/Pip
                 $(FREETZ_LD_RUN_PATH) \
                 $(3) \
                 , \
-                -m pip install --no-deps --no-build-isolation \
+                -m pip install --no-deps $(if $(filter isolated,$(strip $(4))),,--no-build-isolation) \
                         --prefix=/usr \
                         --root=$(abspath $($(strip $(1))_DEST_DIR)) \
                         --no-compile \

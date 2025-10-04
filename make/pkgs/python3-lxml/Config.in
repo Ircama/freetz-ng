@@ -1,8 +1,8 @@
 config FREETZ_PACKAGE_PYTHON3_LXML
-	bool "lxml 5.3.0 (for Python 3)"
+	bool "lxml 5.3.0"
 	depends on FREETZ_PACKAGE_PYTHON3
 	select FREETZ_LIB_libxml2
-	select FREETZ_LIB_libxml2_WITH_HTML
+	select FREETZ_LIB_libxslt
 	default n
 	help
 		lxml is a powerful XML and HTML processing library.
