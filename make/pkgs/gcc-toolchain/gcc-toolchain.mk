@@ -2,7 +2,7 @@ $(call PKG_INIT_BIN, $(if $(FREETZ_AVM_GCC_13),13.4.0,$(if $(FREETZ_AVM_GCC_14),
 $(PKG)_CONDITIONAL:=y
 $(PKG)_CATEGORY:=Debug helpers
 
-$(PKG)_BINARY:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(REAL_GNU_TARGET_NAME)-gcc
+$(PKG)_BINARY:=$(TARGET_UTILS_DIR)/usr/bin/gcc
 $(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/bin/gcc
 
 $(PKG)_EXTERNALIZE_FILES:=usr/bin/* usr/lib/* usr/libexec/* $(if $(FREETZ_PACKAGE_GCC_TOOLCHAIN_HEADERS),usr/include/*)
@@ -15,10 +15,11 @@ GCC_TOOLCHAIN_TARGET_TRIPLET := $(REAL_GNU_TARGET_NAME)
 # No source to download - we reuse the existing toolchain
 # So we skip PKG_SOURCE_DOWNLOAD, PKG_UNPACKED, PKG_CONFIGURED_NOP
 
-$($(PKG)_BINARY):
+# Ensure the native MIPS toolchain is built
+$($(PKG)_BINARY): gcc_target binutils_target uclibc_target
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
-	@echo "Packaging GCC toolchain from $(TARGET_TOOLCHAIN_STAGING_DIR)..."
+	@echo "Packaging GCC toolchain from $(TARGET_UTILS_DIR)..."
 	
 	# Create necessary directories
 	$(INSTALL_DIR) $($(PKG)_DEST_DIR)/usr/bin
@@ -28,8 +29,8 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 	# Copy GCC compiler binaries (gcc, g++, cpp)
 	@echo "  - Copying GCC binaries..."
 	for bin in gcc g++ cpp gcov gcov-tool gcov-dump; do \
-		if [ -f "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(GCC_TOOLCHAIN_TARGET_TRIPLET)-$$bin" ]; then \
-			cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(GCC_TOOLCHAIN_TARGET_TRIPLET)-$$bin" \
+		if [ -f "$(TARGET_UTILS_DIR)/usr/bin/$$bin" ]; then \
+			cp -a "$(TARGET_UTILS_DIR)/usr/bin/$$bin" \
 			      "$($(PKG)_DEST_DIR)/usr/bin/$$bin"; \
 		fi; \
 	done
@@ -42,16 +43,16 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 ifneq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_MINIMAL)),y)
 	@echo "  - Copying binutils..."
 	for bin in as ld ar ranlib nm objdump objcopy strip strings readelf addr2line; do \
-		if [ -f "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(GCC_TOOLCHAIN_TARGET_TRIPLET)-$$bin" ]; then \
-			cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(GCC_TOOLCHAIN_TARGET_TRIPLET)-$$bin" \
+		if [ -f "$(TARGET_UTILS_DIR)/usr/bin/$$bin" ]; then \
+			cp -a "$(TARGET_UTILS_DIR)/usr/bin/$$bin" \
 			      "$($(PKG)_DEST_DIR)/usr/bin/$$bin"; \
 		fi; \
 	done
 else
 	@echo "  - Copying essential binutils (minimal mode)..."
 	for bin in as ld ar ranlib; do \
-		if [ -f "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(GCC_TOOLCHAIN_TARGET_TRIPLET)-$$bin" ]; then \
-			cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/$(GCC_TOOLCHAIN_TARGET_TRIPLET)-$$bin" \
+		if [ -f "$(TARGET_UTILS_DIR)/usr/bin/$$bin" ]; then \
+			cp -a "$(TARGET_UTILS_DIR)/usr/bin/$$bin" \
 			      "$($(PKG)_DEST_DIR)/usr/bin/$$bin"; \
 		fi; \
 	done
@@ -59,23 +60,23 @@ endif
 	
 	# Copy GCC libraries (libgcc_s, libstdc++, etc.)
 	@echo "  - Copying GCC libraries..."
-	if [ -d "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/gcc" ]; then \
-		cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/gcc" \
+	if [ -d "$(TARGET_UTILS_DIR)/usr/lib/gcc" ]; then \
+		cp -a "$(TARGET_UTILS_DIR)/usr/lib/gcc" \
 		      "$($(PKG)_DEST_DIR)/usr/lib/"; \
 	fi
 	
 	# Copy runtime libraries
 	for lib in libgcc_s.so* libstdc++.so* libgomp.so* libatomic.so*; do \
-		if [ -e "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/$$lib" ]; then \
-			cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/$$lib" \
+		if [ -e "$(TARGET_UTILS_DIR)/usr/lib/$$lib" ]; then \
+			cp -a "$(TARGET_UTILS_DIR)/usr/lib/$$lib" \
 			      "$($(PKG)_DEST_DIR)/usr/lib/"; \
 		fi; \
 	done
 	
 	# Copy libexec (compiler internal programs: cc1, cc1plus, collect2, lto1)
 	@echo "  - Copying compiler internals..."
-	if [ -d "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/libexec/gcc" ]; then \
-		cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/libexec/gcc" \
+	if [ -d "$(TARGET_UTILS_DIR)/usr/libexec/gcc" ]; then \
+		cp -a "$(TARGET_UTILS_DIR)/usr/libexec/gcc" \
 		      "$($(PKG)_DEST_DIR)/usr/libexec/"; \
 	fi
 	
@@ -85,14 +86,14 @@ ifeq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_HEADERS)),y)
 	$(INSTALL_DIR) $($(PKG)_DEST_DIR)/usr/include
 	
 	# Copy C/C++ standard library headers
-	if [ -d "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" ]; then \
+	if [ -d "$(TARGET_UTILS_DIR)/usr/include" ]; then \
 		for dir in c++ bits gnu linux asm asm-generic; do \
-			if [ -e "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/$$dir" ]; then \
-				cp -a "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/$$dir" \
+			if [ -e "$(TARGET_UTILS_DIR)/usr/include/$$dir" ]; then \
+				cp -a "$(TARGET_UTILS_DIR)/usr/include/$$dir" \
 				      "$($(PKG)_DEST_DIR)/usr/include/"; \
 			fi; \
 		done; \
-		find "$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" -maxdepth 1 -type f \
+		find "$(TARGET_UTILS_DIR)/usr/include" -maxdepth 1 -type f \
 		     -exec cp -a {} "$($(PKG)_DEST_DIR)/usr/include/" \; ; \
 	fi
 	

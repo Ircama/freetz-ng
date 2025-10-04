@@ -1,3 +1,6 @@
+comment "Python 3.13.7 requires external storage  (Enable 'External processing' in the main menu)"
+	depends on !EXTERNAL_ENABLED
+
 config FREETZ_PACKAGE_PYTHON3
 	bool "Python 3.13.7"
 	depends on EXTERNAL_ENABLED

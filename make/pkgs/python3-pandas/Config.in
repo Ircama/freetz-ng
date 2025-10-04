@@ -1,3 +1,6 @@
+comment "pandas requires external storage  (Enable 'External processing' in the main menu)"
+	depends on FREETZ_PACKAGE_PYTHON3 && !EXTERNAL_ENABLED && FREETZ_DL_TOOL_developer
+
 config FREETZ_PACKAGE_PYTHON3_PANDAS
 	bool "pandas 2.2.3 (for Python 3) - DEVELOPER ONLY"
 	depends on FREETZ_PACKAGE_PYTHON3

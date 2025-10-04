@@ -11,7 +11,6 @@ $(PKG)_HASH:=ddc7c39727ba62b80dfdbedf400d1c10ddfa8eefbd7ec8dcb118be8b56d31029
 $(PKG)_DEPENDS_ON += python3
 $(PKG)_DEPENDS_ON += meson-host
 $(PKG)_DEPENDS_ON += ninja-host
-$(PKG)_DEPENDS_ON += python3-setuptools-host
 
 
 $(PKG_SOURCE_DOWNLOAD)

@@ -1,3 +1,6 @@
+comment "GCC Toolchain requires external storage (Enable 'External processing' in the main menu)"
+	depends on !EXTERNAL_ENABLED
+
 config FREETZ_PACKAGE_GCC_TOOLCHAIN
 	bool "GCC Toolchain (Native Compiler from Build System)"
 	depends on EXTERNAL_ENABLED

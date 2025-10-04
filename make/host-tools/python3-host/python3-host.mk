@@ -47,6 +47,8 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY) | $(HOST_TOOLS_DIR)
 		$(TOOLS_SUBMAKE) -C $(PYTHON3_HOST_DIR) \
 		DESTDIR="$(HOST_TOOLS_DIR)" \
 		commoninstall bininstall maninstall )
+	@echo "Installing meson-python for host..."
+	$(HOST_TOOLS_DIR)/usr/bin/python3 -m pip install --no-cache-dir meson-python $(SILENT)
 
 $(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 

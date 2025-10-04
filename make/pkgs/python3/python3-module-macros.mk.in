@@ -78,6 +78,7 @@ define Build/Py3Mod/Pip
                         --prefix=/usr \
                         --root=$(abspath $($(strip $(1))_DEST_DIR)) \
                         --no-compile \
+                        --config-settings=setup-args="--cross-file=$(FREETZ_BASE_DIR)/include/meson.cross/$(REAL_GNU_TARGET_NAME)" \
                         $(2) \
                         . \
         )
