@@ -6,10 +6,11 @@ $(PKG)_CATEGORY:=Debug helpers
 # This packages the GCC cross-compiler for installation on target MIPS Fritz!Box
 
 # Hardcoded paths for simplicity and reliability
-GCC_TOOLCHAIN_TARGET_UTILS_DIR:=source/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/target-utils
-GCC_TOOLCHAIN_DEST_DIR:=packages/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/gcc-toolchain-13.4.0/root
-GCC_TOOLCHAIN_BINARY:=$(TOPDIR)/$(GCC_TOOLCHAIN_TARGET_UTILS_DIR)/usr/bin/gcc
-GCC_TOOLCHAIN_TARGET_BINARY:=$(TOPDIR)/$(GCC_TOOLCHAIN_DEST_DIR)/usr/bin/gcc
+TOPDIR?=.
+GCC_TOOLCHAIN_TARGET_UTILS_DIR:=$(TOPDIR)/toolchain/build/mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/mips-linux-uclibc/target-utils
+GCC_TOOLCHAIN_DEST_DIR:=$(TOPDIR)/packages/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/gcc-toolchain-13.4.0/root
+GCC_TOOLCHAIN_BINARY:=$(GCC_TOOLCHAIN_TARGET_UTILS_DIR)/usr/bin/gcc
+GCC_TOOLCHAIN_TARGET_BINARY:=$(GCC_TOOLCHAIN_DEST_DIR)/usr/bin/gcc
 $(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/bin/gcc
 
 $(PKG)_EXTERNALIZE_FILES:=usr/bin/* usr/lib/* usr/libexec/* $(if $(FREETZ_PACKAGE_GCC_TOOLCHAIN_HEADERS),usr/include/*)
