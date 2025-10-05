@@ -1,0 +1,38 @@
+--- string_buffer.h.orig	2025-10-04 12:13:59.549727208 +0200
++++ numpy/_core/src/umath/string_buffer.h	2025-10-04 12:13:59.559251348 +0200
+@@ -42,7 +42,7 @@
+ 
+ template <>
+ inline npy_ucs4
+-getchar<ENCODING::ASCII>(const unsigned char *buf, int *bytes)
++npy_getchar<ENCODING::ASCII>(const unsigned char *buf, int *bytes)
+ {
+     *bytes = 1;
+     return (npy_ucs4) *buf;
+@@ -51,7 +51,7 @@
+ 
+ template <>
+ inline npy_ucs4
+-getchar<ENCODING::UTF32>(const unsigned char *buf, int *bytes)
++npy_getchar<ENCODING::UTF32>(const unsigned char *buf, int *bytes)
+ {
+     *bytes = 4;
+     return *(npy_ucs4 *)buf;
+@@ -59,7 +59,7 @@
+ 
+ template <>
+ inline npy_ucs4
+-getchar<ENCODING::UTF8>(const unsigned char *buf, int *bytes)
++npy_getchar<ENCODING::UTF8>(const unsigned char *buf, int *bytes)
+ {
+     Py_UCS4 codepoint;
+     *bytes = utf8_char_to_ucs4_code(buf, &codepoint);
+@@ -378,7 +378,7 @@
+     operator*()
+     {
+         int bytes;
+-        return getchar<enc>((unsigned char *) buf, &bytes);
++        return npy_getchar<enc>((unsigned char *) buf, &bytes);
+     }
+ 
+     inline int

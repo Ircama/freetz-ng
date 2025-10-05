@@ -20,7 +20,16 @@ $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
-$($(PKG)_BINARY) $($(PKG)_LIB_DIR) $($(PKG)_CODECS_DIR): $($(PKG)_DIR)/.configured
+# Create missing wrapper symlink for ccache support
+$($(PKG)_DIR)/.wrapper-linked: $($(PKG)_DIR)/.configured
+	@CCACHE_BIN_DIR="/home/myuser/freetz-ng/toolchain/build/mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/mips-linux-uclibc/bin-ccache"; \
+	if [ -d "$$CCACHE_BIN_DIR" ] && [ ! -L "$$CCACHE_BIN_DIR/mips-linux-uclibc-g++-wrapper" ]; then \
+		echo "Creating missing g++-wrapper symlink for ccache..."; \
+		ln -sf mips-linux-uclibc-g++ "$$CCACHE_BIN_DIR/mips-linux-uclibc-g++-wrapper"; \
+	fi
+	@touch $@
+
+$($(PKG)_BINARY) $($(PKG)_LIB_DIR) $($(PKG)_CODECS_DIR): $($(PKG)_DIR)/.wrapper-linked
 	$(SUBMAKE) -C $(P7ZIP_DIR) DEST_HOME="$(abspath $($(PKG)_DEST_DIR))" \
 	CC="$(TARGET_CC)" \
 	CXX="$(TARGET_CXX)" \
