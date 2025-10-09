@@ -22,10 +22,11 @@ $(PKG_CONFIGURED_NOP)
 
 # Create missing wrapper symlink for ccache support
 $($(PKG)_DIR)/.wrapper-linked: $($(PKG)_DIR)/.configured
-	@CCACHE_BIN_DIR="/home/myuser/freetz-ng/toolchain/build/mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/mips-linux-uclibc/bin-ccache"; \
-	if [ -d "$$CCACHE_BIN_DIR" ] && [ ! -L "$$CCACHE_BIN_DIR/mips-linux-uclibc-g++-wrapper" ]; then \
+	@CCACHE_BIN_DIR="$(REAL_GNU_TARGET_NAME)-ccache"; \
+	CCACHE_WRAPPER="$(REAL_GNU_TARGET_NAME)-g++-wrapper"; \
+	if command -v "$$CCACHE_BIN_DIR/$(REAL_GNU_TARGET_NAME)-g++" >/dev/null 2>&1 && [ ! -L "$$(dirname $$(command -v $$CCACHE_BIN_DIR/$(REAL_GNU_TARGET_NAME)-g++))/$$CCACHE_WRAPPER" ]; then \
 		echo "Creating missing g++-wrapper symlink for ccache..."; \
-		ln -sf mips-linux-uclibc-g++ "$$CCACHE_BIN_DIR/mips-linux-uclibc-g++-wrapper"; \
+		ln -sf "$(REAL_GNU_TARGET_NAME)-g++" "$$(dirname $$(command -v $$CCACHE_BIN_DIR/$(REAL_GNU_TARGET_NAME)-g++))/$$CCACHE_WRAPPER"; \
 	fi
 	@touch $@
 
