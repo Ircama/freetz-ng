@@ -97,6 +97,8 @@ def format_size(size_bytes):
 
 def log_ssh_command(command, output="", debug=False):
     """Log SSH/SCP commands to file for debugging"""
+    if not debug:
+        return
     try:
         with open(SSH_LOG_FILE, 'a', encoding='utf-8') as f:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -105,11 +107,9 @@ def log_ssh_command(command, output="", debug=False):
             if output:
                 f.write(f"OUTPUT:\n{output}\n")
             f.write(f"{'='*60}\n")
-        if debug:
-            cdebug(f"Logged SSH command to {SSH_LOG_FILE}", True)
+        cdebug(f"Logged SSH command to {SSH_LOG_FILE}", True)
     except Exception as e:
-        if debug:
-            cdebug(f"Failed to log SSH command: {e}", True)
+        cdebug(f"Failed to log SSH command: {e}", True)
 
 
 # --- NETWORK UTILITY FUNCTIONS ---
@@ -409,8 +409,9 @@ def ssh_run(host, user, password, command, debug=False, capture_output=True):
     # Execute command
     output = sshpass_exec(cmd, password, verbose=debug, capture_output=capture_output)
     
-    # Log command and output
-    log_ssh_command(cmd_str, output if capture_output else "[output not captured]", debug)
+    # Log command and output only in debug mode
+    if debug:
+        log_ssh_command(cmd_str, output if capture_output else "[output not captured]", debug)
     
     return output
 
@@ -421,11 +422,26 @@ def scp_send(host, user, password, local, remote, debug=False):
     cmd_str = ' '.join(cmd)
     cdebug(f"SCP: {cmd_str}", debug)
     
-    # Log SCP command
-    log_ssh_command(cmd_str, f"Uploading {local} to {remote}", debug)
+    # Log SCP command only in debug mode
+    if debug:
+        log_ssh_command(cmd_str, f"Uploading {local} to {remote}", debug)
     
     # Execute SCP with silent=True to suppress all output
     try:
+        # Check if remote file already exists and warn user in interactive mode
+        remote_exists = ssh_run(host, user, password, f"test -f '{remote}' && echo exists || echo notfound", debug=debug, capture_output=True).strip()
+        if remote_exists == "exists":
+            if not dry_run:
+                if sys.stdin.isatty():  # Interactive mode
+                    cwarning(f"Remote file already exists: {remote}")
+                    if not confirm(f"Overwrite remote file\n '{remote}'?\n This will delete the existing file and it is needed to continue.", default=False):
+                        cerror("Upload cancelled by user.")
+                        return None
+                # Delete remote file before upload
+                ssh_run(host, user, password, f"rm -f '{remote}'", debug=debug)
+            else:
+                cwarning(f"[DRY-RUN] Remote file '{remote}' already exists. Would delete before upload.")
+
         output = sshpass_exec(cmd, password, verbose=False, capture_output=True, silent=True)
         # Check if there were any error messages in output
         if output and ('error' in output.lower() or 'failed' in output.lower() or 'permission denied' in output.lower()):
@@ -520,14 +536,31 @@ def read_router_config(host, user, password, debug=False):
     
     # Step 1: Read mod.cfg
     cinfo("Step 1: Reading Freetz-NG configuration (/mod/etc/conf/mod.cfg)")
-    mod_cfg_output = ssh_run(host, user, password, 
-                            "cat /mod/etc/conf/mod.cfg 2>/dev/null",
-                            debug=debug, capture_output=True)
-    
-    if not mod_cfg_output or 'No such file' in mod_cfg_output:
-        cerror("Freetz-NG configuration file not found!")
-        cerror("File /mod/etc/conf/mod.cfg is missing. Freetz-NG may not be properly installed.")
-        return None
+
+    # Try to connect for up to 5 minutes, retrying every 2 seconds if 'No route to host' is detected
+    start_time = time.time()
+    no_route_first = True
+    while True:
+        mod_cfg_output = ssh_run(host, user, password, 
+                                "cat /mod/etc/conf/mod.cfg 2>/dev/null",
+                                debug=debug, capture_output=True)
+        if mod_cfg_output and "ssh:" in mod_cfg_output and "No route to host" in mod_cfg_output:
+            elapsed = time.time() - start_time
+            if no_route_first:
+                cerror(f"No connection to {host} (port 22: No route to host)")
+                no_route_first = False
+            else:
+                print(".", end='', flush=True)
+            if elapsed > 300:
+                cerror(f"Could not connect to {host} after 5 minutes. Aborting.")
+                return None
+            time.sleep(2)
+            continue
+        if not mod_cfg_output or 'No such file' in mod_cfg_output:
+            cerror("Freetz-NG configuration file not found!")
+            cerror("File /mod/etc/conf/mod.cfg is missing. Freetz-NG may not be properly installed.")
+            return None
+        break
     
     # Parse mod.cfg
     mod_config = parse_mod_config(mod_cfg_output)
@@ -550,7 +583,7 @@ def read_router_config(host, user, password, debug=False):
     cprint(f"  Language:           {config.lang}", 'cyan')
     
     # Step 2: Read storage information (df -h)
-    cprint("\n")
+    cprint("")
     cinfo("Step 2: Detecting storage devices (df -h)")
     df_output = ssh_run(host, user, password, "df -h", debug=debug, capture_output=True)
     
@@ -583,23 +616,39 @@ def read_router_config(host, user, password, debug=False):
         else:
             cwarning("No external storage devices detected")
     
-    # Determine temp directory suggestions based on external directory
-    # Replace "external" with "stage" for temp directory
-    if config.external_dir and '/external' in config.external_dir:
-        stage_dir = config.external_dir.replace('/external', '/stage')
-        config.temp_suggestions.append(stage_dir)
-    elif config.external_dir:
-        # If "external" is not in path, append /stage to the path
-        config.temp_suggestions.append(config.external_dir.rstrip('/') + '/stage')
-    else:
-        # Fallback if external_dir is somehow empty
+    # Determine temp directory suggestions
+    config.temp_suggestions = []
+    # If config.external_dir is set, use it as default with '/stage' appended unless it already contains 'stage' or 'external'
+    if config.external_dir:
+        ext_dir = config.external_dir.rstrip('/')
+        # If external_dir ends with '/external', always suggest '/stage' for temp
+        if ext_dir.endswith('/external'):
+            config.temp_suggestions.append(ext_dir.replace('/external', '/stage'))
+        elif ext_dir.endswith('/stage'):
+            config.temp_suggestions.append(ext_dir)
+        else:
+            config.temp_suggestions.append(ext_dir + '/stage')
+    # If UBI internal storage is present, suggest its mountpoint + /stage
+    if config.has_ubi and hasattr(config, 'ubi_available') and hasattr(config, 'ubi_size'):
+        ubi_stage = None
+        # Try to get UBI mountpoint from config (set above)
+        ubi_mount = None
+        if 'ubi_info' in locals() and ubi_info and 'mountpoint' in ubi_info:
+            ubi_mount = ubi_info['mountpoint']
+        elif hasattr(config, 'ubi_mount'):
+            ubi_mount = config.ubi_mount
+        if ubi_mount:
+            ubi_stage = ubi_mount.rstrip('/') + '/stage'
+        else:
+            ubi_stage = '/var/media/ftp/stage'
+        config.temp_suggestions.append(ubi_stage)
+    # Fallbacks
+    if '/var/media/ftp/stage' not in config.temp_suggestions:
         config.temp_suggestions.append('/var/media/ftp/stage')
-    
-    # Add /var/tmp as alternative
     config.temp_suggestions.append('/var/tmp')
     
     # Step 3: Additional router information
-    cprint("\n")
+    cprint("")
     cinfo("Step 3: Gathering system information")
     
     # Get Freetz version
@@ -648,12 +697,30 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
     filesize = get_file_size(local_file)
     remote_path = f"{remote_dir}/{filename}"
     
-    cprint(f"\nUploading {filename} ({format_size(filesize)}) to {remote_path}", 'yellow', 'copy')
+    cprint(f"Uploading file name: '{filename}' ({format_size(filesize)})", 'yellow', 'copy')
+    # Count number of files in tar archive
+    nfiles = count_tar_files(local_file)
+    cprint(f"Archive contains {nfiles} files.", 'yellow', 'info')
+    cprint(f"Stage filename: {remote_path}", 'yellow', 'copy')
     
     if dry_run:
         cwarning("[DRY-RUN] Skipping file upload")
         return remote_path
     
+    # Check if remote file already exists and warn user in interactive mode
+    remote_exists = ssh_run(host, user, password, f"test -f '{remote_path}' && echo exists || echo notfound", debug=debug, capture_output=True).strip()
+    if remote_exists == "exists":
+        if not dry_run:
+            if sys.stdin.isatty():  # Interactive mode
+                cwarning(f"Remote file already exists: {remote_path}")
+                if not confirm(f"Overwrite remote file '{remote_path}'? This will delete the existing file.", default=False):
+                    cerror("Upload cancelled by user.")
+                    return None
+            # Delete remote file before upload
+            ssh_run(host, user, password, f"rm -f '{remote_path}'", debug=debug)
+        else:
+            cwarning(f"[DRY-RUN] Remote file '{remote_path}' already exists. Would delete before upload.")
+
     # For large files, show progress with monitoring thread
     if filesize > 10 * 1024 * 1024:  # > 10MB
         cinfo("Upload in progress (this may take several minutes)...")
@@ -678,16 +745,16 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
                             last_size = current_size
                             elapsed = time.time() - start_time
                             speed = current_size / elapsed if elapsed > 0 else 0
-                            percent = min(99, int(100 * current_size / filesize))
+                            percent = int(100 * current_size / filesize)
                             eta = int((filesize - current_size) / speed) if speed > 0 else 0
                             
                             # Clear line and show progress
-                            print(f"\r  Progress: {percent}% | {format_size(current_size)}/{format_size(filesize)} | "
+                            print(f"\r   Progress: {percent}% | {format_size(current_size)}/{format_size(filesize)} | "
                                   f"{format_size(speed)}/s | ETA: {eta}s     ", end='', flush=True)
                             shown_progress = True
                 except:
                     pass
-                time.sleep(2)  # Update every 2 seconds
+                time.sleep(1)  # Update every second
             
             # If we never showed progress, it means upload was too fast or failed
             if not shown_progress:
@@ -712,7 +779,7 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
             uploaded_size = int(verify_result.strip())
             if uploaded_size == filesize:
                 speed = filesize / elapsed if elapsed > 0 else 0
-                print(f"\r  Progress: 100% | {format_size(filesize)}/{format_size(filesize)} | "
+                print(f"\r   Progress: 100% | {format_size(filesize)}/{format_size(filesize)} | "
                       f"{format_size(speed)}/s | Completed in {int(elapsed)}s     ")
                 success = True
             else:
@@ -722,7 +789,7 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
             # Could not verify - assume success if scp_send returned True
             if success:
                 speed = filesize / elapsed if elapsed > 0 else 0
-                print(f"\r  Progress: 100% | {format_size(filesize)}/{format_size(filesize)} | "
+                print(f"\r   Progress: 100% | {format_size(filesize)}/{format_size(filesize)} | "
                       f"{format_size(speed)}/s | Completed in {int(elapsed)}s     ")
     else:
         # Small files: simple upload
@@ -739,7 +806,7 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
 
 def firmware_update_process(host, user, password, image_file, target_dir,
                            stop_services='stop_avm', no_reboot=False, 
-                           debug=False, dry_run=False, dry_run_extract=False):
+                           debug=False, dry_run=False):
     """Execute firmware update process (emulates do_update_handler.sh)"""
     cprint("\n" + "="*60, 'bold')
     cprint("FIRMWARE UPDATE PROCESS", 'bold', 'install')
@@ -755,27 +822,50 @@ def firmware_update_process(host, user, password, image_file, target_dir,
         return True
     
     # Step 1: Extract firmware archive
-    if dry_run_extract:
-        cinfo("Step 1: [DRY-RUN-EXTRACT] Testing firmware archive (tar -t)")
-        tar_count = count_tar_files(image_file)
-        test_cmd = f"tar -tv < {remote_image} 2>&1 | head -20"
-        cdebug(f"Testing {tar_count} files in archive", debug)
-        test_output = ssh_run(host, user, password, test_cmd, debug=debug)
-        cprint(f"{EMOJI['ok']} Archive test complete (showing first 20 files):", 'green')
-        print(test_output)
-    else:
-        cinfo("Step 1: Extracting firmware archive to /")
-        tar_count = count_tar_files(image_file)
-        extract_cmd = f"tar -C / -xv < {remote_image} 2>&1 | tee /tmp/fw_extract.log"
-        cdebug(f"Extracting {tar_count} files from firmware", debug)
-        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False)
-        cprint(f"{EMOJI['ok']} Firmware extracted", 'green')
+    cinfo("Step 1: Extracting firmware archive to /")
+    tar_count = count_tar_files(image_file)
+    extract_cmd = f"tar -C / -xv < {remote_image} > /tmp/fw_extract.log 2>&1"
+    cdebug(f"Extracting {tar_count} files from firmware", debug)
+    
+    # Monitor extraction progress
+    extract_done = threading.Event()
+    start_time = time.time()
+    
+    def monitor_extraction():
+        """Monitor extraction progress by counting extracted files"""
+        last_count = 0
+        while not extract_done.is_set():
+            try:
+                # Count lines in extraction log (each line = one file)
+                result = ssh_run(host, user, password, 
+                               f"wc -l < /tmp/fw_extract.log 2>/dev/null || echo 0",
+                               debug=False, capture_output=True)
+                if result and result.strip().isdigit():
+                    current_count = int(result.strip())
+                    if current_count > last_count:
+                        last_count = current_count
+                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
+                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ", 
+                              end='', flush=True)
+            except:
+                pass
+            time.sleep(1)  # Update every second
+    
+    # Start monitoring thread
+    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
+    monitor_thread.start()
+    
+    # Execute extraction
+    ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False)
+    extract_done.set()
+    monitor_thread.join(timeout=1)
+    
+    # Show completion
+    elapsed = int(time.time() - start_time)
+    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
+    cprint(f"{EMOJI['ok']} Firmware extracted", 'green')
     
     # Step 2: Stop AVM services (if requested)
-    if dry_run_extract:
-        cwarning("[DRY-RUN-EXTRACT] Skipping AVM services stop and installation")
-        return True
-    
     if stop_services in ('stop_avm', 'semistop_avm'):
         cinfo(f"Step 2: Stopping AVM services ({stop_services})")
         if stop_services == 'stop_avm':
@@ -834,8 +924,8 @@ def firmware_update_process(host, user, password, image_file, target_dir,
         return False
 
 def external_update_process(host, user, password, external_file, external_dir,
-                            delete_old=False, restart_services=True,
-                            debug=False, dry_run=False, dry_run_extract=False):
+                            preserve_old=False, restart_services=True,
+                            debug=False, dry_run=False):
     """Execute external update process (emulates do_external_handler.sh)"""
     cprint("\n" + "="*60, 'bold')
     cprint("EXTERNAL UPDATE PROCESS", 'bold', 'external')
@@ -877,44 +967,68 @@ def external_update_process(host, user, password, external_file, external_dir,
         else:
             cinfo("External services not running")
     
-    # Step 2: Delete old files if requested
-    if delete_old and not dry_run_extract:
-        cinfo("Step 2: Removing old external files")
-        ssh_run(host, user, password, f"rm -rf {external_dir}", debug=debug)
-        cprint(f"{EMOJI['ok']} Old files removed", 'green')
-    elif dry_run_extract:
-        cinfo("Step 2: [DRY-RUN-EXTRACT] Skipping old files removal")
+    # Step 2: Delete or preserve old directory
+    if preserve_old:
+        cinfo("Step 2: Keeping old external directory and files")
     else:
-        cinfo("Step 2: Keeping old external files")
+        cinfo("Step 2: Removing old external directory and files")
+        ssh_run(host, user, password, f"rm -rf {external_dir}", debug=debug)
+        cprint(f"{EMOJI['ok']} Old external directory and files removed", 'green')
     
     # Step 3: Extract external archive
-    if dry_run_extract:
-        cinfo("Step 3: [DRY-RUN-EXTRACT] Testing external archive (tar -t)")
-        tar_count = count_tar_files(external_file)
-        test_cmd = f"tar -tv < {remote_external} 2>&1 | head -20"
-        cdebug(f"Testing {tar_count} files in archive", debug)
-        test_output = ssh_run(host, user, password, test_cmd, debug=debug)
-        cprint(f"{EMOJI['ok']} Archive test complete (showing first 20 files):", 'green')
-        print(test_output)
-    else:
-        cinfo("Step 3: Extracting external archive")
-        tar_count = count_tar_files(external_file)
-        extract_cmd = f"mkdir -p {external_dir} && tar -C {external_dir} -xv < {remote_external} 2>&1 | tee /tmp/ext_extract.log"
-        cdebug(f"Extracting {tar_count} files to {external_dir}", debug)
-        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False)
-        cprint(f"{EMOJI['ok']} External files extracted", 'green')
+    cinfo("Step 3: Extracting external archive")
+    tar_count = count_tar_files(external_file)
+    extract_cmd = f"mkdir -p {external_dir} && tar -C {external_dir} -xv < {remote_external} > /tmp/ext_extract.log 2>&1"
+    cdebug(f"Extracting {tar_count} files to {external_dir}", debug)
+    
+    # Monitor extraction progress
+    extract_done = threading.Event()
+    start_time = time.time()
+    
+    def monitor_extraction():
+        """Monitor extraction progress by counting extracted files"""
+        last_count = 0
+        while not extract_done.is_set():
+            try:
+                # Count lines in extraction log (each line = one file)
+                result = ssh_run(host, user, password, 
+                               f"wc -l < /tmp/ext_extract.log 2>/dev/null || echo 0",
+                               debug=False, capture_output=True)
+                if result and result.strip().isdigit():
+                    current_count = int(result.strip())
+                    if current_count > last_count:
+                        last_count = current_count
+                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
+                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ", 
+                              end='', flush=True)
+            except:
+                pass
+            time.sleep(1)  # Update every second
+    
+    # Start monitoring thread
+    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
+    monitor_thread.start()
+    
+    # Execute extraction
+    ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False)
+    extract_done.set()
+    monitor_thread.join(timeout=1)
+    
+    # Show completion
+    elapsed = int(time.time() - start_time)
+    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
+    cprint(f"{EMOJI['ok']} External files extracted", 'green')
     
     # Step 4: Mark as external directory
-    if not dry_run_extract:
-        ssh_run(host, user, password, f"touch {external_dir}/.external", debug=debug)
+    cinfo("Step 4: Mark external directory")
+    ssh_run(host, user, password, f"touch {external_dir}/.external", debug=debug)
     
     # Step 5: Restart external services
-    if restart_services and not dry_run_extract:
-        cinfo("Step 5: Starting external services")
-        ssh_run(host, user, password, "/mod/etc/init.d/rc.external start", debug=debug)
+    if restart_services:
+        cinfo("Step 5: Starting external services...")
+        ret = ssh_run(host, user, password, "/mod/etc/init.d/rc.external start", debug=debug)
+        cprint(ret)
         cprint(f"{EMOJI['ok']} External services started", 'green')
-    elif dry_run_extract:
-        cwarning("[DRY-RUN-EXTRACT] Skipping external services restart")
     
     return True
 
@@ -928,20 +1042,20 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Interactive mode (recommended for first-time users)
-  %(prog)s --host 192.168.178.1 --password mypass
-  
-  # Batch mode with specific files
-  %(prog)s --host 192.168.178.1 --password mypass --image fw.image --external fw.external --batch
-  
-  # Dry-run to test without making changes
-  %(prog)s --host 192.168.178.1 --password mypass --dry-run
-  
-  # Update only firmware (no external)
-  %(prog)s --host 192.168.178.1 --password mypass --image fw.image --batch --skip-external
-  
-  # Update only external (no firmware)
-  %(prog)s --host 192.168.178.1 --password mypass --external fw.external --batch --skip-firmware
+    # Interactive mode (recommended for first-time users)
+    %(prog)s --host 192.168.178.1 --password mypass
+
+    # Batch mode with specific files
+    %(prog)s --host 192.168.178.1 --password mypass --image fw.image --external fw.external --batch
+
+    # Dry-run to test without making changes
+    %(prog)s --host 192.168.178.1 --password mypass --dry-run
+
+    # Update only firmware (no external)
+    %(prog)s --host 192.168.178.1 --password mypass --image fw.image --batch --skip-external
+
+    # Update only external (no firmware)
+    %(prog)s --host 192.168.178.1 --password mypass --external fw.external --batch --skip-firmware
 """
     )
     
@@ -980,7 +1094,7 @@ Examples:
                              help='AVM services stop strategy (default: stop_avm)')
     update_group.add_argument('--no-reboot', action='store_true',
                              help='Do not reboot router after firmware update')
-    update_group.add_argument('--delete-old-external', action='store_true',
+    update_group.add_argument('--no-delete-external', action='store_true',
                              help='Delete old external files before extraction')
     update_group.add_argument('--no-external-restart', action='store_true',
                              help='Do not restart external services after update')
@@ -993,8 +1107,6 @@ Examples:
                            help='Batch mode: no interactive prompts, use only CLI arguments')
     mode_group.add_argument('--dry-run', action='store_true',
                            help='Dry-run: show what would be done without making changes')
-    mode_group.add_argument('--dry-run-extract', action='store_true',
-                           help='Dry-run with file copy and tar test (tar -t instead of tar -x)')
     mode_group.add_argument('--debug', action='store_true',
                            help='Enable debug output')
     
@@ -1008,18 +1120,17 @@ Examples:
     cprint("   Freetz-NG Router Update Tool", 'bold', 'rocket')
     cprint("="*70 + "\n", 'bold')
     
-    # Initialize SSH log file
-    try:
-        with open(SSH_LOG_FILE, 'w', encoding='utf-8') as f:
-            f.write(f"Router Update Session - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        cinfo(f"SSH commands will be logged to: {SSH_LOG_FILE}")
-    except Exception as e:
-        cwarning(f"Could not create SSH log file: {e}")
+    # Initialize SSH log file only if debug mode is active
+    if args.debug:
+        try:
+            with open(SSH_LOG_FILE, 'w', encoding='utf-8') as f:
+                f.write(f"Router Update Session - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            cinfo(f"SSH commands will be logged to: {SSH_LOG_FILE}")
+        except Exception as e:
+            cwarning(f"Could not create SSH log file: {e}")
     
     if args.dry_run:
         cwarning("DRY-RUN MODE: No changes will be made to the router\n")
-    elif args.dry_run_extract:
-        cwarning("DRY-RUN-EXTRACT MODE: Files will be copied, tar tested (tar -t), but not extracted\n")
     
     # Read router configuration (always read to show information and validate)
     router_config = read_router_config(args.host, args.user, args.password, args.debug)
@@ -1092,44 +1203,32 @@ Examples:
         cerror(f"External package not found: {args.external}")
         return 1
     
-    # Show summary
-    cprint("\n" + "-"*70, 'dim')
-    cinfo("Update Summary:")
-    cprint(f"  Router:          {args.host}", 'cyan')
-    cprint(f"  User:            {args.user}", 'cyan')
-    cprint(f"  Temp directory:  {args.target_dir}", 'cyan')
-    if args.image:
-        cprint(f"  Firmware:        {os.path.basename(args.image)} ({format_size(get_file_size(args.image))})", 'cyan')
-    if args.external:
-        cprint(f"  External:        {os.path.basename(args.external)} ({format_size(get_file_size(args.external))})", 'cyan')
-        if args.external_dir:
-            cprint(f"  External dir:    {args.external_dir}", 'cyan')
-    cprint(f"  Stop services:   {args.stop_services}", 'cyan')
-    cprint(f"  Reboot:          {'No' if args.no_reboot else 'Yes'}", 'cyan')
-    cprint("-"*70 + "\n", 'dim')
+    # Interactive directory configuration
+    cprint("\n" + "-"*70, 'dim')  # Begin directory configuration
+    cinfo("Directory Configuration:")
     
-    if not args.batch and not args.dry_run and not args.dry_run_extract:
-        if not confirm("Proceed with update?", default=False):
-            cinfo("Update cancelled by user")
-            return 0
-        
-        # Interactive directory configuration
-        cprint("\n" + "-"*70, 'dim')
-        cinfo("Directory Configuration:")
-        
-        # Show storage information first
-        if router_config and router_config.storage_devices:
-            cprint(f"  💡 Available storage devices:", 'yellow')
+    # Show storage information first
+    if router_config:
+        cprint(f"  💡 Available storage devices:", 'yellow')
+        # Show UBI internal storage first if present
+        if router_config.has_ubi and hasattr(router_config, 'ubi_available') and hasattr(router_config, 'ubi_size'):
+            ubi_label = getattr(router_config, 'ubi_mount', None) or '/var/media/ftp'
+            cprint(f"     [UBI] {ubi_label}: {router_config.ubi_available} free ({router_config.ubi_size} total)", 'yellow')
+        # Show external devices
+        if router_config.storage_devices:
             for dev in router_config.storage_devices:
                 cprint(f"     {dev['mountpoint']}: {dev['available']} free ({dev['size']} total)", 'yellow')
-            cprint("")  # Empty line for spacing
-        
-        # Determine best temp directory suggestion
-        if router_config and router_config.temp_suggestions:
-            suggested_temp = router_config.temp_suggestions[0]
-        else:
-            suggested_temp = args.target_dir
-        
+        cprint("")  # Empty line for spacing
+    
+    # Determine best temp directory suggestion
+    if router_config and router_config.temp_suggestions:
+        suggested_temp = router_config.temp_suggestions[0]
+    else:
+        suggested_temp = args.target_dir
+    
+    if args.batch:
+        args.target_dir = suggested_temp
+    else:
         # Ask for temporary upload directory
         cprint(f"  Suggested temp directory: {suggested_temp}", 'cyan')
         if router_config and len(router_config.temp_suggestions) > 1:
@@ -1137,6 +1236,7 @@ Examples:
             for alt in router_config.temp_suggestions[1:]:
                 cprint(f"    - {alt}", 'dim')
         
+        # Ask for temp directory
         if not confirm("Use suggested temporary directory for uploads?", default=True):
             custom_dir = input(f"{EMOJI['prompt']} Enter custom temporary directory path: ").strip()
             if custom_dir:
@@ -1145,126 +1245,220 @@ Examples:
         else:
             args.target_dir = suggested_temp
             cinfo(f"Using temp directory: {args.target_dir}")
-        
-        # Ask for external directory if external update is selected
-        if args.external and not args.skip_external:
-            if not args.external_dir:
-                # Use router config external directory directly (without appending basename)
-                if router_config:
-                    suggested_dir = router_config.external_dir
-                else:
-                    suggested_dir = DEFAULT_EXTERNAL_BASE
-                
-                cprint(f"  Suggested external directory: {suggested_dir}", 'cyan')
-                
-                # Show storage recommendations
-                if router_config and router_config.storage_devices:
-                    cprint(f"  💡 Available storage devices:", 'yellow')
-                    for dev in router_config.storage_devices:
-                        cprint(f"     {dev['mountpoint']}: {dev['available']} free", 'yellow')
-                
-                if confirm("Use suggested directory for external installation?", default=True):
-                    args.external_dir = suggested_dir
-                else:
-                    custom_dir = input(f"{EMOJI['prompt']} Enter custom external directory path: ").strip()
-                    args.external_dir = custom_dir if custom_dir else suggested_dir
-                    cinfo(f"Using external directory: {args.external_dir}")
-        
-        cprint("-"*70 + "\n", 'dim')
-        
-        # Interactive service management
-        if args.image and not args.skip_firmware:
-            cprint("\n" + "-"*70, 'dim')
-            cinfo("Firmware Update Service Management:")
-            if confirm("Stop AVM services before firmware update?", default=True):
-                if confirm("Use full stop (stop_avm) instead of semi-stop (semistop_avm)?", default=True):
-                    args.stop_services = 'stop_avm'
-                else:
-                    args.stop_services = 'semistop_avm'
+
+    # Check and create temp directory if needed
+    temp_exists = ssh_run(args.host, args.user, args.password, f"test -d {args.target_dir} && echo exists || echo notfound", debug=args.debug).strip()
+    if temp_exists == "exists":
+        cwarning(f"Temporary directory '{args.target_dir}' already exists on router.")
+        if not args.batch:
+            if not confirm(
+                    f"Delete temporary directory on router: {args.target_dir}?\n   This will remove all its contents and it is required to continue.",
+                    default=True
+            ):
+                cwarning("Process interrupted by user.")
+                return 1
+        if not args.dry_run:
+            # Ask if user wants to delete the temp directory if it exists
+            delete_dir_cmd = f"rm -rf '{args.target_dir}'; echo EXIT_CODE=$?"
+            delete_result = ssh_run(args.host, args.user, args.password, delete_dir_cmd, debug=args.debug)
+            error_keywords = [
+                "cannot remove", "permission denied", "no such file or directory", "disk full",
+                "input/output error", "invalid argument", "not a directory", "read-only file system",
+                "operation not permitted", "exit_code="
+            ]
+            exit_code = None
+            if "exit_code=" in delete_result.lower():
+                try:
+                    exit_code = int(delete_result.lower().split("exit_code=")[-1].split()[0])
+                except Exception:
+                    exit_code = None
+            if exit_code is not None and exit_code != 0:
+                cerror(f"Failed to delete temporary directory '{args.target_dir}'.\n   Check permissions or try manually.")
+                return 1
             else:
-                args.stop_services = 'nostop_avm'
-                cwarning("Warning: Not stopping AVM services may cause issues!")
-            
-            args.no_reboot = not confirm("Reboot router after firmware installation?", default=True)
-            cprint("-"*70 + "\n", 'dim')
-        
-        if args.external and not args.skip_external:
-            cprint("\n" + "-"*70, 'dim')
-            cinfo("External Update Service Management:")
-            
-            if not confirm("Stop/restart external services during update?", default=True):
-                args.no_external_restart = True
-                cwarning("Warning: Not restarting services may cause issues!")
-            
-            if confirm("Delete old external files before extraction?", default=False):
-                args.delete_old_external = True
-            cprint("-"*70 + "\n", 'dim')
-    
-    elif not args.batch and args.dry_run_extract:
-        # Interactive configuration for dry-run-extract mode
-        cprint("\n" + "-"*70, 'dim')
-        cinfo("DRY-RUN-EXTRACT Configuration:")
-        cwarning("Files will be uploaded and tested, but NOT extracted or installed")
-        
-        if not confirm("Continue with dry-run-extract?", default=True):
-            cinfo("Update cancelled by user")
-            return 0
-        
-        # Show storage information first
-        if router_config and router_config.storage_devices:
-            cprint(f"  💡 Available storage devices:", 'yellow')
-            for dev in router_config.storage_devices:
-                cprint(f"     {dev['mountpoint']}: {dev['available']} free ({dev['size']} total)", 'yellow')
-            cprint("")  # Empty line for spacing
-        
-        # Determine best temp directory suggestion
-        if router_config and router_config.temp_suggestions:
-            suggested_temp = router_config.temp_suggestions[0]
+                cprint(f"{EMOJI['ok']} Temporary directory '{args.target_dir}' deleted.", 'green')
         else:
-            suggested_temp = args.target_dir
-        
-        # Ask for directories even in dry-run-extract
-        cprint(f"  Suggested temp directory: {suggested_temp}", 'cyan')
-        if not confirm("Use suggested temporary directory for uploads?", default=True):
-            custom_dir = input(f"{EMOJI['prompt']} Enter custom temporary directory path: ").strip()
-            if custom_dir:
-                args.target_dir = custom_dir
-                cinfo(f"Using temp directory: {args.target_dir}")
-        else:
-            args.target_dir = suggested_temp
-        
-        if args.external and not args.skip_external:
-            if not args.external_dir:
-                # Use router config external directory directly
-                if router_config:
-                    suggested_dir = router_config.external_dir
-                else:
-                    suggested_dir = DEFAULT_EXTERNAL_BASE
-                
-                cprint("")
+            cinfo("[DRY RUN] Temporary directory deleted.")
+
+    if not args.dry_run:
+        create_dir_cmd = f"mkdir -p '{args.target_dir}'; echo EXIT_CODE=$?"
+        create_result = ssh_run(args.host, args.user, args.password, create_dir_cmd, debug=args.debug)
+        error_keywords = [
+            "cannot create directory", "permission denied", "no space left", "disk full",
+            "input/output error", "invalid argument", "not a directory", "read-only file system",
+            "operation not permitted", "file exists", "exit_code="
+        ]
+        exit_code = None
+        if "exit_code=" in create_result.lower():
+            try:
+                exit_code = int(create_result.lower().split("exit_code=")[-1].split()[0])
+            except Exception:
+                exit_code = None
+        if exit_code is not None and exit_code != 0:
+            cerror(f"Failed to create temporary directory '{args.target_dir}'. Check permissions, disk space, or choose another path.")
+            return 1
+        cprint(f"{EMOJI['ok']} Temporary directory '{args.target_dir}' created.", 'green')
+    else:
+        cwarning("[DRY RUN Temporary directory created.")
+        return 1
+
+    # Show temp directory size
+    temp_size = ssh_run(args.host, args.user, args.password, f"du -sh '{args.target_dir}' 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
+    cprint(f"  Temporary directory size: {temp_size}", 'cyan')
+    cprint("")  # Empty line for spacing
+
+    # Ask for external directory if external update is selected
+    if args.external and not args.skip_external:
+        if not args.external_dir:
+            # Use router config external directory directly (without appending basename)
+            if router_config:
+                suggested_dir = router_config.external_dir
+            else:
+                suggested_dir = DEFAULT_EXTERNAL_BASE
+            if args.batch:
+                args.external_dir = suggested_dir
+            else:
                 cprint(f"  Suggested external directory: {suggested_dir}", 'cyan')
-                
                 # Show storage recommendations
                 if router_config and router_config.storage_devices:
                     cprint(f"  💡 Available storage devices:", 'yellow')
-                    for dev in router_config.storage_devices:
-                        cprint(f"     {dev['mountpoint']}: {dev['available']} free", 'yellow')
-                
+                    # Show UBI internal storage first if present
+                    if router_config.has_ubi and hasattr(router_config, 'ubi_available') and hasattr(router_config, 'ubi_size'):
+                        ubi_label = getattr(router_config, 'ubi_mount', None) or '/var/media/ftp'
+                        cprint(f"     [UBI] {ubi_label}: {router_config.ubi_available} free ({router_config.ubi_size} total)", 'yellow')
+                    # Show external devices
+                    if router_config.storage_devices:
+                        for dev in router_config.storage_devices:
+                            cprint(f"     {dev['mountpoint']}: {dev['available']} free", 'yellow')
                 if confirm("Use suggested directory for external installation?", default=True):
                     args.external_dir = suggested_dir
                 else:
                     custom_dir = input(f"{EMOJI['prompt']} Enter custom external directory path: ").strip()
                     args.external_dir = custom_dir if custom_dir else suggested_dir
                     cinfo(f"Using external directory: {args.external_dir}")
+
+        # Check and create external directory if needed
+        ext_exists = ssh_run(args.host, args.user, args.password, f"test -d '{args.external_dir}' && echo exists || echo notfound", debug=args.debug).strip()
+        if ext_exists != "exists":
+            cwarning(f"External directory does not exist on router: {args.external_dir}")
+            if not args.dry_run:
+                if confirm(f"Create external directory on router: {args.external_dir}?", default=True):
+                    create_dir_cmd = f"mkdir -p '{args.external_dir}'; echo EXIT_CODE=$?"
+                    create_result = ssh_run(args.host, args.user, args.password, create_dir_cmd, debug=args.debug)
+                    error_keywords = [
+                        "cannot create directory", "permission denied", "no space left", "disk full",
+                        "input/output error", "invalid argument", "not a directory", "read-only file system",
+                        "operation not permitted", "file exists", "exit_code="
+                    ]
+                    error_found = any(kw in create_result.lower() for kw in error_keywords)
+                    exit_code = None
+                    if "exit_code=" in create_result.lower():
+                        try:
+                            exit_code = int(create_result.lower().split("exit_code=")[-1].split()[0])
+                        except Exception:
+                            exit_code = None
+                    if error_found or (exit_code is not None and exit_code != 0):
+                        cerror(f"Failed to create external directory '{args.external_dir}'. Check permissions, disk space, or choose another path.")
+                        return 1
+                    else:
+                        cprint(f"{EMOJI['ok']} External directory '{args.external_dir}' created.", 'green')
+        else:
+            cwarning(f"External directory '{args.external_dir}' already exists on router.")
+
+        cinfo(f"External directory: {args.external_dir}")
+
+        # Show external directory size
+        ext_size = ssh_run(args.host, args.user, args.password, f"du -sh '{args.external_dir}' 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
+        cprint(f"  External directory size: {ext_size}", 'cyan')
+
+    # Ask for external directory if external update is selected
+    if args.external and not args.skip_external:
+        if not args.external_dir:
+            # Use router config external directory directly (without appending basename)
+            if router_config:
+                suggested_dir = router_config.external_dir
+            else:
+                suggested_dir = DEFAULT_EXTERNAL_BASE
+            
+            cprint(f"  Suggested external directory: {suggested_dir}", 'cyan')
+            
+            # Show storage recommendations
+            if router_config and router_config.storage_devices:
+                cprint(f"  💡 Available storage devices:", 'yellow')
+                # Show UBI internal storage first if present
+                if router_config.has_ubi and hasattr(router_config, 'ubi_available') and hasattr(router_config, 'ubi_size'):
+                    ubi_label = getattr(router_config, 'ubi_mount', None) or '/var/media/ftp'
+                    cprint(f"     [UBI] {ubi_label}: {router_config.ubi_available} free ({router_config.ubi_size} total)", 'yellow')
+                # Show external devices
+                if router_config.storage_devices:
+                    for dev in router_config.storage_devices:
+                        cprint(f"     {dev['mountpoint']}: {dev['available']} free", 'yellow')
+            
+            if confirm("Use suggested directory for external installation?", default=True):
+                args.external_dir = suggested_dir
+            else:
+                custom_dir = input(f"{EMOJI['prompt']} Enter custom external directory path: ").strip()
+                args.external_dir = custom_dir if custom_dir else suggested_dir
+                cinfo(f"Using external directory: {args.external_dir}")
+    
+    cprint("-"*70 + "\n", 'dim')  # End of directory configuration
+    
+    # Interactive service management
+    if args.image and not args.skip_firmware:
+        cprint("\n" + "-"*70, 'dim')
+        cinfo("Firmware Update Service Management:")
+        if confirm("Stop AVM services before firmware update?", default=True):
+            if confirm("Use full stop (stop_avm) instead of semi-stop (semistop_avm)?", default=True):
+                args.stop_services = 'stop_avm'
+            else:
+                args.stop_services = 'semistop_avm'
+        else:
+            args.stop_services = 'nostop_avm'
+            cwarning("Warning: Not stopping AVM services may cause issues!")
         
+        args.no_reboot = not confirm("Reboot router after firmware installation?", default=True)
         cprint("-"*70 + "\n", 'dim')
     
+    if args.external and not args.skip_external and not args.batch:
+        cprint("\n" + "-"*70, 'dim')
+        cinfo("External Update Service Management:")
+
+        if confirm("Delete external directory after file upload and before extraction?", default=True):
+            args.no_delete_external = True
+        cprint("-"*70 + "\n", 'dim')
+
+        if not confirm("Stop/restart external services after the file extraction?", default=True):
+            args.no_external_restart = True
+            cwarning("Warning: Not restarting services may cause issues!")
+            
+    # Show summary
+    cprint("\n" + "-"*70, 'dim')
+    cinfo("Update Summary:")
+    cprint(f"  Router:           {args.host}", 'cyan')
+    cprint(f"  User:             {args.user}", 'cyan')
+    # Get temp directory size
+    temp_size = ssh_run(args.host, args.user, args.password, f"du -hs {args.target_dir} 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
+    temp_size_str = f" ({temp_size})" if temp_size else ""
+    cprint(f"  Temp directory:   {args.target_dir}{temp_size_str}", 'cyan')
+    if args.image:
+        cprint(f"  Firmware:         {os.path.basename(args.image)} ({format_size(get_file_size(args.image))})", 'cyan')
+    if args.external:
+        cprint(f"  External archive: {os.path.basename(args.external)} ({format_size(get_file_size(args.external))})", 'cyan')
+        if args.external_dir:
+            ext_size = ssh_run(args.host, args.user, args.password, f"du -hs {args.external_dir} 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
+            ext_size_str = f" ({ext_size})" if ext_size else ""
+            cprint(f"  External dir:     {args.external_dir}{ext_size_str}", 'cyan')
+    if args.image and not args.skip_firmware:
+        cprint(f"  Stop services:    {args.stop_services}", 'cyan')
+        cprint(f"  Reboot:           {'No' if args.no_reboot else 'Yes'}", 'cyan')
+    cprint("-"*70 + "\n", 'dim')
+
     # Execute firmware update
     if args.image and not args.skip_firmware:
         success = firmware_update_process(
             args.host, args.user, args.password, args.image, args.target_dir,
             stop_services=args.stop_services, no_reboot=args.no_reboot,
-            debug=args.debug, dry_run=args.dry_run, dry_run_extract=args.dry_run_extract
+            debug=args.debug, dry_run=args.dry_run
         )
         if not success:
             cerror("Firmware update failed!")
@@ -1279,16 +1473,21 @@ Examples:
                 basename = os.path.splitext(os.path.basename(args.external))[0]
                 args.external_dir = f"{router_config.external_dir}/{basename}"
                 cdebug(f"Using external directory from router config: {args.external_dir}", args.debug)
-            elif not args.dry_run and not args.dry_run_extract:
+            elif not args.dry_run:
                 # Fallback to detection
                 args.external_dir = detect_external_dir(args.host, args.user, args.password, args.debug)
                 cdebug(f"Detected external directory: {args.external_dir}", args.debug)
+
+        if not args.batch:
+            if not confirm("Proceed with update?", default=False):
+                cinfo("Update cancelled by user.")
+                return 0
         
         success = external_update_process(
             args.host, args.user, args.password, args.external, args.external_dir,
-            delete_old=args.delete_old_external, 
+            preserve_old=args.no_delete_external, 
             restart_services=not args.no_external_restart,
-            debug=args.debug, dry_run=args.dry_run, dry_run_extract=args.dry_run_extract
+            debug=args.debug, dry_run=args.dry_run
         )
         if not success:
             cerror("External update failed!")
@@ -1299,15 +1498,17 @@ Examples:
     cprint("   UPDATE COMPLETED SUCCESSFULLY!", 'green', 'ok')
     cprint("="*70 + "\n", 'bold')
     
-    # Show log file location
-    if os.path.exists(SSH_LOG_FILE):
+    # Show log file location only in debug mode
+    if args.debug and os.path.exists(SSH_LOG_FILE):
         cinfo(f"SSH command log saved to: {SSH_LOG_FILE}")
     
     return 0
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        ret = main()
+        cprint("")
+        sys.exit(ret)
     except KeyboardInterrupt:
         cwarning("\n\nUpdate interrupted by user")
         sys.exit(130)
