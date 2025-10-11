@@ -1,56 +1,3 @@
-def extract_archive_with_progress(host, user, password, archive_file, target_dir, log_file, debug=False):
-    """
-    Extract a tar archive to a target directory on FRITZ!Box, showing progress.
-    Used by both firmware_update_process and external_update_process.
-    """
-    ssh_run(host, user, password, f"rm -rf {log_file}", debug=debug)
-    tar_count = count_tar_files(archive_file)
-    extract_cmd = f"mkdir -p {target_dir} && tar -C {target_dir} -xvf - > {log_file} 2>&1; echo $? > /tmp/var-tar.code"
-    cdebug(f"Extracting {tar_count} files to {target_dir}", debug)
-
-    extract_done = threading.Event()
-    start_time = time.time()
-
-    def monitor_extraction():
-        last_count = 0
-        while not extract_done.is_set():
-            try:
-                result = ssh_run(host, user, password,
-                                 f"wc -l < {log_file} 2>/dev/null || echo 0",
-                                 debug=False, capture_output=True)
-                if result and result.strip().isdigit():
-                    current_count = int(result.strip())
-                    if current_count > last_count:
-                        last_count = current_count
-                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
-                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ",
-                              end='', flush=True)
-            except:
-                pass
-            time.sleep(1)
-
-    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
-    monitor_thread.start()
-
-    with open(archive_file, 'rb') as f:
-        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
-    extract_done.set()
-    monitor_thread.join(timeout=1)
-
-    elapsed = int(time.time() - start_time)
-
-    
-
-    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
-    cprint(f"{EMOJI['ok']} Extraction complete", 'green')
-
-    # Check extraction return code
-    ret_code = ssh_run(host, user, password, f"cat /tmp/var-tar.code", debug=debug, capture_output=True).strip()
-    if not ret_code.isdigit() or int(ret_code) != 0:
-        cerror(f"Archive extraction failed with code {ret_code}!")
-        cprint(f"Last 10 lines of extraction log:", 'red')
-        log_tail = ssh_run(host, user, password, f"tail -n 10 {log_file}", debug=debug, capture_output=True)
-        print(log_tail)
 #!/usr/bin/env python3
 """
 router_update.py — Professional Freetz-NG FRITZ!Box Update via SSH/SCP
@@ -324,7 +271,7 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
         while True:
             r, _, _ = select.select([master] + ([stdin_stream.fileno()] if stdin_stream else [sys.stdin.fileno()]), [], [], 0.1)
             # Handle command output
-            if master in r:
+            if master in r:  # Here is the data received from the remote command
                 try:
                     data = os.read(master, 4096)
                 except OSError as e:
@@ -394,7 +341,7 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                             sys.stderr.flush()
                         time.sleep(0.05)
                         break
-                    # Se non ci sono prompt password e non ci sono errori, consideriamo autenticato
+                    # No password prompt and no error: autheticated
                     if sent_count > 0 and not any(p in data.lower() for p in prompts + fails):
                         authenticated = True
                         time.sleep(1)
@@ -423,7 +370,7 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     continue
             # Handle stdin input (pipe data after authentication)
             if authenticated:
-                if stdin_stream and stdin_stream.fileno() in r:
+                if stdin_stream and stdin_stream.fileno() in r:  # read from INPUT (stdin_stream)
                     try:
                         data = stdin_stream.read(4096)
                     except Exception:
@@ -431,17 +378,23 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     if not data:
                         # EOF reached: close master to send EOF to slave
                         try:
-                            os.close(master)
+                            os.write(master, data)
+                            while True:
+                                r, _, _ = select.select([master], [], [], 0)
+                                if not r:
+                                    # nessun dato da leggere, esco dal loop
+                                    break
+                                time.sleep(1)
                             time.sleep(5)
-                        except Exception:
-                            pass
+                            os.close(master)
+                        except Exception as e:
+                            cerror("Write error: {e}")
                         break
                     else:
                         if first_write:
-                            time.sleep(2)
                             first_write = False
                         os.write(master, data)
-                elif not stdin_stream and sys.stdin.fileno() in r:
+                elif not stdin_stream and sys.stdin.fileno() in r:  # read from INPUT (stdin)
                     try:
                         data = os.read(sys.stdin.fileno(), 4096)
                     except OSError:
@@ -449,10 +402,17 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     if not data:
                         # EOF reached: close master to send EOF to slave
                         try:
+                            os.write(master, data)
+                            while True:
+                                r, _, _ = select.select([master], [], [], 0)
+                                if not r:
+                                    # nessun dato da leggere, esco dal loop
+                                    break
+                                time.sleep(1)
+                            time.sleep(5)
                             os.close(master)
-                            time.sleep(5)                            
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            cerror("Write error: {e}")
                         break
                     else:
                         os.write(master, data)
@@ -844,6 +804,61 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
         cerror("Upload failed!")
         return None
 
+def extract_archive_with_progress(host, user, password, archive_file, target_dir, log_file, debug=False):
+    """
+    Extract a tar archive to a target directory on FRITZ!Box, showing progress.
+    Used by both firmware_update_process and external_update_process.
+    """
+    ssh_run(host, user, password, f"rm -rf {log_file}", debug=debug)
+    tar_count = count_tar_files(archive_file)
+    extract_cmd = f"mkdir -p {target_dir} && tar -C {target_dir} -xvf - > {log_file} 2>&1; echo $? > /tmp/var-tar.code"
+    cdebug(f"Extracting {tar_count} files to {target_dir}", debug)
+
+    extract_done = threading.Event()
+    start_time = time.time()
+
+    def monitor_extraction():
+        last_count = 0
+        while not extract_done.is_set():
+            try:
+                result = ssh_run(host, user, password,
+                                 f"wc -l < {log_file} 2>/dev/null || echo 0",
+                                 debug=False, capture_output=True)
+                if result and result.strip().isdigit():
+                    current_count = int(result.strip())
+                    if current_count > last_count:
+                        last_count = current_count
+                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
+                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ",
+                              end='', flush=True)
+            except:
+                pass
+            time.sleep(1)
+
+    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
+    monitor_thread.start()
+
+    with open(archive_file, 'rb') as f:
+        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
+    extract_done.set()
+    monitor_thread.join(timeout=1)
+
+    elapsed = int(time.time() - start_time)
+
+    # Check extraction return code
+    ret_code = ssh_run(host, user, password, f"cat /tmp/var-tar.code", debug=debug, capture_output=True).strip()
+    if not ret_code.isdigit() or int(ret_code) != 0:
+        cprint("")
+        cerror(f"Archive extraction failed with code {ret_code}")
+        cprint(f"Last 10 lines of extraction log:", 'red', 'warning')
+        log_tail = ssh_run(host, user, password, f"tail -n 10 {log_file}", debug=debug, capture_output=True)
+        print(log_tail)
+        return False
+
+    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
+    cprint(f"{EMOJI['ok']} Extraction complete", 'green')
+    return True
+
 def firmware_update_process(host, user, password, image_file,
                            stop_services='semistop_avm', no_reboot=False, 
                            debug=False, dry_run=False):
@@ -858,13 +873,14 @@ def firmware_update_process(host, user, password, image_file,
 
     # Step 1: Extract FRITZ!Box firmware archive
     cinfo("Step 1: Extracting firmware archive to the tmpfs of FRITZ!Box. Please wait...")
-    extract_archive_with_progress(
+    if not extract_archive_with_progress(
         host, user, password,
         archive_file=image_file,
         target_dir="/",
         log_file="/tmp/fw_extract.log",
         debug=debug
-    )
+    ):
+        return False
     
     # Step 2: Stop AVM services (if requested)
     if stop_services == 'noaction':
@@ -897,8 +913,9 @@ def firmware_update_process(host, user, password, image_file,
     
     # Parse installation result
     exit_code = 6  # Default: OTHER_ERROR
-    if install_output.strip().isdigit():
-        exit_code = int(install_output.strip())
+    last_line = install_output.strip().splitlines()[-1] if install_output.strip() else ''
+    if last_line.isnumeric():
+        exit_code = int(last_line)
     
     result_codes = {
         0: ("INSTALL_SUCCESS_NO_REBOOT", "green"),
@@ -981,13 +998,14 @@ def external_update_process(host, user, password, external_file, external_dir,
     
     # Step 3: Extract external archive
     cinfo("Step 3: Extracting external archive. Please wait...")
-    extract_archive_with_progress(
+    if not extract_archive_with_progress(
         host, user, password,
         archive_file=external_file,
         target_dir=external_dir,
         log_file="/tmp/ext_extract.log",
         debug=debug
-    )
+    ):
+        return False
     
     # Step 4: Mark as external directory
     cinfo("Step 4: Mark external directory")
@@ -1003,7 +1021,6 @@ def external_update_process(host, user, password, external_file, external_dir,
         cinfo("Step 5: External not restarted as requested.")
     
     return True
-
 
 
 # --- MAIN FUNCTION ---
@@ -1270,17 +1287,18 @@ Examples:
             stop_default = 'semistop_avm'
         #cprint(f"Valid action for your device: {'Full stop (stop_avm)' if stop_default == 'stop_avm' else 'Semi-stop (semistop_avm)'}", 'yellow', 'lamp')
         # Prompt con default corretto
-        if confirm("Stop AVM services before firmware update (stop is needed)?", default=True):
-            pass
-            """
-            if confirm("Use full stop (stop_avm) instead of semi-stop (semistop_avm)?", default=(stop_default == 'stop_avm')):
-                args.stop_services = 'stop_avm'
+        if args.stop_services != "noaction":
+            if confirm("Stop AVM services before firmware update (stop is needed)?", default=True):
+                pass
+                """
+                if confirm("Use full stop (stop_avm) instead of semi-stop (semistop_avm)?", default=(stop_default == 'stop_avm')):
+                    args.stop_services = 'stop_avm'
+                else:
+                    args.stop_services = 'semistop_avm'
+                """
             else:
-                args.stop_services = 'semistop_avm'
-            """
-        else:
-            args.stop_services = 'nostop_avm'
-            cwarning("Warning: Not stopping AVM services during firmware upgrade may cause issues!")
+                args.stop_services = 'nostop_avm'
+                cwarning("Warning: Not stopping AVM services during firmware upgrade may cause issues!")
         
         args.no_reboot = not confirm("Reboot FRITZ!Box after firmware installation (reboot is needed)?", default=True)
         cprint("-"*70 + "\n", 'dim')
@@ -1314,6 +1332,11 @@ Examples:
         cprint(f"  Stop services:    {args.stop_services}", 'yellow')
         cprint(f"  Reboot:           {'No' if args.no_reboot else 'Yes'}", 'yellow')
     cprint("-"*70 + "\n", 'dim')
+
+    if not args.batch:
+        if not confirm("Proceed with update?", default=False):
+            cinfo("Update cancelled by user.")
+            return 0
 
     # Execute firmware update
     if args.image and not args.skip_firmware:
