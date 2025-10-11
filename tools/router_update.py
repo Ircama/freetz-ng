@@ -17,8 +17,7 @@ from datetime import datetime
 # --- CONSTANTS ---
 DEFAULT_USER = 'root'
 DEFAULT_TARGET_DIR = '/var/tmp'
-DEFAULT_EXTERNAL_BASE = '/var/media/ftp/FRITZBOX/external'
-STREAM_SIZE_THRESHOLD = 200 * 1024 * 1024  # 200MB
+DEFAULT_EXTERNAL_BASE = '/var/media/ftp/external'
 PING_TIMEOUT = 1
 BOOT_WAIT_MAX_TRIES = 120  # 4 minutes
 SSH_TEST_CMD = 'pwd'
@@ -227,7 +226,7 @@ def select_file_interactive(files, file_type):
 
 
 # --- SSH/SCP WRAPPER ---
-def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, silent=False):
+def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, silent=False, stdin_stream=None):
     """
     Execute SSH/SCP command with automatic password authentication.
     Uses PTY to interact with SSH password prompts.
@@ -245,38 +244,32 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
     """
     pid, master = pty.fork()
     if pid == 0:
+        # Child process: force PTY slave (stdin) to raw mode for binary data transfer
+        try:
+            import tty
+            tty.setraw(sys.stdin.fileno())
+        except Exception:
+            cerror("Cannot set tty in raw mode")
+            pass  # continue anyway
         # Child process: execute the command
         try:
             os.execvp(cmd[0], cmd)
         except Exception as e:
             print(f"Exec failed: {e}", file=sys.stderr)
             os._exit(127)
-    
+
     # Parent process: handle password prompts and output
     rolling = bytearray()
     sent_count = 0
     hostkey_answered = False
     max_retries = max(0, retries)
     output = b''
-    
+
+    authenticated = False
+    first_write = True
     try:
         while True:
-            r, _, _ = select.select([master, sys.stdin.fileno()], [], [], 0.1)
-            
-            # Handle stdin input
-            if sys.stdin.fileno() in r:
-                try:
-                    data = os.read(sys.stdin.fileno(), 4096)
-                except OSError:
-                    data = b''
-                if not data:
-                    try:
-                        os.shutdown(master, 1)
-                    except Exception:
-                        pass
-                else:
-                    os.write(master, data)
-            
+            r, _, _ = select.select([master] + ([stdin_stream.fileno()] if stdin_stream else [sys.stdin.fileno()]), [], [], 0.1)
             # Handle command output
             if master in r:
                 try:
@@ -285,64 +278,86 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     if e.errno == errno.EIO:
                         break
                     raise
-                
                 if not data:
                     break
-                
-                # Filter password prompt from output
                 filtered = data
-                
                 # For SCP, also filter progress lines (lines starting with filename and containing %)
                 if b'scp' in cmd[0].encode():
-                    # Filter SCP progress lines
                     lines = data.split(b'\n')
                     filtered_lines = []
                     for line in lines:
-                        # Skip lines that look like SCP progress (contain % and ETA)
                         if b'%' in line and (b'ETA' in line or b'KB/s' in line or b'MB/s' in line):
                             continue
                         filtered_lines.append(line)
                     filtered = b'\n'.join(filtered_lines)
-                
-                for p in [b'password:', b'passwort:', b'pass:', b"'s password:", 
-                          b'root password:', b'root@']:
-                    idx = filtered.lower().find(p)
-                    while idx != -1:
-                        end = filtered.find(b'\n', idx)
-                        start = filtered.rfind(b'\n', 0, idx)
-                        next_nl = end
-                        while next_nl != -1 and next_nl+1 < len(filtered) and filtered[next_nl+1:next_nl+2] == b'\n':
-                            next_nl += 1
-                        if start != -1 and end != -1:
-                            filtered = filtered[:start] + filtered[(next_nl+1) if next_nl != -1 else (end+1):]
-                        elif end != -1:
-                            filtered = filtered[:idx] + filtered[(next_nl+1) if next_nl != -1 else (end+1):]
-                        elif start != -1:
-                            filtered = filtered[:start]
-                        else:
-                            filtered = filtered[:idx]
+                # Intercept password only if not yet authenticated
+                if not authenticated:
+                    for p in [b'password:', b"'s password:", b'root password:', b'root@']:
                         idx = filtered.lower().find(p)
-                
+                        while idx != -1:
+                            end = filtered.find(b'\n', idx)
+                            start = filtered.rfind(b'\n', 0, idx)
+                            next_nl = end
+                            while next_nl != -1 and next_nl+1 < len(filtered) and filtered[next_nl+1:next_nl+2] == b'\n':
+                                next_nl += 1
+                            if start != -1 and end != -1:
+                                filtered = filtered[:start] + filtered[(next_nl+1) if next_nl != -1 else (end+1):]
+                            elif end != -1:
+                                filtered = filtered[:idx] + filtered[(next_nl+1) if next_nl != -1 else (end+1):]
+                            elif start != -1:
+                                filtered = filtered[:start]
+                            else:
+                                filtered = filtered[:idx]
+                            idx = filtered.lower().find(p)
+                    # Detect and respond to password prompts
+                    if sent_count <= max_retries:
+                        prompts = [b'password:', b"'s password:", b'root password:', b'root@']
+                        for p in prompts:
+                            if p in data.lower():
+                                os.write(master, password.encode() + b"\n")
+                                sent_count += 1
+                                if verbose:
+                                    sys.stderr.write(f"[debug] Sent password (attempt {sent_count}) for prompt {p.decode(errors='ignore')}\n")
+                                    sys.stderr.flush()
+                                rolling = bytearray()
+                                break
+                        else:
+                            idx = data.lower().find(b'password')
+                            if idx != -1:
+                                window = data.lower()[idx: idx + 64]
+                                if b':' in window:
+                                    os.write(master, password.encode() + b"\n")
+                                    sent_count += 1
+                                    if verbose:
+                                        sys.stderr.write(f"[debug] Sent password (attempt {sent_count})\n")
+                                        sys.stderr.flush()
+                                    rolling = bytearray()
+                                    continue
+                    # Detect authentication failures
+                    fails = [b'permission denied', b'authentication failed', b'authentication error', b'login incorrect', b'access denied']
+                    if any(p in data.lower() for p in fails):
+                        if verbose:
+                            sys.stderr.write("[debug] Detected authentication failure, aborting\n")
+                            sys.stderr.flush()
+                        time.sleep(0.05)
+                        break
+                    # Se non ci sono prompt password e non ci sono errori, consideriamo autenticato
+                    if sent_count > 0 and not any(p in data.lower() for p in prompts + fails):
+                        authenticated = True
+                        time.sleep(1)
                 # Remove leading whitespace/newlines
                 while filtered and filtered[:1] in (b'\n', b'\r', b' ', b'\t'):
                     filtered = filtered[1:]
-                
-                # Store or print output
                 output += filtered
                 if not capture_output and not silent and filtered:
                     os.write(sys.stdout.fileno(), filtered)
-                
                 if verbose:
                     sys.stderr.write("[recv hex] " + ' '.join(f'{x:02x}' for x in data) + "\n")
                     sys.stderr.flush()
-                
-                # Update rolling buffer for prompt detection
                 rolling += data
                 if len(rolling) > 4096:
                     rolling = rolling[-4096:]
                 low = rolling.lower()
-                
-                # Handle SSH host key confirmation
                 if (not hostkey_answered) and b"are you sure you want to continue connecting" in low:
                     os.write(master, b"yes\n")
                     hostkey_answered = True
@@ -353,43 +368,39 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     hostkey_answered = True
                     rolling = bytearray()
                     continue
-                
-                # Detect and respond to password prompts
-                if sent_count <= max_retries:
-                    prompts = [b'password:', b'passwort:', b'pass:', b"'s password:", 
-                               b'root password:', b'root@']
-                    for p in prompts:
-                        if p in low:
-                            os.write(master, password.encode() + b"\n")
-                            sent_count += 1
-                            if verbose:
-                                sys.stderr.write(f"[debug] Sent password (attempt {sent_count}) for prompt {p.decode(errors='ignore')}\n")
-                                sys.stderr.flush()
-                            rolling = bytearray()
-                            break
+            # Handle stdin input (pipe data after authentication)
+            if authenticated:
+                if stdin_stream and stdin_stream.fileno() in r:
+                    try:
+                        data = stdin_stream.read(4096)
+                    except Exception:
+                        data = b''
+                    if not data:
+                        # EOF reached: close master to send EOF to slave
+                        try:
+                            os.close(master)
+                        except Exception:
+                            pass
+                        break
                     else:
-                        # Fallback: detect 'password' + ':' nearby
-                        idx = low.find(b'password')
-                        if idx != -1:
-                            window = low[idx: idx + 64]
-                            if b':' in window:
-                                os.write(master, password.encode() + b"\n")
-                                sent_count += 1
-                                if verbose:
-                                    sys.stderr.write(f"[debug] Sent password (attempt {sent_count})\n")
-                                    sys.stderr.flush()
-                                rolling = bytearray()
-                                continue
-                
-                # Detect authentication failures
-                fails = [b'permission denied', b'authentication failed', 
-                         b'authentication error', b'login incorrect', b'access denied']
-                if any(p in low for p in fails):
-                    if verbose:
-                        sys.stderr.write("[debug] Detected authentication failure, aborting\n")
-                        sys.stderr.flush()
-                    time.sleep(0.05)
-                    break
+                        if first_write:
+                            time.sleep(2)
+                            first_write = False
+                        os.write(master, data)
+                elif not stdin_stream and sys.stdin.fileno() in r:
+                    try:
+                        data = os.read(sys.stdin.fileno(), 4096)
+                    except OSError:
+                        data = b''
+                    if not data:
+                        # EOF reached: close master to send EOF to slave
+                        try:
+                            os.close(master)
+                        except Exception:
+                            pass
+                        break
+                    else:
+                        os.write(master, data)
     
     except KeyboardInterrupt:
         pass
@@ -401,22 +412,18 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
     
     return output.decode(errors='ignore') if capture_output else ''
 
-def ssh_run(host, user, password, command, debug=False, capture_output=True):
-    """Execute command on remote host via SSH"""
+def ssh_run(host, user, password, command, debug=False, capture_output=True, stdin_stream=None):
+    """Execute command on remote host via SSH, optionally passing a file-like stdin_stream"""
     cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{host}', command]
     cmd_str = ' '.join(cmd)
     cdebug(f"SSH: {cmd_str}", debug)
-    
-    # Execute command
-    output = sshpass_exec(cmd, password, verbose=debug, capture_output=capture_output)
-    
+    output = sshpass_exec(cmd, password, verbose=debug, capture_output=capture_output, stdin_stream=stdin_stream)
     # Log command and output only in debug mode
     if debug:
         log_ssh_command(cmd_str, output if capture_output else "[output not captured]", debug)
-    
     return output
 
-def scp_send(host, user, password, local, remote, debug=False):
+def scp_send(host, user, password, local, remote, debug=False, dry_run=False):
     """Copy file to remote host via SCP"""
     # Use quiet mode and redirect all output to /dev/null to prevent progress display
     cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 'LogLevel=ERROR', '-q', local, f'{user}@{host}:{remote}']
@@ -465,7 +472,6 @@ class RouterConfig:
         self.ubi_size = 0
         self.ubi_available = 0
         self.storage_devices = []
-        self.temp_suggestions = []
         
     def __repr__(self):
         return (f"RouterConfig(external_dir={self.external_dir}, "
@@ -531,10 +537,6 @@ def read_router_config(host, user, password, debug=False):
     """Read and parse router configuration"""
     config = RouterConfig()
     
-    cprint("\n" + "="*70, 'bold')
-    cprint("   Reading Router Configuration", 'bold', 'info')
-    cprint("="*70 + "\n", 'bold')
-    
     # Step 1: Read mod.cfg
     cinfo("Step 1: Reading Freetz-NG configuration (/mod/etc/conf/mod.cfg)")
 
@@ -587,7 +589,7 @@ def read_router_config(host, user, password, debug=False):
     cprint("")
     cinfo("Step 2: Detecting storage devices (df -h)")
     df_output = ssh_run(host, user, password, "df -h", debug=debug, capture_output=True)
-    
+
     if df_output:
         ubi_info, storage_devices = parse_df_output(df_output)
         
@@ -616,38 +618,7 @@ def read_router_config(host, user, password, debug=False):
                 cprint(f"    Mount:      {dev['mountpoint']}", 'cyan')
         else:
             cwarning("No external storage devices detected")
-    
-    # Determine temp directory suggestions
-    config.temp_suggestions = []
-    # If config.external_dir is set, use it as default with '/stage' appended unless it already contains 'stage' or 'external'
-    if config.external_dir:
-        ext_dir = config.external_dir.rstrip('/')
-        # If external_dir ends with '/external', always suggest '/stage' for temp
-        if ext_dir.endswith('/external'):
-            config.temp_suggestions.append(ext_dir.replace('/external', '/stage'))
-        elif ext_dir.endswith('/stage'):
-            config.temp_suggestions.append(ext_dir)
-        else:
-            config.temp_suggestions.append(ext_dir + '/stage')
-    # If UBI internal storage is present, suggest its mountpoint + /stage
-    if config.has_ubi and hasattr(config, 'ubi_available') and hasattr(config, 'ubi_size'):
-        ubi_stage = None
-        # Try to get UBI mountpoint from config (set above)
-        ubi_mount = None
-        if 'ubi_info' in locals() and ubi_info and 'mountpoint' in ubi_info:
-            ubi_mount = ubi_info['mountpoint']
-        elif hasattr(config, 'ubi_mount'):
-            ubi_mount = config.ubi_mount
-        if ubi_mount:
-            ubi_stage = ubi_mount.rstrip('/') + '/stage'
-        else:
-            ubi_stage = '/var/media/ftp/stage'
-        config.temp_suggestions.append(ubi_stage)
-    # Fallbacks
-    if '/var/media/ftp/stage' not in config.temp_suggestions:
-        config.temp_suggestions.append('/var/media/ftp/stage')
-    config.temp_suggestions.append('/var/tmp')
-    
+
     # Step 3: Additional router information
     cprint("")
     cinfo("Step 3: Gathering system information")
@@ -673,9 +644,6 @@ def read_router_config(host, user, password, debug=False):
         cprint(f"  Kernel:     {kernel_version}", 'cyan')
     if box_model != 'Unknown':
         cprint(f"  Model:      {box_model}", 'cyan')
-    
-    cprint("\n" + "="*70 + "\n", 'bold')
-    
     return config
 
 # --- UPDATE PROCESS FUNCTIONS ---
@@ -725,11 +693,9 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
     # For large files, show progress with monitoring thread
     if filesize > 10 * 1024 * 1024:  # > 10MB
         cinfo("Upload in progress (this may take several minutes)...")
-        
         # Progress monitoring thread
         upload_done = threading.Event()
         start_time = time.time()
-        
         def monitor_progress():
             """Monitor upload progress by checking remote file size"""
             last_size = 0
@@ -748,7 +714,6 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
                             speed = current_size / elapsed if elapsed > 0 else 0
                             percent = int(100 * current_size / filesize)
                             eta = int((filesize - current_size) / speed) if speed > 0 else 0
-                            
                             # Clear line and show progress
                             print(f"\r   Progress: {percent}% | {format_size(current_size)}/{format_size(filesize)} | "
                                   f"{format_size(speed)}/s | ETA: {eta}s     ", end='', flush=True)
@@ -756,26 +721,21 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
                 except:
                     pass
                 time.sleep(1)  # Update every second
-            
             # If we never showed progress, it means upload was too fast or failed
             if not shown_progress:
                 time.sleep(0.1)  # Give SCP time to complete
-        
         # Start monitoring thread
         monitor_thread = threading.Thread(target=monitor_progress, daemon=True)
         monitor_thread.start()
-        
         # Perform upload
-        success = scp_send(host, user, password, local_file, remote_path, debug=debug)
+        success = scp_send(host, user, password, local_file, remote_path, debug=debug, dry_run=dry_run)
         upload_done.set()
         monitor_thread.join(timeout=1)
-        
         # Verify upload completed successfully
         elapsed = time.time() - start_time
         verify_result = ssh_run(host, user, password,
                                f"ls -l {remote_path} 2>/dev/null | awk '{{print $5}}'",
                                debug=debug, capture_output=True)
-        
         if verify_result and verify_result.strip().isdigit():
             uploaded_size = int(verify_result.strip())
             if uploaded_size == filesize:
@@ -795,7 +755,7 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
     else:
         # Small files: simple upload
         start_time = time.time()
-        success = scp_send(host, user, password, local_file, remote_path, debug=debug)
+        success = scp_send(host, user, password, local_file, remote_path, debug=debug, dry_run=dry_run)
         elapsed = time.time() - start_time
     
     if success:
@@ -805,18 +765,13 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
         cerror("Upload failed!")
         return None
 
-def firmware_update_process(host, user, password, image_file, target_dir,
+def firmware_update_process(host, user, password, image_file,
                            stop_services='stop_avm', no_reboot=False, 
                            debug=False, dry_run=False):
     """Execute firmware update process (emulates do_update_handler.sh)"""
     cprint("\n" + "="*60, 'bold')
     cprint("FIRMWARE UPDATE PROCESS", 'bold', 'install')
     cprint("="*60 + "\n", 'bold')
-    
-    # Upload firmware image
-    remote_image = upload_file_with_progress(host, user, password, image_file, target_dir, debug, dry_run)
-    if not remote_image:
-        return False
     
     if dry_run:
         cwarning("[DRY-RUN] Skipping firmware extraction and installation")
@@ -825,7 +780,7 @@ def firmware_update_process(host, user, password, image_file, target_dir,
     # Step 1: Extract firmware archive
     cinfo("Step 1: Extracting firmware archive to /")
     tar_count = count_tar_files(image_file)
-    extract_cmd = f"tar -C / -xv < {remote_image} > /tmp/fw_extract.log 2>&1"
+    extract_cmd = f"tar -C / -xvf - > /tmp/fw_extract.log 2>&1"
     cdebug(f"Extracting {tar_count} files from firmware", debug)
     
     # Monitor extraction progress
@@ -857,7 +812,8 @@ def firmware_update_process(host, user, password, image_file, target_dir,
     monitor_thread.start()
     
     # Execute extraction
-    ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False)
+    with open(image_file, 'rb') as f:
+        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
     extract_done.set()
     monitor_thread.join(timeout=1)
     
@@ -939,21 +895,6 @@ def external_update_process(host, user, password, external_file, external_dir,
     
     cprint(f"Installation directory: {external_dir}", 'cyan', 'info')
     
-    # Determine stage directory (replace /external with /stage, or get parent + /stage)
-    if '/external' in external_dir:
-        stage_dir = external_dir.replace('/external', '/stage')
-    else:
-        # Get parent directory and append /stage
-        parent_dir = '/'.join(external_dir.rstrip('/').split('/')[:-1])
-        stage_dir = f"{parent_dir}/stage" if parent_dir else '/var/media/ftp/stage'
-    
-    cprint(f"Stage directory: {stage_dir}", 'cyan', 'info')
-    
-    # Upload external archive to stage directory (has space for large files)
-    remote_external = upload_file_with_progress(host, user, password, external_file, stage_dir, debug, dry_run)
-    if not remote_external:
-        return False
-    
     if dry_run:
         cwarning("[DRY-RUN] Skipping external extraction")
         return True
@@ -974,12 +915,13 @@ def external_update_process(host, user, password, external_file, external_dir,
     else:
         cinfo("Step 2: Removing old external directory and files")
         ssh_run(host, user, password, f"rm -rf {external_dir}", debug=debug)
-        cprint(f"{EMOJI['ok']} Old external directory and files removed", 'green')
+        cprint(f"{EMOJI['ok']} Old external directory '{external_dir}' and files removed", 'green')
     
     # Step 3: Extract external archive
-    cinfo("Step 3: Extracting external archive")
+    cinfo("Step 3: Extracting external archive. Please wait...")
+    ssh_run(host, user, password, f"rm -r /tmp/ext_extract.log", debug=debug)
     tar_count = count_tar_files(external_file)
-    extract_cmd = f"mkdir -p {external_dir} && tar -C {external_dir} -xv < {remote_external} > /tmp/ext_extract.log 2>&1"
+    extract_cmd = f"mkdir -p {external_dir} && tar -C {external_dir} -xvf - > /tmp/ext_extract.log 2>&1"
     cdebug(f"Extracting {tar_count} files to {external_dir}", debug)
     
     # Monitor extraction progress
@@ -1011,7 +953,8 @@ def external_update_process(host, user, password, external_file, external_dir,
     monitor_thread.start()
     
     # Execute extraction
-    ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False)
+    with open(external_file, 'rb') as f:
+        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
     extract_done.set()
     monitor_thread.join(timeout=1)
     
@@ -1082,8 +1025,6 @@ Examples:
     
     # Directory arguments
     dir_group = parser.add_argument_group('Directory Options')
-    dir_group.add_argument('--target-dir', default=DEFAULT_TARGET_DIR,
-                          help=f'Temporary directory on router for uploads (default: {DEFAULT_TARGET_DIR})')
     dir_group.add_argument('--external-dir',
                           help='External installation directory (default: auto-detect)')
     
@@ -1099,8 +1040,6 @@ Examples:
                              help='Delete old external files before extraction')
     update_group.add_argument('--no-external-restart', action='store_true',
                              help='Do not restart external services after update')
-    update_group.add_argument('--stream-threshold', type=int, default=STREAM_SIZE_THRESHOLD,
-                             help=f'File size threshold for streaming mode in bytes (default: {STREAM_SIZE_THRESHOLD})')
     
     # Mode arguments
     mode_group = parser.add_argument_group('Execution Modes')
@@ -1206,11 +1145,10 @@ Examples:
     
     # Interactive directory configuration
     cprint("\n" + "-"*70, 'dim')  # Begin directory configuration
-    cinfo("Directory Configuration:")
     
     # Show storage information first
     if router_config:
-        cprint(f"  💡 Available storage devices:", 'yellow')
+        cinfo(f"Available storage devices:")
         # Show UBI internal storage first if present
         if router_config.has_ubi and hasattr(router_config, 'ubi_available') and hasattr(router_config, 'ubi_size'):
             ubi_label = getattr(router_config, 'ubi_mount', None) or '/var/media/ftp'
@@ -1220,93 +1158,6 @@ Examples:
             for dev in router_config.storage_devices:
                 cprint(f"     {dev['mountpoint']}: {dev['available']} free ({dev['size']} total)", 'yellow')
         cprint("")  # Empty line for spacing
-    
-    # Determine best temp directory suggestion
-    if router_config and router_config.temp_suggestions:
-        suggested_temp = router_config.temp_suggestions[0]
-    else:
-        suggested_temp = args.target_dir
-    
-    if args.batch:
-        args.target_dir = suggested_temp
-    else:
-        # Ask for temporary upload directory
-        cprint(f"  Suggested temp directory: {suggested_temp}", 'cyan')
-        if router_config and len(router_config.temp_suggestions) > 1:
-            cprint(f"  Alternative options:", 'dim')
-            for alt in router_config.temp_suggestions[1:]:
-                cprint(f"    - {alt}", 'dim')
-        
-        # Ask for temp directory
-        if not confirm("Use suggested temporary directory for uploads?", default=True):
-            custom_dir = input(f"{EMOJI['prompt']} Enter custom temporary directory path: ").strip()
-            if custom_dir:
-                args.target_dir = custom_dir
-                cinfo(f"Using temp directory: {args.target_dir}")
-        else:
-            args.target_dir = suggested_temp
-            cinfo(f"Using temp directory: {args.target_dir}")
-
-    # Check and create temp directory if needed
-    temp_exists = ssh_run(args.host, args.user, args.password, f"test -d {args.target_dir} && echo exists || echo notfound", debug=args.debug).strip()
-    if temp_exists == "exists":
-        cwarning(f"Temporary directory '{args.target_dir}' already exists on router.")
-        if not args.batch:
-            if not confirm(
-                    f"Delete temporary directory on router: {args.target_dir}?\n   This will remove all its contents and it is required to continue.",
-                    default=True
-            ):
-                cwarning("Process interrupted by user.")
-                return 1
-        if not args.dry_run:
-            # Ask if user wants to delete the temp directory if it exists
-            delete_dir_cmd = f"rm -rf '{args.target_dir}'; echo EXIT_CODE=$?"
-            delete_result = ssh_run(args.host, args.user, args.password, delete_dir_cmd, debug=args.debug)
-            error_keywords = [
-                "cannot remove", "permission denied", "no such file or directory", "disk full",
-                "input/output error", "invalid argument", "not a directory", "read-only file system",
-                "operation not permitted", "exit_code="
-            ]
-            exit_code = None
-            if "exit_code=" in delete_result.lower():
-                try:
-                    exit_code = int(delete_result.lower().split("exit_code=")[-1].split()[0])
-                except Exception:
-                    exit_code = None
-            if exit_code is not None and exit_code != 0:
-                cerror(f"Failed to delete temporary directory '{args.target_dir}'.\n   Check permissions or try manually.")
-                return 1
-            else:
-                cprint(f"{EMOJI['ok']} Temporary directory '{args.target_dir}' deleted.", 'green')
-        else:
-            cinfo("[DRY RUN] Temporary directory deleted.")
-
-    if not args.dry_run:
-        create_dir_cmd = f"mkdir -p '{args.target_dir}'; echo EXIT_CODE=$?"
-        create_result = ssh_run(args.host, args.user, args.password, create_dir_cmd, debug=args.debug)
-        error_keywords = [
-            "cannot create directory", "permission denied", "no space left", "disk full",
-            "input/output error", "invalid argument", "not a directory", "read-only file system",
-            "operation not permitted", "file exists", "exit_code="
-        ]
-        exit_code = None
-        if "exit_code=" in create_result.lower():
-            try:
-                exit_code = int(create_result.lower().split("exit_code=")[-1].split()[0])
-            except Exception:
-                exit_code = None
-        if exit_code is not None and exit_code != 0:
-            cerror(f"Failed to create temporary directory '{args.target_dir}'. Check permissions, disk space, or choose another path.")
-            return 1
-        cprint(f"{EMOJI['ok']} Temporary directory '{args.target_dir}' created.", 'green')
-    else:
-        cwarning("[DRY RUN Temporary directory created.")
-        return 1
-
-    # Show temp directory size
-    temp_size = ssh_run(args.host, args.user, args.password, f"du -sh '{args.target_dir}' 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
-    cprint(f"  Temporary directory size: {temp_size}", 'cyan')
-    cprint("")  # Empty line for spacing
 
     # Ask for external directory if external update is selected
     if args.external and not args.skip_external:
@@ -1338,39 +1189,14 @@ Examples:
                     args.external_dir = custom_dir if custom_dir else suggested_dir
                     cinfo(f"Using external directory: {args.external_dir}")
 
-        # Check and create external directory if needed
-        ext_exists = ssh_run(args.host, args.user, args.password, f"test -d '{args.external_dir}' && echo exists || echo notfound", debug=args.debug).strip()
-        if ext_exists != "exists":
-            cwarning(f"External directory does not exist on router: {args.external_dir}")
-            if not args.dry_run:
-                if confirm(f"Create external directory on router: {args.external_dir}?", default=True):
-                    create_dir_cmd = f"mkdir -p '{args.external_dir}'; echo EXIT_CODE=$?"
-                    create_result = ssh_run(args.host, args.user, args.password, create_dir_cmd, debug=args.debug)
-                    error_keywords = [
-                        "cannot create directory", "permission denied", "no space left", "disk full",
-                        "input/output error", "invalid argument", "not a directory", "read-only file system",
-                        "operation not permitted", "file exists", "exit_code="
-                    ]
-                    error_found = any(kw in create_result.lower() for kw in error_keywords)
-                    exit_code = None
-                    if "exit_code=" in create_result.lower():
-                        try:
-                            exit_code = int(create_result.lower().split("exit_code=")[-1].split()[0])
-                        except Exception:
-                            exit_code = None
-                    if error_found or (exit_code is not None and exit_code != 0):
-                        cerror(f"Failed to create external directory '{args.external_dir}'. Check permissions, disk space, or choose another path.")
-                        return 1
-                    else:
-                        cprint(f"{EMOJI['ok']} External directory '{args.external_dir}' created.", 'green')
+        # Show external directory size, check existence first
+        ext_exists = ssh_run(args.host, args.user, args.password, f"test -d '{args.external_dir}' && echo exists || echo notfound", debug=args.debug, capture_output=True).strip()
+        if ext_exists == "exists":
+            ext_size = ssh_run(args.host, args.user, args.password, f"du -sh '{args.external_dir}' 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
+            cprint(f"  External directory size: {ext_size}", 'cyan')
         else:
-            cwarning(f"External directory '{args.external_dir}' already exists on router.")
-
-        cinfo(f"External directory: {args.external_dir}")
-
-        # Show external directory size
-        ext_size = ssh_run(args.host, args.user, args.password, f"du -sh '{args.external_dir}' 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
-        cprint(f"  External directory size: {ext_size}", 'cyan')
+            cwarning(f"Remote external directory '{args.external_dir}' does not exist.\n   It will be created during archive extraction.")
+            ext_size = "0"
 
     # Ask for external directory if external update is selected
     if args.external and not args.skip_external:
@@ -1424,7 +1250,7 @@ Examples:
         cprint("\n" + "-"*70, 'dim')
         cinfo("External Update Service Management:")
 
-        if confirm("Delete external directory after file upload and before extraction?", default=True):
+        if confirm("Delete any previously existing external directory after file upload and before extraction?", default=True):
             args.no_delete_external = True
         cprint("-"*70 + "\n", 'dim')
 
@@ -1435,29 +1261,25 @@ Examples:
     # Show summary
     cprint("\n" + "-"*70, 'dim')
     cinfo("Update Summary:")
-    cprint(f"  Router:           {args.host}", 'cyan')
-    cprint(f"  User:             {args.user}", 'cyan')
-    # Get temp directory size
-    temp_size = ssh_run(args.host, args.user, args.password, f"du -hs {args.target_dir} 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
-    temp_size_str = f" ({temp_size})" if temp_size else ""
-    cprint(f"  Temp directory:   {args.target_dir}{temp_size_str}", 'cyan')
+    cprint(f"  Router:           {args.host}", 'yellow')
+    cprint(f"  User:             {args.user}", 'yellow')
     if args.image:
-        cprint(f"  Firmware:         {os.path.basename(args.image)} ({format_size(get_file_size(args.image))})", 'cyan')
+        cprint(f"  Firmware:         {os.path.basename(args.image)} ({format_size(get_file_size(args.image))})", 'yellow')
     if args.external:
-        cprint(f"  External archive: {os.path.basename(args.external)} ({format_size(get_file_size(args.external))})", 'cyan')
+        cprint(f"  External archive: {os.path.basename(args.external)} ({format_size(get_file_size(args.external))})", 'yellow')
         if args.external_dir:
             ext_size = ssh_run(args.host, args.user, args.password, f"du -hs {args.external_dir} 2>/dev/null | awk '{{print $1}}'", debug=args.debug, capture_output=True).strip()
             ext_size_str = f" ({ext_size})" if ext_size else ""
-            cprint(f"  External dir:     {args.external_dir}{ext_size_str}", 'cyan')
+            cprint(f"  External dir:     {args.external_dir}{ext_size_str}", 'yellow')
     if args.image and not args.skip_firmware:
-        cprint(f"  Stop services:    {args.stop_services}", 'cyan')
-        cprint(f"  Reboot:           {'No' if args.no_reboot else 'Yes'}", 'cyan')
+        cprint(f"  Stop services:    {args.stop_services}", 'yellow')
+        cprint(f"  Reboot:           {'No' if args.no_reboot else 'Yes'}", 'yellow')
     cprint("-"*70 + "\n", 'dim')
 
     # Execute firmware update
     if args.image and not args.skip_firmware:
         success = firmware_update_process(
-            args.host, args.user, args.password, args.image, args.target_dir,
+            args.host, args.user, args.password, args.image,
             stop_services=args.stop_services, no_reboot=args.no_reboot,
             debug=args.debug, dry_run=args.dry_run
         )
