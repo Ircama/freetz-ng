@@ -119,6 +119,7 @@ def ping_router(host, timeout=PING_TIMEOUT):
 def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_TRIES, debug=False):
     """Wait for FRITZ!Box to boot and become accessible via SSH"""
     cinfo(f"Waiting for FRITZ!Box {host} to boot...")
+    time.sleep(25)  # time for the device to shutdown
     start_time = time.time()
     
     # Phase 1: Wait for ping response
@@ -134,20 +135,21 @@ def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_
         return False
     
     # Phase 2: Wait for SSH availability
-    cprint("\nPhase 2: Waiting for SSH service", 'blue', 'wait')
+    cprint("Phase 2: Waiting for SSH service", 'blue', 'wait')
     time.sleep(5)  # Give SSH daemon time to start
-    for i in range(30):
+    for i in range(max_tries):
         try:
             result = ssh_run(host, user, password, SSH_TEST_CMD, debug=debug, capture_output=True)
             if result and not 'connection refused' in result.lower():
                 elapsed = int(time.time() - start_time)
                 cprint(f"{EMOJI['ok']} FRITZ!Box is fully operational! (took {elapsed}s)", 'green')
+                cprint("")
                 return True
         except:
             pass
         print('.', end='', flush=True)
         time.sleep(2)
-    
+
     cerror("Timeout waiting for SSH service to start")
     return False
 
@@ -378,7 +380,6 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     if not data:
                         # EOF reached: close master to send EOF to slave
                         try:
-                            os.write(master, data)
                             while True:
                                 r, _, _ = select.select([master], [], [], 0)
                                 if not r:
@@ -402,7 +403,6 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                     if not data:
                         # EOF reached: close master to send EOF to slave
                         try:
-                            os.write(master, data)
                             while True:
                                 r, _, _ = select.select([master], [], [], 0)
                                 if not r:
@@ -870,9 +870,29 @@ def firmware_update_process(host, user, password, image_file,
     if dry_run:
         cwarning("[DRY-RUN] Skipping firmware extraction and installation")
         return True
+    
+    # Step 1: Stop AVM services (if requested)
+    if stop_services == 'noaction':
+        cwarning(f"Firmware not installed ({stop_services})")
+        return True
+    if stop_services == 'stop_avm':
+        cinfo(f"Step 1: Stopping AVM services ({stop_services}). Please wait...")
+        ssh_run(host, user, password, "prepare_fwupgrade start", debug=debug)
+        ssh_run(host, user, password, "prepare_fwupgrade end", debug=debug)
+        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
+    elif stop_services == 'semistop_avm':
+        cinfo(f"Step 1: Stopping AVM services ({stop_services}). Please wait...")
+        ssh_run(host, user, password, "prepare_fwupgrade start_from_internet", debug=debug)
+        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
+    elif stop_services == 'tr069':
+        cinfo(f"Step 1: Stopping AVM services ({stop_services}). Please wait...")
+        ssh_run(host, user, password, "prepare_fwupgrade start_tr069", debug=debug)
+        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
+    else:
+        cinfo("Step 1: Skipping AVM services stop (nostop_avm mode)")
 
-    # Step 1: Extract FRITZ!Box firmware archive
-    cinfo("Step 1: Extracting firmware archive to the tmpfs of FRITZ!Box. Please wait...")
+    # Step 2: Extract FRITZ!Box firmware archive
+    cinfo("Step 2: Extracting firmware archive to the tmpfs of FRITZ!Box. Please wait...")
     if not extract_archive_with_progress(
         host, user, password,
         archive_file=image_file,
@@ -882,28 +902,13 @@ def firmware_update_process(host, user, password, image_file,
     ):
         return False
     
-    # Step 2: Stop AVM services (if requested)
-    if stop_services == 'noaction':
-        cwarning(f"Firmware not installed ({stop_services})")
-        return True
-    if stop_services == 'stop_avm':
-        cinfo(f"Step 2: Stopping AVM services ({stop_services}). Please wait...")
-        ssh_run(host, user, password, "prepare_fwupgrade start", debug=debug)
-        ssh_run(host, user, password, "prepare_fwupgrade end", debug=debug)
-        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
-    elif stop_services == 'semistop_avm':
-        cinfo(f"Step 2: Stopping AVM services ({stop_services}). Please wait...")
-        ssh_run(host, user, password, "prepare_fwupgrade start_from_internet", debug=debug)
-        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
-    elif stop_services == 'tr069':
-        cinfo(f"Step 2: Stopping AVM services ({stop_services}). Please wait...")
-        ssh_run(host, user, password, "prepare_fwupgrade start_tr069", debug=debug)
-        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
-    else:
-        cinfo("Step 2: Skipping AVM services stop (nostop_avm mode)")
-    
     # Step 3: Execute firmware installation script
-    cinfo("Step 3: Executing firmware installation script (see /tmp/var-install.out)")
+    inst_exists = ssh_run(host, user, password, f"test -f /var/install -a -x /var/install && echo ok || echo notfound", debug=debug, capture_output=True).strip()
+    if inst_exists != "ok":
+        cerror("Installation file does not exist.")
+        return False
+
+    cinfo("Step 3: Flashing firmware, please wait... (see /tmp/var-install.out)")
     install_output = ssh_run(
         host, user, password,
         "cd / && ( /var/install 2>&1 ; echo $? >/tmp/var-install.code ) | tee /tmp/var-install.out && tail -n1 /tmp/var-install.code",
@@ -930,14 +935,14 @@ def firmware_update_process(host, user, password, image_file,
     }
     
     result_txt, color = result_codes.get(exit_code, ("UNKNOWN_ERROR", "red"))
-    cprint(f"\nInstallation result: {exit_code} ({result_txt})", color, 'info' if color == 'green' else 'warning')
+    cprint(f"Installation result: {exit_code} ({result_txt})", color, 'info' if color == 'green' else 'warning')
     
     # Step 4: Reboot if needed
     if exit_code == 1 and not no_reboot:
         cprint("\n" + "="*60, 'bold')
         cprint("REBOOTING FRITZ!Box", 'bold', 'reboot')
         cprint("="*60 + "\n", 'bold')
-        ssh_run(host, user, password, "reboot", debug=debug)
+        ssh_run(host, user, password, "/sbin/reboot; sleep 4", debug=debug)
         return wait_router_boot(host, password, user, debug=debug)
     elif exit_code == 1 and no_reboot:
         cwarning("Reboot required but --no-reboot flag is set")
@@ -947,6 +952,9 @@ def firmware_update_process(host, user, password, image_file,
         return True
     else:
         cerror("Firmware installation failed!")
+        cprint(f"Last 10 lines of installation log:", 'red', 'warning')
+        log_tail = ssh_run(host, user, password, f"tail -n 10 /tmp/var-install.out", debug=debug, capture_output=True)
+        print(log_tail)
         return False
 
 def external_update_process(host, user, password, external_file, external_dir,
@@ -1334,7 +1342,7 @@ Examples:
     cprint("-"*70 + "\n", 'dim')
 
     if not args.batch:
-        if not confirm("Proceed with update?", default=False):
+        if not confirm("Proceed with firmware update?", default=False):
             cinfo("Update cancelled by user.")
             return 0
 
@@ -1364,7 +1372,7 @@ Examples:
                 cdebug(f"Detected external directory: {args.external_dir}", args.debug)
 
         if not args.batch:
-            if not confirm("Proceed with update?", default=False):
+            if not confirm("Proceed with external storage update?", default=False):
                 cinfo("Update cancelled by user.")
                 return 0
         
