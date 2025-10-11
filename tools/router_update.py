@@ -1,6 +1,59 @@
+def extract_archive_with_progress(host, user, password, archive_file, target_dir, log_file, debug=False):
+    """
+    Extract a tar archive to a target directory on FRITZ!Box, showing progress.
+    Used by both firmware_update_process and external_update_process.
+    """
+    ssh_run(host, user, password, f"rm -rf {log_file}", debug=debug)
+    tar_count = count_tar_files(archive_file)
+    extract_cmd = f"mkdir -p {target_dir} && tar -C {target_dir} -xvf - > {log_file} 2>&1; echo $? > /tmp/var-tar.code"
+    cdebug(f"Extracting {tar_count} files to {target_dir}", debug)
+
+    extract_done = threading.Event()
+    start_time = time.time()
+
+    def monitor_extraction():
+        last_count = 0
+        while not extract_done.is_set():
+            try:
+                result = ssh_run(host, user, password,
+                                 f"wc -l < {log_file} 2>/dev/null || echo 0",
+                                 debug=False, capture_output=True)
+                if result and result.strip().isdigit():
+                    current_count = int(result.strip())
+                    if current_count > last_count:
+                        last_count = current_count
+                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
+                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ",
+                              end='', flush=True)
+            except:
+                pass
+            time.sleep(1)
+
+    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
+    monitor_thread.start()
+
+    with open(archive_file, 'rb') as f:
+        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
+    extract_done.set()
+    monitor_thread.join(timeout=1)
+
+    elapsed = int(time.time() - start_time)
+
+    
+
+    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
+    cprint(f"{EMOJI['ok']} Extraction complete", 'green')
+
+    # Check extraction return code
+    ret_code = ssh_run(host, user, password, f"cat /tmp/var-tar.code", debug=debug, capture_output=True).strip()
+    if not ret_code.isdigit() or int(ret_code) != 0:
+        cerror(f"Archive extraction failed with code {ret_code}!")
+        cprint(f"Last 10 lines of extraction log:", 'red')
+        log_tail = ssh_run(host, user, password, f"tail -n 10 {log_file}", debug=debug, capture_output=True)
+        print(log_tail)
 #!/usr/bin/env python3
 """
-router_update.py — Professional Freetz-NG Router Update via SSH/SCP
+router_update.py — Professional Freetz-NG FRITZ!Box Update via SSH/SCP
 
 Emulates the web interface update process with interactive/batch modes, 
 progress bars, dry-run, debug capabilities, and advanced UX.
@@ -32,7 +85,7 @@ COLORS = {
 EMOJI = {
     'ok': '✅', 'fail': '❌', 'wait': '⏳', 'copy': '📤', 'install': '🛠️', 
     'reboot': '🔄', 'ping': '📡', 'external': '📦', 'prompt': '👉',
-    'warning': '⚠️', 'info': 'ℹ️', 'rocket': '🚀', 'check': '✓'
+    'warning': '⚠️', 'info': 'ℹ️', 'rocket': '🚀', 'check': '✓', 'lamp': '💡'
 }
 
 # --- UTILITY FUNCTIONS ---
@@ -113,24 +166,24 @@ def log_ssh_command(command, output="", debug=False):
 
 # --- NETWORK UTILITY FUNCTIONS ---
 def ping_router(host, timeout=PING_TIMEOUT):
-    """Check if router responds to ping"""
+    """Check if FRITZ!Box responds to ping"""
     return os.system(f"ping -c 1 -W {timeout} {host} > /dev/null 2>&1") == 0
 
 def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_TRIES, debug=False):
-    """Wait for router to boot and become accessible via SSH"""
-    cinfo(f"Waiting for router {host} to boot...")
+    """Wait for FRITZ!Box to boot and become accessible via SSH"""
+    cinfo(f"Waiting for FRITZ!Box {host} to boot...")
     start_time = time.time()
     
     # Phase 1: Wait for ping response
     cprint("Phase 1: Waiting for network connectivity", 'blue', 'ping')
     for i in range(max_tries):
         if ping_router(host):
-            cprint(f"{EMOJI['ok']} Router is pingable!", 'green')
+            cprint(f"{EMOJI['ok']} FRITZ!Box is pingable!", 'green')
             break
         print('.', end='', flush=True)
         time.sleep(2)
     else:
-        cerror(f"Timeout waiting for router to respond to ping ({max_tries * 2}s)")
+        cerror(f"Timeout waiting for FRITZ!Box to respond to ping ({max_tries * 2}s)")
         return False
     
     # Phase 2: Wait for SSH availability
@@ -141,7 +194,7 @@ def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_
             result = ssh_run(host, user, password, SSH_TEST_CMD, debug=debug, capture_output=True)
             if result and not 'connection refused' in result.lower():
                 elapsed = int(time.time() - start_time)
-                cprint(f"{EMOJI['ok']} Router is fully operational! (took {elapsed}s)", 'green')
+                cprint(f"{EMOJI['ok']} FRITZ!Box is fully operational! (took {elapsed}s)", 'green')
                 return True
         except:
             pass
@@ -379,6 +432,7 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                         # EOF reached: close master to send EOF to slave
                         try:
                             os.close(master)
+                            time.sleep(5)
                         except Exception:
                             pass
                         break
@@ -396,6 +450,7 @@ def sshpass_exec(cmd, password, verbose=False, retries=2, capture_output=False, 
                         # EOF reached: close master to send EOF to slave
                         try:
                             os.close(master)
+                            time.sleep(5)                            
                         except Exception:
                             pass
                         break
@@ -461,9 +516,9 @@ def scp_send(host, user, password, local, remote, debug=False, dry_run=False):
         return False
 
 
-# --- ROUTER CONFIGURATION FUNCTIONS ---
+# --- FRITZ!Box CONFIGURATION FUNCTIONS ---
 class RouterConfig:
-    """Router configuration container"""
+    """FRITZ!Box configuration container"""
     def __init__(self):
         self.external_dir = DEFAULT_EXTERNAL_BASE
         self.external_freetz_services = 'yes'
@@ -534,7 +589,7 @@ def parse_df_output(df_text):
     return ubi_info, storage
 
 def read_router_config(host, user, password, debug=False):
-    """Read and parse router configuration"""
+    """Read and parse FRITZ!Box configuration"""
     config = RouterConfig()
     
     # Step 1: Read mod.cfg
@@ -587,7 +642,7 @@ def read_router_config(host, user, password, debug=False):
     
     # Step 2: Read storage information (df -h)
     cprint("")
-    cinfo("Step 2: Detecting storage devices (df -h)")
+    cinfo("Step 2: Detecting storage devices")
     df_output = ssh_run(host, user, password, "df -h", debug=debug, capture_output=True)
 
     if df_output:
@@ -604,7 +659,7 @@ def read_router_config(host, user, password, debug=False):
             cprint(f"  Available:  {ubi_info['available']}", 'cyan')
             cprint(f"  Mount:      {ubi_info['mountpoint']}", 'cyan')
         else:
-            cwarning("No UBI storage detected (router may have limited internal storage)")
+            cwarning("No UBI storage detected (FRITZ!Box may have limited internal storage)")
         
         # External storage devices
         if storage_devices:
@@ -619,7 +674,7 @@ def read_router_config(host, user, password, debug=False):
         else:
             cwarning("No external storage devices detected")
 
-    # Step 3: Additional router information
+    # Step 3: Additional FRITZ!Box information
     cprint("")
     cinfo("Step 3: Gathering system information")
     
@@ -644,12 +699,36 @@ def read_router_config(host, user, password, debug=False):
         cprint(f"  Kernel:     {kernel_version}", 'cyan')
     if box_model != 'Unknown':
         cprint(f"  Model:      {box_model}", 'cyan')
+
+    # Get RAM info
+    ram_output = ssh_run(host, user, password, "free", debug=debug, capture_output=True)
+    ram_line = None
+    config.ram_total = None
+    for line in ram_output.splitlines():
+        if line.lower().startswith("mem:"):
+            ram_line = line
+            parts = line.split()
+            if len(parts) >= 2 and parts[1].isdigit():
+                config.ram_total = int(parts[1])
+    if config.ram_total:
+        cprint(f"  RAM:        {config.ram_total // 1024} MB", 'cyan')
+    else:
+        cprint("FRITZ!Box RAM info not available", 'yellow', 'warning')
+    # Get JFFS2 info
+    config.jffs2_output = ssh_run(host, user, password, "grep jffs2 /proc/mtd", debug=debug, capture_output=True)
+    if config.jffs2_output.strip():
+        cprint("  JFFS2 partition detected:", 'cyan')
+        for line in config.jffs2_output.splitlines():
+            cprint(f"  {line}", 'cyan')
+    else:
+        cprint("  No JFFS2 partition detected", 'cyan')
+
     return config
 
 # --- UPDATE PROCESS FUNCTIONS ---
 def detect_external_dir(host, user, password, debug=False):
-    """Detect current external directory from router configuration"""
-    cdebug("Detecting external directory from router config", debug)
+    """Detect current external directory from FRITZ!Box configuration"""
+    cdebug("Detecting external directory from FRITZ!Box config", debug)
     # Try to read mod config
     output = ssh_run(host, user, password, 
                      "cat /mod/etc/conf/mod.cfg 2>/dev/null | grep EXTERNAL_DIRECTORY || echo '/var/media/ftp/FRITZBOX/external'",
@@ -661,7 +740,7 @@ def detect_external_dir(host, user, password, debug=False):
     return DEFAULT_EXTERNAL_BASE
 
 def upload_file_with_progress(host, user, password, local_file, remote_dir, debug=False, dry_run=False):
-    """Upload file to router with progress indication"""
+    """Upload file to FRITZ!Box with progress indication"""
     filename = os.path.basename(local_file)
     filesize = get_file_size(local_file)
     remote_path = f"{remote_dir}/{filename}"
@@ -766,87 +845,60 @@ def upload_file_with_progress(host, user, password, local_file, remote_dir, debu
         return None
 
 def firmware_update_process(host, user, password, image_file,
-                           stop_services='stop_avm', no_reboot=False, 
+                           stop_services='semistop_avm', no_reboot=False, 
                            debug=False, dry_run=False):
     """Execute firmware update process (emulates do_update_handler.sh)"""
     cprint("\n" + "="*60, 'bold')
     cprint("FIRMWARE UPDATE PROCESS", 'bold', 'install')
     cprint("="*60 + "\n", 'bold')
-    
+
     if dry_run:
         cwarning("[DRY-RUN] Skipping firmware extraction and installation")
         return True
-    
-    # Step 1: Extract firmware archive
-    cinfo("Step 1: Extracting firmware archive to /")
-    tar_count = count_tar_files(image_file)
-    extract_cmd = f"tar -C / -xvf - > /tmp/fw_extract.log 2>&1"
-    cdebug(f"Extracting {tar_count} files from firmware", debug)
-    
-    # Monitor extraction progress
-    extract_done = threading.Event()
-    start_time = time.time()
-    
-    def monitor_extraction():
-        """Monitor extraction progress by counting extracted files"""
-        last_count = 0
-        while not extract_done.is_set():
-            try:
-                # Count lines in extraction log (each line = one file)
-                result = ssh_run(host, user, password, 
-                               f"wc -l < /tmp/fw_extract.log 2>/dev/null || echo 0",
-                               debug=False, capture_output=True)
-                if result and result.strip().isdigit():
-                    current_count = int(result.strip())
-                    if current_count > last_count:
-                        last_count = current_count
-                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
-                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ", 
-                              end='', flush=True)
-            except:
-                pass
-            time.sleep(1)  # Update every second
-    
-    # Start monitoring thread
-    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
-    monitor_thread.start()
-    
-    # Execute extraction
-    with open(image_file, 'rb') as f:
-        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
-    extract_done.set()
-    monitor_thread.join(timeout=1)
-    
-    # Show completion
-    elapsed = int(time.time() - start_time)
-    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
-    cprint(f"{EMOJI['ok']} Firmware extracted", 'green')
+
+    # Step 1: Extract FRITZ!Box firmware archive
+    cinfo("Step 1: Extracting firmware archive to the tmpfs of FRITZ!Box. Please wait...")
+    extract_archive_with_progress(
+        host, user, password,
+        archive_file=image_file,
+        target_dir="/",
+        log_file="/tmp/fw_extract.log",
+        debug=debug
+    )
     
     # Step 2: Stop AVM services (if requested)
-    if stop_services in ('stop_avm', 'semistop_avm'):
-        cinfo(f"Step 2: Stopping AVM services ({stop_services})")
-        if stop_services == 'stop_avm':
-            ssh_run(host, user, password, "prepare_fwupgrade start", debug=debug)
-            ssh_run(host, user, password, "prepare_fwupgrade end", debug=debug)
-        else:
-            ssh_run(host, user, password, "prepare_fwupgrade start_from_internet", debug=debug)
+    if stop_services == 'noaction':
+        cwarning(f"Firmware not installed ({stop_services})")
+        return True
+    if stop_services == 'stop_avm':
+        cinfo(f"Step 2: Stopping AVM services ({stop_services}). Please wait...")
+        ssh_run(host, user, password, "prepare_fwupgrade start", debug=debug)
+        ssh_run(host, user, password, "prepare_fwupgrade end", debug=debug)
+        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
+    elif stop_services == 'semistop_avm':
+        cinfo(f"Step 2: Stopping AVM services ({stop_services}). Please wait...")
+        ssh_run(host, user, password, "prepare_fwupgrade start_from_internet", debug=debug)
+        cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
+    elif stop_services == 'tr069':
+        cinfo(f"Step 2: Stopping AVM services ({stop_services}). Please wait...")
+        ssh_run(host, user, password, "prepare_fwupgrade start_tr069", debug=debug)
         cprint(f"{EMOJI['ok']} AVM services stopped", 'green')
     else:
         cinfo("Step 2: Skipping AVM services stop (nostop_avm mode)")
     
     # Step 3: Execute firmware installation script
-    cinfo("Step 3: Executing firmware installation script (/var/install)")
-    install_output = ssh_run(host, user, password, 
-                            "cd / && /var/install 2>&1 | tee /tmp/var-install.out; echo EXIT_CODE=$?",
-                            debug=debug)
+    cinfo("Step 3: Executing firmware installation script (see /tmp/var-install.out)")
+    install_output = ssh_run(
+        host, user, password,
+        "cd / && ( /var/install 2>&1 ; echo $? >/tmp/var-install.code ) | tee /tmp/var-install.out && tail -n1 /tmp/var-install.code",
+        debug=debug
+    )
+    cprint("")
     
     # Parse installation result
     exit_code = 6  # Default: OTHER_ERROR
-    if 'EXIT_CODE=' in install_output:
-        try:
-            exit_code = int(install_output.split('EXIT_CODE=')[-1].split()[0])
-        except:
-            pass
+    if install_output.strip().isdigit():
+        exit_code = int(install_output.strip())
     
     result_codes = {
         0: ("INSTALL_SUCCESS_NO_REBOOT", "green"),
@@ -866,7 +918,7 @@ def firmware_update_process(host, user, password, image_file,
     # Step 4: Reboot if needed
     if exit_code == 1 and not no_reboot:
         cprint("\n" + "="*60, 'bold')
-        cprint("REBOOTING ROUTER", 'bold', 'reboot')
+        cprint("REBOOTING FRITZ!Box", 'bold', 'reboot')
         cprint("="*60 + "\n", 'bold')
         ssh_run(host, user, password, "reboot", debug=debug)
         return wait_router_boot(host, password, user, debug=debug)
@@ -894,6 +946,14 @@ def external_update_process(host, user, password, external_file, external_dir,
         external_dir = f"{DEFAULT_EXTERNAL_BASE}/{basename}"
     
     cprint(f"Installation directory: {external_dir}", 'cyan', 'info')
+
+    # Check if external_dir exists and contains .external marker
+    dir_exists = ssh_run(host, user, password, f"test -d '{external_dir}' && echo exists || echo notfound", debug=debug, capture_output=True).strip()
+    if dir_exists == "exists":
+        marker_exists = ssh_run(host, user, password, f"test -e '{external_dir}/.external' && echo exists || echo notfound", debug=debug, capture_output=True).strip()
+        if marker_exists != "exists":
+            cerror(f"External directory '{external_dir}' exists but is missing the .external marker file!")
+            return False
     
     if dry_run:
         cwarning("[DRY-RUN] Skipping external extraction")
@@ -908,6 +968,8 @@ def external_update_process(host, user, password, external_file, external_dir,
             cprint(f"{EMOJI['ok']} External services stopped", 'green')
         else:
             cinfo("External services not running")
+    else:
+        cinfo("Step 1: External services not stopped as requested.")
     
     # Step 2: Delete or preserve old directory
     if preserve_old:
@@ -919,49 +981,13 @@ def external_update_process(host, user, password, external_file, external_dir,
     
     # Step 3: Extract external archive
     cinfo("Step 3: Extracting external archive. Please wait...")
-    ssh_run(host, user, password, f"rm -r /tmp/ext_extract.log", debug=debug)
-    tar_count = count_tar_files(external_file)
-    extract_cmd = f"mkdir -p {external_dir} && tar -C {external_dir} -xvf - > /tmp/ext_extract.log 2>&1"
-    cdebug(f"Extracting {tar_count} files to {external_dir}", debug)
-    
-    # Monitor extraction progress
-    extract_done = threading.Event()
-    start_time = time.time()
-    
-    def monitor_extraction():
-        """Monitor extraction progress by counting extracted files"""
-        last_count = 0
-        while not extract_done.is_set():
-            try:
-                # Count lines in extraction log (each line = one file)
-                result = ssh_run(host, user, password, 
-                               f"wc -l < /tmp/ext_extract.log 2>/dev/null || echo 0",
-                               debug=False, capture_output=True)
-                if result and result.strip().isdigit():
-                    current_count = int(result.strip())
-                    if current_count > last_count:
-                        last_count = current_count
-                        percent = min(99, int(100 * current_count / tar_count)) if tar_count > 0 else 0
-                        print(f"\r   Extraction progress: {percent}% | {current_count}/{tar_count} files extracted     ", 
-                              end='', flush=True)
-            except:
-                pass
-            time.sleep(1)  # Update every second
-    
-    # Start monitoring thread
-    monitor_thread = threading.Thread(target=monitor_extraction, daemon=True)
-    monitor_thread.start()
-    
-    # Execute extraction
-    with open(external_file, 'rb') as f:
-        ssh_run(host, user, password, extract_cmd, debug=debug, capture_output=False, stdin_stream=f)
-    extract_done.set()
-    monitor_thread.join(timeout=1)
-    
-    # Show completion
-    elapsed = int(time.time() - start_time)
-    print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
-    cprint(f"{EMOJI['ok']} External files extracted", 'green')
+    extract_archive_with_progress(
+        host, user, password,
+        archive_file=external_file,
+        target_dir=external_dir,
+        log_file="/tmp/ext_extract.log",
+        debug=debug
+    )
     
     # Step 4: Mark as external directory
     cinfo("Step 4: Mark external directory")
@@ -973,6 +999,8 @@ def external_update_process(host, user, password, external_file, external_dir,
         ret = ssh_run(host, user, password, "/mod/etc/init.d/rc.external start", debug=debug)
         cprint(ret)
         cprint(f"{EMOJI['ok']} External services started", 'green')
+    else:
+        cinfo("Step 5: External not restarted as requested.")
     
     return True
 
@@ -982,7 +1010,7 @@ def external_update_process(host, user, password, external_file, external_dir,
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description="Professional Freetz-NG Router Update Tool",
+        description="Professional Freetz-NG FRITZ!Box Update Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -1006,7 +1034,7 @@ Examples:
     # Connection arguments
     conn_group = parser.add_argument_group('Connection Options')
     conn_group.add_argument('--host', required=True,
-                           help='Router IP address or hostname')
+                           help='FRITZ!Box IP address or hostname')
     conn_group.add_argument('--user', default=DEFAULT_USER,
                            help=f'SSH username (default: {DEFAULT_USER})')
     conn_group.add_argument('--password',
@@ -1031,11 +1059,11 @@ Examples:
     # Update behavior arguments
     update_group = parser.add_argument_group('Update Behavior')
     update_group.add_argument('--stop-services', 
-                             choices=['stop_avm', 'semistop_avm', 'nostop_avm'],
-                             default='stop_avm',
+                             choices=['stop_avm', 'semistop_avm', 'nostop_avm', 'tr069', 'noaction'],
+                             default='semistop_avm',
                              help='AVM services stop strategy (default: stop_avm)')
     update_group.add_argument('--no-reboot', action='store_true',
-                             help='Do not reboot router after firmware update')
+                             help='Do not reboot FRITZ!Box after firmware update')
     update_group.add_argument('--no-delete-external', action='store_true',
                              help='Delete old external files before extraction')
     update_group.add_argument('--no-external-restart', action='store_true',
@@ -1057,32 +1085,32 @@ Examples:
     
     # Print header
     cprint("\n" + "="*70, 'bold')
-    cprint("   Freetz-NG Router Update Tool", 'bold', 'rocket')
+    cprint("   Freetz-NG FRITZ!Box Update Tool", 'bold', 'rocket')
     cprint("="*70 + "\n", 'bold')
     
     # Initialize SSH log file only if debug mode is active
     if args.debug:
         try:
             with open(SSH_LOG_FILE, 'w', encoding='utf-8') as f:
-                f.write(f"Router Update Session - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"FRITZ!Box Update Session - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             cinfo(f"SSH commands will be logged to: {SSH_LOG_FILE}")
         except Exception as e:
             cwarning(f"Could not create SSH log file: {e}")
     
     if args.dry_run:
-        cwarning("DRY-RUN MODE: No changes will be made to the router\n")
+        cwarning("DRY-RUN MODE: No changes will be made to FRITZ!Box\n")
     
-    # Read router configuration (always read to show information and validate)
+    # Read FRITZ!Box configuration (always read to show information and validate)
     router_config = read_router_config(args.host, args.user, args.password, args.debug)
     if router_config is None:
         cerror("Cannot proceed without valid Freetz-NG configuration!")
         return 1
     
-    # Update defaults based on router configuration
+    # Update defaults based on FRITZ!Box configuration
     if not args.external_dir:
         # Use configured external directory as default
         DEFAULT_EXTERNAL_BASE_OVERRIDE = router_config.external_dir
-        cdebug(f"Using external directory from router config: {DEFAULT_EXTERNAL_BASE_OVERRIDE}", args.debug)
+        cdebug(f"Using external directory from FRITZ!Box config: {DEFAULT_EXTERNAL_BASE_OVERRIDE}", args.debug)
     
     # Validate arguments
     if args.skip_firmware and args.skip_external:
@@ -1101,6 +1129,7 @@ Examples:
             cinfo(f"Auto-selected latest image: {os.path.basename(args.image)}")
         else:
             # Interactive: ask if user wants to install firmware
+            cprint("")
             if confirm("Install firmware image?", default=True):
                 args.image = select_file_interactive(images, 'firmware image')
                 if not args.image:
@@ -1143,11 +1172,9 @@ Examples:
         cerror(f"External package not found: {args.external}")
         return 1
     
-    # Interactive directory configuration
-    cprint("\n" + "-"*70, 'dim')  # Begin directory configuration
-    
     # Show storage information first
-    if router_config:
+    if router_config and args.external:
+        cprint("\n" + "-"*70, 'dim')  # Begin directory configuration
         cinfo(f"Available storage devices:")
         # Show UBI internal storage first if present
         if router_config.has_ubi and hasattr(router_config, 'ubi_available') and hasattr(router_config, 'ubi_size'):
@@ -1162,7 +1189,7 @@ Examples:
     # Ask for external directory if external update is selected
     if args.external and not args.skip_external:
         if not args.external_dir:
-            # Use router config external directory directly (without appending basename)
+            # Use FRITZ!Box config external directory directly (without appending basename)
             if router_config:
                 suggested_dir = router_config.external_dir
             else:
@@ -1201,7 +1228,7 @@ Examples:
     # Ask for external directory if external update is selected
     if args.external and not args.skip_external:
         if not args.external_dir:
-            # Use router config external directory directly (without appending basename)
+            # Use FRITZ!Box config external directory directly (without appending basename)
             if router_config:
                 suggested_dir = router_config.external_dir
             else:
@@ -1234,16 +1261,28 @@ Examples:
     if args.image and not args.skip_firmware:
         cprint("\n" + "-"*70, 'dim')
         cinfo("Firmware Update Service Management:")
-        if confirm("Stop AVM services before firmware update?", default=True):
-            if confirm("Use full stop (stop_avm) instead of semi-stop (semistop_avm)?", default=True):
+        # --- Compute default as in firmware.cgi ---
+        ram_mb = router_config.ram_total // 1024 if router_config.ram_total else 0
+        has_jffs2 = bool(router_config.jffs2_output.strip())
+        if ram_mb >= 128 and not has_jffs2:
+            stop_default = 'stop_avm'
+        else:
+            stop_default = 'semistop_avm'
+        #cprint(f"Valid action for your device: {'Full stop (stop_avm)' if stop_default == 'stop_avm' else 'Semi-stop (semistop_avm)'}", 'yellow', 'lamp')
+        # Prompt con default corretto
+        if confirm("Stop AVM services before firmware update (stop is needed)?", default=True):
+            pass
+            """
+            if confirm("Use full stop (stop_avm) instead of semi-stop (semistop_avm)?", default=(stop_default == 'stop_avm')):
                 args.stop_services = 'stop_avm'
             else:
                 args.stop_services = 'semistop_avm'
+            """
         else:
             args.stop_services = 'nostop_avm'
-            cwarning("Warning: Not stopping AVM services may cause issues!")
+            cwarning("Warning: Not stopping AVM services during firmware upgrade may cause issues!")
         
-        args.no_reboot = not confirm("Reboot router after firmware installation?", default=True)
+        args.no_reboot = not confirm("Reboot FRITZ!Box after firmware installation (reboot is needed)?", default=True)
         cprint("-"*70 + "\n", 'dim')
     
     if args.external and not args.skip_external and not args.batch:
@@ -1260,8 +1299,8 @@ Examples:
             
     # Show summary
     cprint("\n" + "-"*70, 'dim')
-    cinfo("Update Summary:")
-    cprint(f"  Router:           {args.host}", 'yellow')
+    cinfo("Summary of the selected options:")
+    cprint(f"  FRITZ!Box:        {args.host}", 'yellow')
     cprint(f"  User:             {args.user}", 'yellow')
     if args.image:
         cprint(f"  Firmware:         {os.path.basename(args.image)} ({format_size(get_file_size(args.image))})", 'yellow')
@@ -1292,10 +1331,10 @@ Examples:
         # Detect external dir if not provided
         if not args.external_dir:
             if router_config:
-                # Use configuration from router
+                # Use configuration from FRITZ!Box
                 basename = os.path.splitext(os.path.basename(args.external))[0]
                 args.external_dir = f"{router_config.external_dir}/{basename}"
-                cdebug(f"Using external directory from router config: {args.external_dir}", args.debug)
+                cdebug(f"Using external directory from FRITZ!Box config: {args.external_dir}", args.debug)
             elif not args.dry_run:
                 # Fallback to detection
                 args.external_dir = detect_external_dir(args.host, args.user, args.password, args.debug)
