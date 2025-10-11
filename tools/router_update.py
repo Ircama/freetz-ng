@@ -216,13 +216,14 @@ def select_file_interactive(files, file_type):
     
     choice = input(f"Enter number (1-{min(5, len(files))}) or path: ").strip()
     if choice.isdigit() and 1 <= int(choice) <= min(5, len(files)):
+        cprint(f"Selected archive: {files[int(choice) - 1]}", 'green', 'check')
         return files[int(choice) - 1]
     elif os.path.exists(choice):
+        cprint(f"Selected archive: {choice}", 'green', 'check')
         return choice
     else:
-        cwarning(f"Invalid selection, using latest {file_type}")
+        cwarning(f"Invalid selection. Using latest {file_type}")
         return files[0]
-
 
 
 # --- SSH/SCP WRAPPER ---
