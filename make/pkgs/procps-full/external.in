@@ -1,0 +1,13 @@
+config EXTERNAL_FREETZ_PACKAGE_PROCPS_FULL
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_PROCPS_FULL && EXTERNAL_SUBDIRS
+	bool "procps-full (externalization recommended)"
+	default n
+	help
+		Externalize procps-full binaries to USB storage.
+		
+		Recommended for devices with limited flash memory.
+		The procps-full package includes multiple utilities
+		that can be stored on external storage to save
+		internal flash space.
+		
+		All selected binaries will be externalized with -full suffix.
