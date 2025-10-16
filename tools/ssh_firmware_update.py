@@ -164,7 +164,7 @@ def count_tar_files(tarfile):
     """Count total files in tar archive"""
     try:
         output = subprocess.getoutput(f"tar -tf '{tarfile}' 2>/dev/null")
-        return len([l for l in output.splitlines() if l.strip() and not l.endswith('/')])
+        return len([l for l in output.splitlines() if l.strip() and not l.endswith('/')])  # only count files
     except:
         return 0
 
@@ -883,7 +883,7 @@ def extract_archive_with_progress(host, user, password, archive_file, target_dir
         while not extract_done.is_set():
             try:
                 result = ssh_run(host, user, password,
-                                 f"wc -l < {log_file} 2>/dev/null || echo 0",
+                                 f"grep -v '/$' {log_file} 2>/dev/null | wc -l || echo 0",  # only count files
                                  debug=False, capture_output=True)
                 if result and result.strip().isdigit():
                     current_count = int(result.strip())
@@ -1434,13 +1434,12 @@ Examples:
         cprint(f"  Reboot at end:    {'Yes' if args.reboot_at_the_end else 'No'}", 'yellow')
     cprint("-"*70 + "\n", 'dim')
 
-    if not args.batch:
-        if not confirm("Proceed with firmware update?", default=False):
-            cinfo("Update cancelled by user.")
-            return 0
-
     # Execute firmware update
     if args.image and not args.skip_firmware:
+        if not args.batch:
+            if not confirm("Proceed with firmware update?", default=False):
+                cinfo("Update cancelled by user.")
+                return 0
         success = firmware_update_process(
             args.host, args.user, args.password, args.image,
             stop_services=args.stop_services, no_reboot=args.no_reboot,
@@ -1498,7 +1497,7 @@ Examples:
 
     # Final success message
     cprint("\n" + "="*60, 'bold')
-    cprint("   UPDATE COMPLETED SUCCESSFULLY!", 'green', 'ok')
+    cprint("UPDATE COMPLETED SUCCESSFULLY!", 'green', 'ok')
     cprint("="*60 + "\n", 'bold')
     
     # Show log file location only in debug mode
