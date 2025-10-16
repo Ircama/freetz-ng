@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 ssh_firmware_update.py — Freetz-NG FRITZ!Box Update via SSH/SCP
-by Ircama, 2025
 
 Emulates the web interface update process with interactive/batch modes, 
 progress bars, dry-run, debug capabilities, and advanced UX.
@@ -138,6 +137,7 @@ def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_
         print('.', end='', flush=True)
         time.sleep(2)
     else:
+        cprint("")
         cerror(f"Timeout waiting for FRITZ!Box to respond to ping ({max_tries * 2}s)")
         return False
     
@@ -1006,7 +1006,6 @@ def firmware_update_process(host, user, password, image_file,
     
     # Step 4: Reboot if needed
     if exit_code == 1 and not no_reboot and reboot_at_the_end:
-        cprint("")
         cprint(f"{EMOJI['ok']} Firmware update complete.", 'green')
         cprint("Reboot is postponed after the installation of the external updates.", 'reboot', 'reboot')
         cprint("")
@@ -1033,6 +1032,7 @@ def firmware_update_process(host, user, password, image_file,
 
 def external_update_process(host, user, password, external_file, external_dir,
                             preserve_old=False, restart_services=True,
+                            reboot_at_the_end=False,
                             debug=False, dry_run=False):
     """Execute external update process (emulates do_external_handler.sh)"""
     cprint("\n" + "="*60, 'bold')
@@ -1069,7 +1069,8 @@ def external_update_process(host, user, password, external_file, external_dir,
         else:
             cinfo("External services not running")
     else:
-        cinfo("Step 1: External services not stopped as requested.")
+        if not reboot_at_the_end:
+            cinfo("Step 1: External services not stopped as requested.")
     
     # Step 2: Delete or preserve old directory
     if preserve_old:
@@ -1398,7 +1399,10 @@ Examples:
         cinfo("External Update Options:")
 
         if confirm("Delete any previously existing external directory after file upload and before extraction?", default=True):
+            args.no_delete_external = False
+        else:
             args.no_delete_external = True
+            cwarning("Warning: Not deleting old external files may cause issues!")
 
         if args.stop_services != 'nostop_avm' and args.reboot_at_the_end:
             cinfo("Note: external services will be stopped by the firmware update and restarted within the reboot.")
@@ -1472,6 +1476,7 @@ Examples:
             args.host, args.user, args.password, args.external, args.external_dir,
             preserve_old=args.no_delete_external, 
             restart_services=not args.no_external_restart,
+            reboot_at_the_end=args.reboot_at_the_end,
             debug=args.debug, dry_run=args.dry_run
         )
         if not success:
