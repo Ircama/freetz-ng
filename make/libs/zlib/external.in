@@ -1,6 +1,6 @@
 config EXTERNAL_FREETZ_LIB_libz
 	depends on EXTERNAL_ENABLED && FREETZ_LIB_libz
-	bool "libz"
+	bool "libz (required internal by Dropbear SSH)"
 	default n
 	help
 		externals the following file(s):
