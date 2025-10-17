@@ -110,7 +110,7 @@ endif
 	DEST_SPEC="$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/lib/gcc/$(REAL_GNU_TARGET_NAME)/$$VER/specs"; \
 	mkdir -p "$$(dirname $$DEST_SPEC)"; \
 	$(TARGET_CC) -dumpspecs | \
-	  sed -e 's#/lib/ld-uClibc.so.0#/mod/external/usr/lib/freetz/ld-uClibc.so.0 -L/mod/external/usr/lib/freetz -rpath /mod/external/usr/lib/freetz#g' \
+	  sed -e 's#/lib/ld-uClibc.so.0#/usr/lib/freetz/ld-uClibc.so.1 -L/mod/external/usr/lib/freetz -rpath /usr/lib/freetz#g' \
 	      -e 's#^\*cross_compile:$$#*cross_compile:#' \
 	      -e '/^\*cross_compile:/{ n; s/^1$$/0/; }' \
 	      -e 's#^\*cpp:$$#*cpp:#' \
