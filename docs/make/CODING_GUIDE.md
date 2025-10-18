@@ -1142,3 +1142,961 @@ After regeneration, check that:
 - Tools directory: `tools/`
 - Wiki documentation: `docs/wiki/`
 - Package documentation: `docs/make/`
+
+------------
+
+# Freetz-NG Library Management Guide
+
+This document explains how Freetz-NG manages shared libraries, handles potential conflicts with AVM firmware libraries, and implements library externalization.
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [AVM Firmware Library Structure](#avm-firmware-library-structure)
+3. [Freetz-NG Library Structure](#freetz-ng-library-structure)
+4. [Library Separation Strategy](#library-separation-strategy)
+5. [RPATH and Dynamic Linking](#rpath-and-dynamic-linking)
+6. [ABI Configuration](#abi-configuration)
+7. [Library Externalization](#library-externalization)
+8. [Best Practices for Package Developers](#best-practices-for-package-developers)
+9. [External Configuration Guidelines](#external-configuration-guidelines)
+
+---
+
+## Overview
+
+Freetz-NG extends AVM FRITZ!Box firmware by adding additional functionality while maintaining compatibility with the original firmware. A critical aspect of this integration is managing shared libraries to avoid conflicts between AVM's native libraries and Freetz-added libraries.
+
+---
+
+## AVM Firmware Library Structure
+
+### Core Libraries (`/lib/`)
+
+AVM firmware uses **MUSL libc** as its C standard library, located in `/lib/`:
+
+```
+/lib/
+├── ld-musl-mips-sf.so.1  # MUSL dynamic linker
+├── libc.so.1              # MUSL C library (symlink)
+└── [other AVM core libraries]
+```
+
+**Key Characteristics:**
+- **C Library**: MUSL libc
+- **Dynamic Linker**: `/lib/ld-musl-mips-sf.so.1`
+- **Usage**: All native AVM binaries and services
+- **Location**: `/lib/` (core system libraries)
+
+### AVM User Libraries (`/usr/lib/`)
+
+AVM also provides additional libraries in `/usr/lib/` for its applications:
+
+```
+/usr/lib/
+├── libavmdb.so
+├── libfbcp.so
+└── [other AVM-specific libraries]
+```
+
+These libraries are specifically for AVM applications and services.
+
+---
+
+## Freetz-NG Library Structure
+
+### Standard Freetz Libraries (`/usr/lib/`)
+
+Freetz generally places additional libraries in `/usr/lib/` when they:
+- Do NOT conflict with AVM libraries
+- Are new libraries not present in AVM firmware
+- Are required by Freetz packages
+
+**Example: Freetz-only libraries**
+```
+/usr/lib/
+├── libopenssl.so.3      # Added by Freetz (not in AVM)
+├── libcurl.so.4         # Added by Freetz (not in AVM)
+└── libsqlite3.so.0      # Added by Freetz (not in AVM)
+```
+
+### Separated Freetz Libraries (`/usr/lib/freetz/`)
+
+When a library conflicts with an AVM library (same name, different version), Freetz uses a **separate directory** to avoid conflicts:
+
+```
+/usr/lib/freetz/
+├── ld-uClibc.so.1       # uClibc dynamic linker (ABI1)
+├── libc.so.0            # uClibc C library
+├── libgcc_s.so.1        # GCC runtime library
+├── libstdc++.so.6       # C++ standard library
+├── libz.so.1            # zlib (if AVM also has libz)
+└── [other separated libraries]
+```
+
+**Key Characteristics:**
+- **C Library**: uClibc (version 1.0.55+)
+- **Dynamic Linker**: `/usr/lib/freetz/ld-uClibc.so.1`
+- **Usage**: Freetz binaries compiled with `FREETZ_SEPARATE_AVM_UCLIBC=y`
+- **RPATH**: Freetz binaries have RPATH set to `/usr/lib/freetz/`
+
+---
+
+## Library Separation Strategy
+
+### When to Use `/usr/lib/`
+
+Use `/usr/lib/` when:
+- The library is **new** (not present in AVM firmware)
+- There is **no name conflict** with AVM libraries
+- The library is **compatible** with AVM's runtime environment
+
+**Example packages using `/usr/lib/`:**
+- OpenSSL (libssl.so, libcrypto.so)
+- cURL (libcurl.so)
+- SQLite (libsqlite3.so)
+
+### When to Use `/usr/lib/freetz/`
+
+Use `/usr/lib/freetz/` when:
+- The library **name conflicts** with an AVM library
+- The library **version differs** from AVM's version
+- The library is part of the **core runtime** (libc, libgcc, libstdc++)
+- Package configuration enables `FREETZ_SEPARATE_AVM_UCLIBC=y`
+
+**Example libraries requiring separation:**
+- **libc.so**: AVM uses MUSL, Freetz uses uClibc
+- **libz.so**: Different versions between AVM and Freetz
+- **libgcc_s.so**: GCC runtime support library
+- **libstdc++.so**: C++ standard library
+
+### Configuration Variable: `FREETZ_SEPARATE_AVM_UCLIBC`
+
+This configuration option controls library separation:
+
+```kconfig
+config FREETZ_SEPARATE_AVM_UCLIBC
+	bool "Separate uClibc"
+	default n
+	help
+		Puts uClibc of Freetz into /usr/lib/freetz/,
+		needs about 1 MB (uncompressed).
+```
+
+**Effect when enabled:**
+- Freetz uses uClibc in `/usr/lib/freetz/`
+- All Freetz binaries use dynamic linker `/usr/lib/freetz/ld-uClibc.so.1`
+- No conflicts with AVM's MUSL libraries in `/lib/`
+
+**Important:** A library should exist in **either** `/usr/lib/` **or** `/usr/lib/freetz/`, but **never both**. Use `/usr/lib/freetz/` only when `/usr/lib/` contains the AVM version of the same library.
+
+---
+
+## RPATH and Dynamic Linking
+
+### What is RPATH?
+
+RPATH (Run-Path) is embedded into ELF binaries and tells the dynamic linker where to search for shared libraries at runtime.
+
+### Freetz RPATH Configuration
+
+Freetz binaries compiled with `FREETZ_SEPARATE_AVM_UCLIBC=y` have RPATH set to `/usr/lib/freetz/`:
+
+```bash
+$ readelf -d /usr/bin/php | grep RPATH
+ 0x0000000f (RPATH)    Library rpath: [/usr/lib/freetz/]
+```
+
+**Library Search Order for Freetz Binaries:**
+1. **RPATH**: `/usr/lib/freetz/` (embedded in binary)
+2. `/usr/lib/`
+3. `/lib/`
+
+**Library Search Order for AVM Binaries:**
+- AVM binaries have **no RPATH** set
+- They use system default search paths: `/lib/`, `/usr/lib/`
+- They **completely ignore** `/usr/lib/freetz/`
+
+### Complete Separation: No Conflicts Possible
+
+This design ensures **complete isolation**:
+
+| Binary Type | Dynamic Linker | Library Path Priority | C Library Used |
+|-------------|----------------|----------------------|----------------|
+| **AVM binaries** | `/lib/ld-musl-mips-sf.so.1` | `/lib/`, `/usr/lib/` | MUSL |
+| **Freetz binaries** | `/usr/lib/freetz/ld-uClibc.so.1` | `/usr/lib/freetz/`, `/usr/lib/`, `/lib/` | uClibc |
+
+**Result**: AVM and Freetz binaries run in separate "worlds" with zero library conflicts.
+
+### Dynamic Linker Override
+
+Freetz build system forces the correct dynamic linker at compile time:
+
+```makefile
+# From make/pkgs/Makefile.in
+ifeq ($(strip $(FREETZ_SEPARATE_AVM_UCLIBC)),y)
+FREETZ_LIBRARY_DIR:=/usr/lib/freetz
+TARGET_CFLAGS_LD:=-Wl,-I$(FREETZ_LIBRARY_DIR)/ld-uClibc.so.1
+else
+FREETZ_LIBRARY_DIR:=/usr/lib
+TARGET_CFLAGS_LD:=
+endif
+```
+
+The `-Wl,-I/usr/lib/freetz/ld-uClibc.so.1` flag overrides GCC's default linker specs, ensuring all Freetz binaries use the correct dynamic linker.
+
+---
+
+## ABI Configuration
+
+### What is ABI?
+
+ABI (Application Binary Interface) defines the low-level interface between binary modules (programs, libraries, OS). For uClibc, the ABI version affects the dynamic linker name.
+
+### uClibc ABI Versions
+
+| uClibc Version | ABI | Dynamic Linker |
+|----------------|-----|----------------|
+| 0.9.28 - 0.9.33 | **ABI0** | `ld-uClibc.so.0` |
+| 1.0.x+ | **ABI1** | `ld-uClibc.so.1` |
+
+### Freetz ABI Configuration
+
+Freetz-NG primarily uses **uClibc 1.0.55** with **ABI1**:
+
+```makefile
+# GCC specs file expects ABI0 by default
+# Freetz overrides this at runtime with TARGET_CFLAGS_LD
+TARGET_CFLAGS_LD:=-Wl,-I/usr/lib/freetz/ld-uClibc.so.1
+```
+
+**Key Points:**
+- GCC toolchain specs file may reference ABI0 (`ld-uClibc.so.0`)
+- Freetz **overrides** at runtime using `-Wl,-I` flag
+- Final binaries use ABI1 linker (`ld-uClibc.so.1`)
+- This override happens during compilation, not installation
+
+### Verification on a device
+
+You can verify the dynamic linker on a running device via SSH:
+
+```bash
+# Check Freetz binary
+$ readelf -l /usr/bin/php | grep interpreter
+  [Requesting program interpreter: /usr/lib/freetz/ld-uClibc.so.1]
+
+# Check library dependencies
+$ ldd /usr/bin/php
+	libc.so.0 => /usr/lib/freetz/libc.so.0
+	ld-uClibc.so.1 => /usr/lib/freetz/ld-uClibc.so.1
+```
+
+---
+
+## Library Externalization
+
+### What is Externalization?
+
+Library externalization moves library files from internal flash memory to external storage (USB stick, SD card) to save flash space. This is implemented through:
+1. **Moving files**: Real library files → `/mod/external/usr/lib/freetz/`
+2. **Creating symlinks**: Original locations → external storage
+
+### Directory Structure
+
+#### Before Externalization
+```
+/usr/lib/freetz/
+├── libiconv.so.2.7.0    # Real file in flash (1.2 MB)
+├── libiconv.so.2        # Symlink → libiconv.so.2.7.0
+└── libiconv.so          # Symlink → libiconv.so.2
+```
+
+#### After Externalization
+```
+# External storage (real files)
+/mod/external/usr/lib/freetz/
+├── libiconv.so.2.7.0    # Real file (1.2 MB)
+├── libiconv.so.2        # Symlink → libiconv.so.2.7.0
+└── libiconv.so          # Symlink → libiconv.so.2
+
+# Flash memory (symlinks)
+/usr/lib/freetz/
+├── libiconv.so.2.7.0    # Symlink → /mod/external/usr/lib/freetz/libiconv.so.2.7.0
+├── libiconv.so.2        # Symlink → /mod/external/usr/lib/freetz/libiconv.so.2
+└── libiconv.so          # Symlink → /mod/external/usr/lib/freetz/libiconv.so
+```
+
+**Result**: Flash memory savings = library size (in this case, 1.2 MB)
+
+### Externalization Paths
+
+Libraries externalize to directories matching their original location:
+
+| Original Location | External Storage Location |
+|-------------------|---------------------------|
+| `/usr/lib/` | `/mod/external/usr/lib/` |
+| `/usr/lib/freetz/` | `/mod/external/usr/lib/freetz/` |
+
+**Important**: Libraries in `/usr/lib/` externalize to `/mod/external/usr/lib/`, while libraries in `/usr/lib/freetz/` externalize to `/mod/external/usr/lib/freetz/`.
+
+### Boot Order and External Dependencies
+
+**Critical Issue**: External storage is mounted **after** core services start.
+
+#### Boot Sequence
+```
+1. Mount filesystems (flash, tmpfs)
+2. Start core services (e.g., Dropbear SSH server)
+   ├─ Dropbear reads libraries from /usr/lib/freetz/
+   └─ External storage NOT YET MOUNTED
+3. Mount external storage (/mod/external)
+4. Start external services (from /mod/etc/external.pkg)
+```
+
+**Problem Example**: If `libz.so.1` (required by Dropbear) is externalized:
+- Dropbear tries to start at step 2
+- `libz.so.1` is not yet available (external storage not mounted)
+- Dropbear **fails with segmentation fault**
+
+#### Solution: external.pkg
+
+Services depending on externalized libraries must be listed in `/mod/etc/external.pkg`:
+
+```bash
+# /mod/etc/external.pkg
+dropbear
+sshd
+```
+
+Services listed in `external.pkg`:
+- Are **NOT started** at step 2
+- Are started at step 4 (after external storage is mounted)
+- Can safely use externalized libraries
+
+**Example Configuration**:
+```bash
+# If you externalize libz, add Dropbear to external.pkg
+ssh root@192.168.178.1
+echo "dropbear" >> /mod/etc/external.pkg
+```
+
+### Configuring Externalization
+
+Externalization is configured in `make menuconfig`:
+
+```
+Advanced options → External → [package name]
+```
+
+Example for PHP:
+```
+Advanced options → External → php → PHP dependency libraries
+```
+
+---
+
+## Best Practices for Package Developers
+
+### 1. Choosing Library Location
+
+**Decision Flow:**
+```
+Does AVM firmware have this library?
+├─ NO → Use /usr/lib/
+│         Example: libcurl, libssl, libsqlite
+└─ YES → Does version conflict exist?
+		  ├─ NO → Can use /usr/lib/
+		  └─ YES → MUST use /usr/lib/freetz/
+				   Example: libz, libiconv
+```
+
+### 2. Package Configuration
+
+#### For packages using `/usr/lib/` (no conflicts)
+```makefile
+$(call PKG_INIT_BIN, 1.2.3)
+$(PKG)_DEPENDS_ON += openssl
+
+# Libraries installed to /usr/lib/ automatically
+```
+
+#### For packages using `/usr/lib/freetz/` (with conflicts)
+```makefile
+$(call PKG_INIT_BIN, 1.2.3)
+$(PKG)_DEPENDS_ON += zlib
+
+# Ensure FREETZ_SEPARATE_AVM_UCLIBC is enabled
+# Libraries installed to /usr/lib/freetz/
+```
+
+### 3. Library Dependencies
+
+When adding library dependencies, use `select` statements in `Config.in`:
+
+```kconfig
+config FREETZ_PACKAGE_MYPACKAGE
+	bool "mypackage"
+	select FREETZ_LIB_libz         # Select library
+	select FREETZ_LIB_libiconv     # Select library
+	default n
+	help
+		My package description.
+```
+
+### 4. RPATH Configuration
+
+Most packages inherit RPATH automatically from Freetz build system. If manual configuration is needed:
+
+```makefile
+# RPATH is automatically set by TARGET_CFLAGS_LD
+# For special cases, use:
+$(PKG)_LDFLAGS := -Wl,-rpath,$(FREETZ_LIBRARY_DIR)
+```
+
+---
+
+## External Configuration Guidelines
+
+### Creating external.in Files
+
+Library externalization is configured in `external.in` files:
+
+```
+make/libs/LIBRARY_NAME/external.in      # For individual libraries
+make/pkgs/PACKAGE_NAME/external.in      # For package libraries
+```
+
+### Alphabetical Ordering
+
+**Important**: List libraries in **alphabetical order** in `external.in` files for:
+- Easier maintenance
+- Better readability
+- Consistent structure across packages
+
+**Example: PHP library externalization** (`make/pkgs/php/external.in`)
+
+```kconfig
+config EXTERNAL_FREETZ_PACKAGE_PHP
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_PHP
+	bool "php (binaries only)"
+	default n
+	help
+		Externalizes PHP binaries only (php, php-cgi).
+		Libraries remain in firmware for faster boot.
+
+menu "PHP dependency libraries"
+	depends on EXTERNAL_FREETZ_PACKAGE_PHP
+
+config EXTERNAL_FREETZ_PACKAGE_PHP_LIBS
+	bool "Externalize all PHP dependency libraries"
+	default n
+	select EXTERNAL_FREETZ_LIB_libgcc_s      if FREETZ_LIB_libgcc_s
+	select EXTERNAL_FREETZ_LIB_libiconv      if FREETZ_LIB_libiconv
+	select EXTERNAL_FREETZ_LIB_libintl       if FREETZ_LIB_libintl
+	select EXTERNAL_FREETZ_LIB_libonig       if FREETZ_LIB_libonig
+	select EXTERNAL_FREETZ_LIB_libpcre2      if FREETZ_LIB_libpcre2
+	select EXTERNAL_FREETZ_LIB_libstdcxx     if FREETZ_LIB_libstdcxx
+	select EXTERNAL_FREETZ_LIB_libxml2       if FREETZ_LIB_libxml2
+	select EXTERNAL_FREETZ_LIB_libz          if FREETZ_LIB_libz
+	help
+		Externalizes all PHP dependency libraries.
+		Saves ~4 MB flash but requires external storage.
+
+if !EXTERNAL_FREETZ_PACKAGE_PHP_LIBS
+	# Listed alphabetically
+	config EXTERNAL_FREETZ_LIB_libgcc_s
+		depends on FREETZ_LIB_libgcc_s
+		bool "libgcc_s (~112 KB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libiconv
+		depends on FREETZ_LIB_libiconv
+		bool "libiconv (~1.2 MB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libintl
+		depends on FREETZ_LIB_libintl
+		bool "libintl (~110 KB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libonig
+		depends on FREETZ_LIB_libonig
+		bool "libonig (~600 KB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libpcre2
+		depends on FREETZ_LIB_libpcre2
+		bool "libpcre2 (~600 KB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libstdcxx
+		depends on FREETZ_LIB_libstdcxx
+		bool "libstdc++ (~2.7 MB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libxml2
+		depends on FREETZ_LIB_libxml2
+		bool "libxml2 (~1.5 MB)"
+		default n
+	
+	config EXTERNAL_FREETZ_LIB_libz
+		depends on FREETZ_LIB_libz
+		bool "libz (~80 KB)"
+		default n
+		help
+			WARNING: Dropbear SSH requires libz at boot time.
+			If externalized, add dropbear to /mod/etc/external.pkg
+endif
+
+endmenu
+```
+
+### Key Configuration Principles
+
+1. **Default to NOT externalize** (`default n`)
+   - Libraries in firmware provide faster boot
+   - Avoids boot dependency issues
+   - External storage may not always be available
+
+2. **Provide bulk option** for convenience
+   - One option to externalize all libraries
+   - Individual options when bulk is disabled
+
+3. **Include size information** in descriptions
+   - Helps users make informed decisions
+   - Format: `"library_name (~size)"`
+
+4. **Document boot dependencies**
+   - Warn about services requiring libraries at boot
+   - Example: Dropbear needs libz
+
+5. **Alphabetical ordering**
+   - Both in `select` statements
+   - And in individual config blocks
+
+### Creating external.files
+
+Companion file to `external.in` that lists actual files to externalize:
+
+```bash
+# make/libs/iconv/external.files
+[ "$EXTERNAL_FREETZ_LIB_libiconv" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libiconv.so.2.7.0"
+```
+
+**Important**:
+- Use `${FREETZ_LIBRARY_DIR}` variable (expands to `/usr/lib/freetz/` or `/usr/lib/`)
+- List **versioned files only** (symlinks created automatically)
+- Match version exactly (e.g., `2.7.0` not `2.5.0`)
+
+---
+
+## Summary
+
+### Key Takeaways
+
+1. **AVM uses MUSL** in `/lib/`, **Freetz uses uClibc** in `/usr/lib/freetz/`
+2. **Complete separation** via RPATH ensures zero conflicts
+3. **Use `/usr/lib/`** for new libraries, **use `/usr/lib/freetz/`** for conflicting libraries
+4. **Never duplicate** a library in both `/usr/lib/` and `/usr/lib/freetz/`
+5. **Externalization saves flash** but requires careful boot dependency management
+6. **Alphabetize external.in** configurations for maintainability
+7. **Document boot dependencies** (e.g., Dropbear + libz)
+
+### Quick Reference
+
+| Scenario | Library Location | Example |
+|----------|-----------------|---------|
+| New library (no AVM conflict) | `/usr/lib/` | libssl, libcurl |
+| Conflicting library | `/usr/lib/freetz/` | libz, libc, libgcc_s |
+| Externalized `/usr/lib/` library | `/mod/external/usr/lib/` | libssl externalized |
+| Externalized `/usr/lib/freetz/` library | `/mod/external/usr/lib/freetz/` | libz externalized |
+
+### Configuration Quick Start
+
+```bash
+# Enable library separation
+make menuconfig
+  → Advanced options
+	→ Toolchain options
+	  → [x] Separate uClibc
+
+# Configure externalization
+make menuconfig
+  → Advanced options
+	→ External
+	  → [package/library name]
+```
+
+---
+
+## Additional Resources
+
+- **External Documentation**: `docs/wiki/20_Advanced/external.md`
+- **Package Development**: `docs/make/CODING_GUIDE_gcc-python3.md`
+- **Build System**: `make/pkgs/Makefile.in`
+- **Example Configurations**: `make/pkgs/php/external.in`, `make/libs/*/external.in`
+
+-----
+
+# Library Version Selection in Freetz-NG
+
+## Overview
+
+Freetz-NG supports **version selection** for certain libraries to maintain backward compatibility with older devices and applications. Users can choose between:
+
+- **ABANDON version**: Older, stable version (usually for older uClibc toolchains and older devices)
+- **CURRENT version**: Latest, updated version (recommended for newer devices)
+
+This mechanism allows building firmware that remains compatible with legacy applications compiled against older library versions.
+
+## When to Use Version Selection
+
+### Use ABANDON version when:
+- Building for older devices with limited resources
+- Need compatibility with existing binaries compiled against older library versions
+- Using older uClibc toolchains (0.9.28 or 0.9.29)
+- Targeting FRITZ!Box devices with old kernels (kernel 2.x)
+
+### Use CURRENT version when:
+- Building for newer devices
+- Want latest features and security fixes
+- Using modern toolchains
+- No legacy compatibility requirements
+
+## Libraries Supporting Version Selection
+
+### 1. **libiconv / iconv**
+
+**Configuration**: `FREETZ_LIB_libiconv_WITH_VERSION_ABANDON`
+
+| Version | Package | Library Version | Use Case |
+|---------|---------|----------------|----------|
+| ABANDON | 1.13.1  | 2.5.0          | uClibc 0.9.28/0.9.29, older devices |
+| CURRENT | 1.18    | 2.7.0          | Modern toolchains, newer devices |
+
+**Files Modified**:
+- `make/libs/libiconv/Config.in` - Version selection menu
+- `make/libs/libiconv/libiconv.mk` - Makefile with version logic
+- `make/pkgs/iconv/Config.in` - Package version selection
+- `make/pkgs/iconv/iconv.mk` - Package makefile with version logic
+
+**What Changed**:
+- Package version: 1.13.1 → 1.18
+- Library version: 2.5.0 → 2.7.0
+
+**Impact**: Applications linked against `libiconv.so.2.5.0` will fail if only version 2.7.0 is present. Use ABANDON to maintain compatibility.
+
+---
+
+### 2. **libsqlite3 / sqlite**
+
+**Configuration**: `FREETZ_LIB_libsqlite3_WITH_VERSION_ABANDON`
+
+| Version | Package | Library Version | Use Case |
+|---------|---------|----------------|----------|
+| ABANDON | 3.40.1  | 0.8.6          | uClibc 0.9.28/0.9.29, older applications |
+| CURRENT | 3.50.4  | 3.50.4         | Modern systems |
+
+**Files Modified**:
+- `make/pkgs/sqlite/Config.in` - Version selection menu (already existed)
+- `make/pkgs/sqlite/sqlite.mk` - **FIXED** to properly handle both LIB_VERSIONs
+
+**What Changed**:
+- Package version: 3.47.1 → 3.50.4 (CURRENT only)
+- Library version: 0.8.6 → 3.50.4 **(CRITICAL CHANGE)**
+
+**Critical Fix Applied**:
+Previous implementation had a bug where both ABANDON and CURRENT versions used the same `LIB_VERSION`. Fixed by implementing:
+```makefile
+$(PKG)_LIB_VERSION_ABANDON:=0.8.6
+$(PKG)_LIB_VERSION_CURRENT:=3.50.4
+$(PKG)_LIB_VERSION:=$($(PKG)_LIB_VERSION_$(if $(FREETZ_LIB_libsqlite3_WITH_VERSION_ABANDON),ABANDON,CURRENT))
+```
+
+**Impact**: Applications linked against `libsqlite3.so.0.8.6` would fail with new version. ABANDON version now correctly provides the old library version.
+
+---
+
+### 3. **libreadline / readline**
+
+**Configuration**: `FREETZ_LIB_libreadline_VERSION_ABANDON`
+
+| Version | Library Version | Use Case |
+|---------|----------------|----------|
+| ABANDON | 6.3  | Kernel 2.x devices only |
+| CURRENT | 8.3  | Modern kernels |
+
+**Constraint**: ABANDON version only available on `FREETZ_KERNEL_VERSION_2_MAX`
+
+---
+
+### 4. **libusb-1.0 / libusb1**
+
+**Configuration**: `FREETZ_LIB_libusb_1_WITH_ABANDON`
+
+| Version | Library Version | Use Case |
+|---------|----------------|----------|
+| ABANDON | 1.0.23 | GCC 4.x or Kernel 2.x |
+| CURRENT | 1.0.29 | Modern toolchains |
+
+**Constraint**: ABANDON version auto-selected for `FREETZ_TARGET_GCC_4_MAX || FREETZ_KERNEL_VERSION_2_MAX`
+
+---
+
+### 5. **liblua / lua**
+
+**Configuration**: `FREETZ_LIB_liblua_WITH_VERSION_ABANDON`
+
+| Version | Use Case |
+|---------|----------|
+| ABANDON | 5.1.5 | Legacy compatibility |
+| CURRENT | 5.4.8 | Modern Lua features |
+
+---
+
+## How Version Selection Works
+
+### Makefile Implementation Pattern
+
+```makefile
+# Define package version based on config
+$(call PKG_INIT_BIN, $(if $(FREETZ_LIB_libfoo_WITH_VERSION_ABANDON),OLD_VERSION,NEW_VERSION))
+
+# Define library versions
+$(PKG)_LIB_VERSION_ABANDON:=OLD_LIB_VERSION
+$(PKG)_LIB_VERSION_CURRENT:=NEW_LIB_VERSION
+$(PKG)_LIB_VERSION:=$($(PKG)_LIB_VERSION_$(if $(FREETZ_LIB_libfoo_WITH_VERSION_ABANDON),ABANDON,CURRENT))
+
+# Define source hashes
+$(PKG)_HASH_ABANDON:=hash_of_old_version
+$(PKG)_HASH_CURRENT:=hash_of_new_version
+$(PKG)_HASH:=$($(PKG)_HASH_$(if $(FREETZ_LIB_libfoo_WITH_VERSION_ABANDON),ABANDON,CURRENT))
+
+# Optional: Different download sites
+$(PKG)_SITE_ABANDON:=old_mirror_url
+$(PKG)_SITE_CURRENT:=new_mirror_url
+$(PKG)_SITE:=$($(PKG)_SITE_$(if $(FREETZ_LIB_libfoo_WITH_VERSION_ABANDON),ABANDON,CURRENT))
+
+# Conditional patches
+$(PKG)_CONDITIONAL_PATCHES+=$(if $(FREETZ_LIB_libfoo_WITH_VERSION_ABANDON),abandon,current)
+```
+
+### Config.in Pattern
+
+```kconfig
+config FREETZ_LIB_libfoo
+	bool "libfoo (libfoo.so)"
+	default n
+	help
+		Library description.
+
+if FREETZ_LIB_libfoo
+
+	choice
+		prompt "Version"
+			default FREETZ_LIB_libfoo_WITH_VERSION_CURRENT
+
+		config FREETZ_LIB_libfoo_WITH_VERSION_ABANDON
+			bool "OLD_VERSION"
+			depends on (constraints_for_old_version)
+
+		config FREETZ_LIB_libfoo_WITH_VERSION_CURRENT
+			bool "NEW_VERSION"
+			depends on !(constraints_for_old_version)
+
+	endchoice
+
+endif # FREETZ_LIB_libfoo
+```
+
+## Library Versioning in Detail
+
+### Understanding Shared Library Versioning
+
+Shared libraries use **SONAME** versioning:
+
+```
+libfoo.so          → symlink to libfoo.so.X (used for linking)
+libfoo.so.X        → symlink to libfoo.so.X.Y.Z (ABI compatibility)
+libfoo.so.X.Y.Z    → actual library file (full version)
+```
+
+**Example for libiconv**:
+```bash
+# ABANDON version (2.5.0):
+libiconv.so → libiconv.so.2 → libiconv.so.2.5.0
+
+# CURRENT version (2.7.0):
+libiconv.so → libiconv.so.2 → libiconv.so.2.7.0
+```
+
+**Key Point**: Both versions share the same **major version** (2), ensuring ABI compatibility. The minor/patch versions differ.
+
+### Why This Matters
+
+Applications are linked against the **full version** at build time:
+```
+ldd /usr/bin/some_app
+	libiconv.so.2.5.0 => /usr/lib/freetz/libiconv.so.2.5.0
+```
+
+If firmware provides only `libiconv.so.2.7.0`, the application will fail:
+```
+error while loading shared libraries: libiconv.so.2.5.0: cannot open shared object file
+```
+
+**Solution**: Use ABANDON version to provide the exact library version the application expects.
+
+## Configuration in menuconfig
+
+```
+Packages  --->
+	Libraries  --->
+		[*] Iconv (libiconv.so)  --->
+			Version (2.7.0 (from libiconv 1.18))  --->
+				( ) 2.5.0 (from libiconv 1.13.1)   # ABANDON
+				(X) 2.7.0 (from libiconv 1.18)     # CURRENT
+
+		[*] libsqlite (libsqlite3.so)  --->
+			Version (3.50.4)  --->
+				( ) 3.40.1   # ABANDON
+				(X) 3.50.4   # CURRENT
+```
+
+## Automatic Version Selection
+
+Some libraries **automatically select ABANDON version** based on toolchain constraints:
+
+### libsqlite3
+- **Auto-ABANDON**: When `FREETZ_TARGET_UCLIBC_0_9_28` or `FREETZ_TARGET_UCLIBC_0_9_29`
+- **Reason**: Older uClibc versions need older sqlite3
+
+### libiconv
+- **Auto-ABANDON**: When `FREETZ_TARGET_UCLIBC_0_9_28` or `FREETZ_TARGET_UCLIBC_0_9_29`
+- **Reason**: Older toolchains require older iconv
+
+### libreadline
+- **Auto-ABANDON**: When `FREETZ_KERNEL_VERSION_2_MAX`
+- **Reason**: Old kernels only support readline 6.3
+
+### libusb1
+- **Auto-ABANDON**: When `FREETZ_TARGET_GCC_4_MAX` or `FREETZ_KERNEL_VERSION_2_MAX`
+- **Reason**: Old toolchains/kernels need libusb 1.0.23
+
+## Migration Guide
+
+### Migrating from Single Version to Multi-Version
+
+If you previously built firmware with the old version and now need to update:
+
+1. **Check existing applications**:
+   ```bash
+   ssh root@192.168.178.1
+   find /usr/lib/freetz -name "*.so*" -exec ldd {} \; | grep -i "libiconv\|sqlite"
+   ```
+
+2. **Identify required library versions**:
+   - If apps need `libiconv.so.2.5.0` → use ABANDON
+   - If apps need `libsqlite3.so.0.8.6` → use ABANDON
+
+3. **Configure menuconfig**:
+   - Select ABANDON versions for libraries used by existing apps
+   - Select CURRENT versions for new builds without legacy requirements
+
+4. **Rebuild firmware**:
+   ```bash
+   make dirclean
+   make menuconfig  # Select appropriate versions
+   make
+   ```
+
+### Updating Existing Devices
+
+**Scenario**: Device has old applications expecting old library versions
+
+**Solution**:
+1. Build new firmware with **ABANDON versions** selected
+2. Flash firmware - old apps continue working
+3. Gradually update applications to newer versions
+4. Once all apps updated, rebuild with **CURRENT versions**
+
+## Implementation Changes Summary
+
+### Changes Made in This Branch
+
+| Library | Files Modified | What Changed |
+|---------|---------------|--------------|
+| **iconv/libiconv** | `make/pkgs/iconv/Config.in`<br>`make/pkgs/iconv/iconv.mk`<br>`make/libs/libiconv/Config.in`<br>`make/libs/libiconv/libiconv.mk` | Added version selection: 1.13.1 (ABANDON) vs 1.18 (CURRENT)<br>Library versions: 2.5.0 vs 2.7.0 |
+| **sqlite3** | `make/pkgs/sqlite/sqlite.mk` | **FIXED** LIB_VERSION to differentiate: 0.8.6 (ABANDON) vs 3.50.4 (CURRENT) |
+
+### Total Changes
+- **5 files modified**
+- **57 lines added**, 9 lines removed
+- **2 libraries** now properly support version selection
+
+## Best Practices
+
+1. **Default to CURRENT**: Unless you have specific compatibility requirements, use CURRENT versions for latest features and security fixes.
+
+2. **Test Both Versions**: When developing packages, test with both ABANDON and CURRENT to ensure compatibility.
+
+3. **Document Dependencies**: If your package requires specific library versions, document in `Config.in` help text.
+
+4. **Use Conditional Patches**: Store version-specific patches in separate directories:
+   ```
+   make/pkgs/foo/patches/
+   ├── abandon/
+   │   └── 100-old-fix.patch
+   └── current/
+	   └── 100-new-fix.patch
+   ```
+
+5. **Verify ABI Compatibility**: When adding new library versions, ensure the major version number is appropriate for ABI compatibility.
+
+## Troubleshooting
+
+### Build Fails with "Hash Mismatch"
+
+**Cause**: Wrong hash for selected version
+
+**Solution**: Verify `$(PKG)_HASH_ABANDON` and `$(PKG)_HASH_CURRENT` in `.mk` file
+
+### Application Fails with "cannot open shared object file"
+
+**Cause**: Application expects different library version
+
+**Solution**: 
+1. Check which version app needs: `ldd /path/to/app`
+2. Select matching ABANDON/CURRENT version in menuconfig
+3. Rebuild firmware
+
+### Both Versions Selected in menuconfig
+
+**Cause**: Configuration conflict
+
+**Solution**: Run `make menuconfig` and ensure only ONE version is selected per library
+
+## Future Work
+
+### Additional Libraries to Consider
+
+Other libraries that might benefit from version selection:
+
+- **libcurl**: Often has compatibility issues between versions
+- **openssl**: Critical for security, but major version changes break compatibility
+- **ncurses**: Terminal library with ABI changes between versions
+- **zlib**: Compression library sometimes has version-specific behavior
+
+### Automated Testing
+
+Consider implementing automated tests to verify:
+- Both versions build successfully
+- Correct library versions are installed
+- No symlink conflicts
+- ABI compatibility is maintained
+
+## References
+
+- [Shared Library Versioning](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html)
+- [ABI Compatibility](https://www.akkadia.org/drepper/dsohowto.pdf)
+- [GNU Libtool Versioning](https://www.gnu.org/software/libtool/manual/html_node/Libtool-versioning.html)
