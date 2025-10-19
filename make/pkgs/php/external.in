@@ -51,6 +51,7 @@ config EXTERNAL_FREETZ_PACKAGE_PHP_LIBS
 	select EXTERNAL_FREETZ_LIB_libonig if FREETZ_LIB_libonig
 	select EXTERNAL_FREETZ_LIB_libintl if FREETZ_LIB_libintl
 	select EXTERNAL_FREETZ_LIB_libz if FREETZ_LIB_libz
+	select EXTERNAL_FREETZ_LIB_libbz2 if FREETZ_LIB_libbz2
 	select EXTERNAL_FREETZ_LIB_libiconv if FREETZ_LIB_libiconv
 	help
 		Externalize all PHP dependency libraries to save flash space.
@@ -105,6 +106,14 @@ config EXTERNAL_FREETZ_LIB_libz
 		
 		NOTE: Required by dropbear SSH. If externalized, add
 		dropbear to /mod/etc/external.pkg to prevent boot issues.
+
+config EXTERNAL_FREETZ_LIB_libbz2
+	depends on FREETZ_LIB_libbz2
+	bool "libbz2 (~60 KB)"
+	default n
+	help
+		Bzip2 compression library.
+		externals: ${FREETZ_LIBRARY_DIR}/libbz2.so.1.0.8
 
 config EXTERNAL_FREETZ_LIB_libiconv
 	depends on FREETZ_LIB_libiconv
