@@ -1086,7 +1086,7 @@ def firmware_update_process(host, user, password, image_file,
         cprint("\n" + "="*60, 'bold')
         cprint("REBOOTING FRITZ!Box", 'bold', 'reboot')
         cprint("="*60 + "\n", 'bold')
-        reboot_cmd = "(sleep 1; reboot -d 2 -f) >/dev/null 2>&1 < /dev/null & exit"
+        reboot_cmd = "(sync; sleep 1; sync; reboot -d 2 -f) >/dev/null 2>&1 < /dev/null & exit"
         ssh_run(host, user, password, reboot_cmd, capture_output=False, debug=debug)
         return wait_router_boot(host, password, user, debug=debug)
     elif exit_code == 1 and no_reboot:
@@ -1618,7 +1618,7 @@ Examples:
         if args.dry_run:
             cwarning("[DRY-RUN] Skipping reboot command")
         else:
-            reboot_cmd = "(sleep 1; reboot -d 2 -f) >/dev/null 2>&1 < /dev/null & exit"
+            reboot_cmd = "(sync; sleep 1; sync; reboot -d 2 -f) >/dev/null 2>&1 < /dev/null & exit"
             ssh_run(args.host, args.user, args.password, reboot_cmd, capture_output=False, debug=args.debug)
             if not wait_router_boot(args.host, args.password, args.user, debug=args.debug):
                 cerror("Router did not come back online in time after reboot!")
