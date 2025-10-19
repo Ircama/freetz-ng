@@ -10,15 +10,15 @@ config FREETZ_LIB_libxml2
 
 if FREETZ_LIB_libxml2
 
-config FREETZ_LIB_libxml2_WITH_FULL_FEATURES
-	bool "Build with full feature set"
+config FREETZ_LIB_libxml2_WITH_EXTENDED_FEATURES
+	bool "Build with extended features (non-minimal)"
 	default n
 	help
-		Build libxml2 with all features enabled (--with-minimum=no).
+		Build libxml2 with extended XML features (--with-minimum=no).
 		
-		This includes additional XML features and APIs that may not be
-		needed for basic XML parsing but are required by some applications
-		like PHP for full functionality.
+		This enables additional XML features and APIs beyond the minimal
+		build, but does not include HTML support (see separate option below).
+		Required by some applications like PHP for full functionality.
 		
 		Size impact: Adds approximately 200-300 KB to libxml2.so
 		
