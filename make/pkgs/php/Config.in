@@ -68,6 +68,8 @@ config FREETZ_PACKAGE_PHP_WITH_CURL
 config FREETZ_PACKAGE_PHP_WITH_DOM
 	bool "DOM support (libxml2.so.16)"
 	depends on FREETZ_PACKAGE_PHP_WITH_LIBXML
+	select FREETZ_LIB_libxml2_WITH_TREE if !FREETZ_PACKAGE_PHP_STATIC
+	select FREETZ_LIB_libxml2_WITH_RELAXNG if !FREETZ_PACKAGE_PHP_STATIC
 	default n
 	help
 		Enables Document Object Model for XML/HTML manipulation (requires LIBXML)
