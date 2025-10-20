@@ -219,6 +219,7 @@ $(PKG)_CONFIGURE_ENV+=ac_cv_func_utime_null=no
 $(PKG)_CONFIGURE_ENV+=ac_cv_time_r_type=POSIX
 $(PKG)_CONFIGURE_ENV+=ac_cv_what_readdir_r=POSIX
 $(PKG)_CONFIGURE_ENV+=ac_cv_write_stdout=yes
+$(PKG)_CONFIGURE_ENV+=php_cv_func_copy_file_range=no
 $(PKG)_CONFIGURE_ENV+=ac_cv_lib_gd_gdImageCreateFromXpm=no
 $(PKG)_CONFIGURE_ENV+=ac_cv_lib_png_png_write_image=yes
 $(PKG)_CONFIGURE_ENV+=cookie_io_functions_use_off64_t=yes
