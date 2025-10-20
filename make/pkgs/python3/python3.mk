@@ -1,14 +1,13 @@
-$(call PKG_INIT_BIN, 3.14.0)
+$(call PKG_INIT_BIN, 3.15.0a1)
 $(PKG)_MAJOR_VERSION:=$(call GET_MAJOR_VERSION,$($(PKG)_VERSION))
 $(PKG)_SOURCE:=Python-$($(PKG)_VERSION).tar.xz
-$(PKG)_HASH:=2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9
-$(PKG)_SITE:=https://www.python.org/ftp/python/$($(PKG)_VERSION)
+$(PKG)_HASH:=3194939d488eeaeefdcf990d35542d9ad1ce788789c4e2305a2060eb7058e5a4
+$(PKG)_SITE:=https://www.python.org/ftp/python/3.15.0
 ### WEBSITE:=https://www.python.org/
 ### MANPAGE:=https://docs.python.org/3/
 ### CHANGES:=https://www.python.org/downloads/
 ### CVSREPO:=https://github.com/python/cpython
-
-$(PKG)_DEPENDS_ON+=patchelf-target-host
+### SUPPORT:=Ircama
 
 $(PKG)_LOCAL_INSTALL_DIR:=$($(PKG)_DIR)/_install
 
@@ -36,6 +35,7 @@ $(PKG)_UNNECESSARY_DIRS := $(if $(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC),$(call ne
 $(PKG)_UNNECESSARY_DIRS += $(call newline2space,$(foreach mod,$($(PKG)_MODULES_EXCLUDED),$(PyMod/$(mod)/dirs)))
 
 $(PKG)_DEPENDS_ON += python3-host expat libffi zlib
+$(PKG)_DEPENDS_ON += $(if $(FREETZ_SEPARATE_AVM_UCLIBC),patchelf-target-host)
 $(PKG)_DEPENDS_ON += $(if $(FREETZ_PACKAGE_PYTHON3_MOD_BSDDB),db)
 $(PKG)_DEPENDS_ON += $(if $(or $(FREETZ_PACKAGE_PYTHON3_MOD_CURSES),$(FREETZ_PACKAGE_PYTHON3_MOD_READLINE)),ncurses)
 $(PKG)_DEPENDS_ON += $(if $(FREETZ_PACKAGE_PYTHON3_MOD_READLINE),readline)
@@ -95,21 +95,21 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 		\
 		find usr/lib/python$(PYTHON3_MAJOR_VERSION)/ -name "*.pyo" -delete; \
 		\
-		[ "$(FREETZ_SEPARATE_AVM_UCLIBC)" != "y" ] || $(PATCHELF_TARGET) --set-interpreter /usr/lib/freetz/ld-uClibc.so.1 usr/bin/python$(PYTHON3_MAJOR_VERSION); \
-		\
 		$(TARGET_STRIP) \
 			usr/bin/python$(PYTHON3_MAJOR_VERSION) \
 			$(if $(FREETZ_PACKAGE_PYTHON3_STATIC),,usr/lib/libpython$(PYTHON3_MAJOR_VERSION).so.1.0) \
 			usr/lib/python$(PYTHON3_MAJOR_VERSION)/lib-dynload/*.so; \
 		\
 		mv usr/bin/python$(PYTHON3_MAJOR_VERSION) usr/bin/python$(PYTHON3_MAJOR_VERSION).bin; \
+		\
+		[ "$(FREETZ_SEPARATE_AVM_UCLIBC)" != "y" ] || $(FREETZ_BASE_DIR)/$(TOOLS_DIR)/patchelf-target --set-interpreter $(FREETZ_LIBRARY_DIR)/ld-uClibc.so.1 usr/bin/python$(PYTHON3_MAJOR_VERSION).bin; \
 	)
 	touch $@
 
 $($(PKG)_STAGING_BINARY): $($(PKG)_DIR)/.installed
 	@$(call COPY_USING_TAR,$(PYTHON3_LOCAL_INSTALL_DIR)/usr,$(TARGET_TOOLCHAIN_STAGING_DIR)/usr,--exclude='*.pyc' .) \
 	$(PKG_FIX_LIBTOOL_LA) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/python-$(PYTHON3_MAJOR_VERSION).pc; \
-	$(RM) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/python$(PYTHON3_MAJOR_VERSION).bin ; \
+	ln -sf python$(PYTHON3_MAJOR_VERSION).bin $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/python$(PYTHON3_MAJOR_VERSION) ; \
 	touch -c $@
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.installed
@@ -141,11 +141,18 @@ $($(PKG)_TARGET_DIR)/excluded-module-files.lst: $(TOPDIR)/.config $(PACKAGES_DIR
 $($(PKG)_TARGET_DIR)/excluded-module-files-zip.lst: $($(PKG)_TARGET_DIR)/excluded-module-files.lst
 	@cat $< | sed -r 's,usr/lib/python$(PYTHON3_MAJOR_VERSION)/,,g' > $@
 
+# Python 3.15 zip importer fix: copy .pyc files from __pycache__ to package level
+# This ensures compatibility with Python 3.15's zip importer which expects
+# .pyc files to be available at both __pycache__ and package level
+
 $($(PKG)_ZIPPED_PYC_TARGET_DIR): $($(PKG)_TARGET_DIR)/excluded-module-files-zip.lst $($(PKG)_TARGET_BINARY)
 	@(cd $(dir $@)/python$(PYTHON3_MAJOR_VERSION); \
 		$(RM) ../$(notdir $@); \
 		$(if $(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC),zip -9qyR -x@$(FREETZ_BASE_DIR)/$(PYTHON3_TARGET_DIR)/excluded-module-files-zip.lst ../$(notdir $@) . "*.pyc";) \
-	); \
+	)
+	$(if $(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC), \
+		$(FREETZ_BASE_DIR)/tools/fix-python315-zip.sh $(FREETZ_BASE_DIR)/$@; \
+	)
 	touch $@
 
 $($(PKG)_TARGET_DIR)/.exclude-extra: $(TOPDIR)/.config $($(PKG)_TARGET_DIR)/py.lst $($(PKG)_TARGET_DIR)/pyc.lst $($(PKG)_TARGET_DIR)/excluded-module-files.lst
@@ -182,4 +189,5 @@ $(pkg)-uninstall:
 		$(PYTHON3_ZIPPED_PYC_TARGET_DIR) \
 		$(PYTHON3_DEST_DIR)/usr/include/python$(PYTHON3_MAJOR_VERSION)
 
+$(call PKG_ADD_LIB,libpython3)
 $(PKG_FINISH)
