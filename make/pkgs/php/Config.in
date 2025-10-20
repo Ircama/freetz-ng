@@ -61,6 +61,7 @@ config FREETZ_PACKAGE_PHP_WITH_CTYPE
 
 config FREETZ_PACKAGE_PHP_WITH_CURL
        bool "CURL support (libcurl.so.4)"
+       select FREETZ_LIB_libcurl if !FREETZ_PACKAGE_PHP_STATIC
        default n
        help
 	       Enables HTTP/HTTPS/FTP client functionality (libcurl.so.4)
