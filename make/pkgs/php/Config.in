@@ -184,6 +184,7 @@ config FREETZ_PACKAGE_PHP_WITH_PDO
 
 config FREETZ_PACKAGE_PHP_WITH_PDO_SQLITE
        bool "PDO SQLite support (libsqlite3.so.3)"
+       select FREETZ_LIB_libsqlite3 if !FREETZ_PACKAGE_PHP_STATIC
        default n
        help
 	       Enables SQLite database access via PDO (libsqlite3.so.3)
@@ -214,6 +215,7 @@ config FREETZ_PACKAGE_PHP_WITH_SOCKETS
 
 config FREETZ_PACKAGE_PHP_WITH_SQLITE3
        bool "SQLite3 support (libsqlite3.so.3)"
+       select FREETZ_LIB_libsqlite3 if !FREETZ_PACKAGE_PHP_STATIC
        default n
        help
 	       Enables SQLite3 database access (libsqlite3.so.3)
