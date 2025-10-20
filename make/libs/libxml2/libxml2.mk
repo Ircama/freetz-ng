@@ -1,7 +1,7 @@
-$(call PKG_INIT_LIB, 2.15.0)
-$(PKG)_LIB_VERSION:=16.1.0
+$(call PKG_INIT_LIB, 2.15.1)
+$(PKG)_LIB_VERSION:=16.1.1
 $(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.xz
-$(PKG)_HASH:=5abc766497c5b1d6d99231f662e30c99402a90d03b06c67b62d6c1179dedd561
+$(PKG)_HASH:=c008bac08fd5c7b4a87f7b8a71f283fa581d80d80ff8d2efd3b26224c39bc54c
 $(PKG)_SITE:=https://download.gnome.org/sources/libxml2/$(call GET_MAJOR_VERSION,$($(PKG)_VERSION))
 ### WEBSITE:=http://www.xmlsoft.org
 ### MANPAGE:=https://gitlab.gnome.org/GNOME/libxml2/-/wikis/home#html-documentation
@@ -15,6 +15,8 @@ $(PKG)_STAGING_BINARY:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/$($(PKG)_LIBNAME)
 $(PKG)_TARGET_BINARY:=$($(PKG)_TARGET_DIR)/$($(PKG)_LIBNAME)
 
 $(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libxml2_WITH_HTML
+$(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libxml2_WITH_TREE
+$(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libxml2_WITH_RELAXNG
 $(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libxml2_WITH_EXTENDED_FEATURES
 
 ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0_9_28)),y)
@@ -37,7 +39,7 @@ $(PKG)_CONFIGURE_OPTIONS += --with-threads=yes
 $(PKG)_CONFIGURE_OPTIONS += --with-zlib="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr"
 $(PKG)_CONFIGURE_OPTIONS += --with-readline=no
 
-$(PKG)_CONFIGURE_OPTIONS += --with-minimum=$(if $(FREETZ_LIB_libxml2_WITH_EXTENDED_FEATURES),no,yes)
+$(PKG)_CONFIGURE_OPTIONS += --with-minimum=yes
 $(PKG)_CONFIGURE_OPTIONS += --with-http=yes
 $(PKG)_CONFIGURE_OPTIONS += --with-c14n=yes
 $(PKG)_CONFIGURE_OPTIONS += --with-catalog=no
@@ -50,6 +52,8 @@ $(PKG)_CONFIGURE_OPTIONS += --with-push=yes		#PUSH parser interfaces
 $(PKG)_CONFIGURE_OPTIONS += --with-reader=yes		#xmlReader parsing interface
 $(PKG)_CONFIGURE_OPTIONS += --with-regexps=yes		#Regular Expressions support
 $(PKG)_CONFIGURE_OPTIONS += --with-sax1=yes		#old SAX1 interface
+$(PKG)_CONFIGURE_OPTIONS += --with-tree=$(if $(FREETZ_LIB_libxml2_WITH_TREE),yes,no)		#tree manipulation API (required by schemas)
+$(PKG)_CONFIGURE_OPTIONS += --with-relaxng=$(if $(FREETZ_LIB_libxml2_WITH_RELAXNG),yes,no)		#Relax-NG support (required by PHP)
 $(PKG)_CONFIGURE_OPTIONS += --with-schemas=yes		#Relax-NG and Schemas support
 $(PKG)_CONFIGURE_OPTIONS += --with-schematron=no	#Schematron support
 $(PKG)_CONFIGURE_OPTIONS += --with-valid=yes		#DTD validation support

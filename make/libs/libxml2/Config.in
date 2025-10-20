@@ -33,5 +33,41 @@ config FREETZ_LIB_libxml2_WITH_HTML
 		Adds html parsing capability to libxml2. This increases the size of
 		libxml2 by 120kB. Html parsing is required to build libxslt.
 
+config FREETZ_LIB_libxml2_WITH_TREE
+	bool "Build with tree manipulation API"
+	default n
+	help
+		Enables the tree manipulation API in libxml2 (--with-tree=yes).
+		This provides functions for creating, modifying, and traversing
+		XML document trees.
+		
+		Required by:
+		- XML Schema validation (--with-schemas)
+		- PHP DOM extension
+		- Applications that need to manipulate XML trees
+		
+		Size impact: Minimal (most code is already included in base build)
+		
+		Note: Automatically enabled by PHP when DOM support is requested.
+
+config FREETZ_LIB_libxml2_WITH_RELAXNG
+	bool "Build with Relax-NG support"
+	default n
+	help
+		Enables Relax-NG schema validation support (--with-relaxng=yes).
+		Relax-NG is an alternative to XML Schema for validating XML documents.
+		
+		Required by:
+		- PHP's DOMDocument::relaxNGValidate() methods
+		- Applications using Relax-NG validation
+		
+		Dependencies:
+		- Requires --with-tree=yes (tree manipulation API)
+		- Included in --with-schemas=yes (XML Schema support)
+		
+		Size impact: Adds approximately 50-80 KB to libxml2.so
+		
+		Note: Automatically enabled by PHP when DOM support is requested.
+
 endif # FREETZ_LIB_libxml2
 
