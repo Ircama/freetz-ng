@@ -1472,7 +1472,7 @@ Examples:
     
     cprint("-"*70 + "\n", 'dim')  # End of directory configuration
     
-    # Interactive service management
+    # Process firmware image options
     if args.image and not args.skip_firmware:
         cprint("\n" + "-"*70, 'dim')
         cinfo("Firmware Update Options:")
@@ -1508,7 +1508,7 @@ Examples:
                     args.stop_services = 'nostop_avm'
                     cwarning("Warning: Not stopping AVM services during firmware upgrade may cause issues!")
         
-        if not args.no_reboot and not args.reboot_at_the_end:
+        if not args.no_reboot and not args.reboot_at_the_end and not args.batch:
             args.no_reboot = not confirm("Reboot FRITZ!Box after firmware installation?", default=True)
         cprint("-"*70 + "\n", 'dim')
     
