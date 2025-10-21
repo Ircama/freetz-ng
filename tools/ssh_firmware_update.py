@@ -682,7 +682,7 @@ def read_device_config(host, user, password, debug=False, summary=False):
 
         # Step 3: Additional FRITZ!Box information
         cprint("")
-        cinfo("Step 3: Gathering additional current system information:")
+        cinfo("Step 3: Gathering additional current system information (/etc/freetz_info.cfg):")
 
     # Get Freetz data
     freetz_data = ssh_run(host, user, password, 
@@ -690,40 +690,92 @@ def read_device_config(host, user, password, debug=False, summary=False):
                             debug=debug, capture_output=True).strip()
 
     # Extract variables from freetz_data
-    freetz_info_boxtype = 'Unknown'
-    freetz_info_firmwareversion = 'Unknown'
-    freetz_info_version = 'Unknown'
-    freetz_info_makedate = 'Unknown'
-    freetz_info_image_name = 'Unknown'
+    config.freetz_info_boxtype = 'Unknown'
+    config.freetz_info_firmwareversion = 'Unknown'
+    config.freetz_info_version = 'Unknown'
+    config.freetz_info_makedate = 'Unknown'
+    config.freetz_info_image_name = 'Unknown'
     if freetz_data != 'Unknown':
         def extract_var(varname):
             match = re.search(rf"export {varname}='([^']*)'", freetz_data)
             return match.group(1) if match else 'Unknown'
-        freetz_info_boxtype = extract_var('FREETZ_INFO_BOXTYPE')
-        freetz_info_firmwareversion = extract_var('FREETZ_INFO_FIRMWAREVERSION')
-        freetz_info_version = extract_var('FREETZ_INFO_VERSION')
-        freetz_info_makedate = extract_var('FREETZ_INFO_MAKEDATE')
-        freetz_info_image_name = extract_var('FREETZ_INFO_IMAGE_NAME')
-        cprint(f"  Box type:     {freetz_info_boxtype}", 'cyan')
-        cprint(f"  AVM Firmware: {freetz_info_firmwareversion}", 'cyan')
-        cprint(f"  Make Version: {freetz_info_version}", 'cyan')
-        cprint(f"  Make date:    {freetz_info_makedate}", 'cyan')
-        cprint(f"  Image name:   {freetz_info_image_name}", 'cyan')
+        config.freetz_info_boxtype = extract_var('FREETZ_INFO_BOXTYPE')
+        config.freetz_info_firmwareversion = extract_var('FREETZ_INFO_FIRMWAREVERSION')
+        config.freetz_info_version = extract_var('FREETZ_INFO_VERSION')
+        config.freetz_info_makedate = extract_var('FREETZ_INFO_MAKEDATE')
+        config.freetz_info_image_name = extract_var('FREETZ_INFO_IMAGE_NAME')
+        cprint(f"  Box type:     {config.freetz_info_boxtype}", 'cyan')
+        cprint(f"  AVM Firmware: {config.freetz_info_firmwareversion}", 'cyan')
+        cprint(f"  Make Version: {config.freetz_info_version}", 'cyan')
+        cprint(f"  Make date:    {config.freetz_info_makedate}", 'cyan')
+        cprint(f"  Image name:   {config.freetz_info_image_name}", 'cyan')
 
     # Get Freetz version
     kernel_version = ssh_run(host, user, password, 
                             "uname -r 2>/dev/null || echo 'Unknown'",
                             debug=debug, capture_output=True).strip()
     
-    # Get box model
-    box_model = ssh_run(host, user, password,
-                       "cat /proc/sys/urlader/environment 2>/dev/null | grep 'HWRevision' | cut -d'=' -f2 || echo 'Unknown'",
-                       debug=debug, capture_output=True).strip()
+    # Get urlader environment variables
+    urlader_env = ssh_run(host, user, password,
+                         "cat /proc/sys/urlader/environment 2>/dev/null || echo 'Unknown'",
+                         debug=debug, capture_output=True).strip()
+    
+    # Parse urlader environment
+    if urlader_env != 'Unknown':
+        urlader_vars = {}
+        for line in urlader_env.splitlines():
+            line = line.strip()
+            if '\t' in line:
+                key, value = line.split('\t', 1)
+                urlader_vars[key.strip()] = value.strip()
+        
+        # Store variables in config
+        config.hw_revision = urlader_vars.get('HWRevision', 'Unknown')
+        config.hw_subrevision = urlader_vars.get('HWSubRevision', 'Unknown')
+        config.product_id = urlader_vars.get('ProductID', 'Unknown')
+        config.serial_number = urlader_vars.get('SerialNumber', 'Unknown')
+        config.annex = urlader_vars.get('annex', 'Unknown')
+        config.autoload = urlader_vars.get('autoload', 'Unknown')
+        config.bootloader_version = urlader_vars.get('bootloaderVersion', 'Unknown')
+        config.country = urlader_vars.get('country', 'Unknown')
+        config.firmware_info = urlader_vars.get('firmware_info', 'Unknown')
+        config.firmware_version = urlader_vars.get('firmware_version', 'Unknown')
+        config.flashsize = urlader_vars.get('flashsize', 'Unknown')
+        
+        # Display selected information
+        if config.hw_revision != 'Unknown':
+            cprint(f"  HW Revision:  {config.hw_revision}", 'cyan')
+        if config.hw_subrevision != 'Unknown':
+            cprint(f"  HW SubRev:    {config.hw_subrevision}", 'cyan')
+        if config.product_id != 'Unknown':
+            cprint(f"  Product ID:   {config.product_id}", 'cyan')
+        if config.serial_number != 'Unknown':
+            cprint(f"  Serial:       {config.serial_number}", 'cyan')
+        if config.annex != 'Unknown':
+            cprint(f"  Annex:        {config.annex}", 'cyan')
+        if config.bootloader_version != 'Unknown':
+            cprint(f"  Bootloader:   {config.bootloader_version}", 'cyan')
+        if config.country != 'Unknown':
+            cprint(f"  Country:      {config.country}", 'cyan')
+        if config.firmware_info != 'Unknown':
+            cprint(f"  FW Info:      {config.firmware_info}", 'cyan')
+        if config.flashsize != 'Unknown':
+            cprint(f"  Flash:        {config.flashsize}", 'cyan')
+    else:
+        config.hw_revision = 'Unknown'
+        config.hw_subrevision = 'Unknown'
+        config.product_id = 'Unknown'
+        config.serial_number = 'Unknown'
+        config.annex = 'Unknown'
+        config.autoload = 'Unknown'
+        config.bootloader_version = 'Unknown'
+        config.country = 'Unknown'
+        config.firmware_info = 'Unknown'
+        config.firmware_version = 'Unknown'
+        config.flashsize = 'Unknown'
     
     if kernel_version != 'Unknown':
         cprint(f"  Kernel:       {kernel_version}", 'cyan')
-    if box_model != 'Unknown':
-        cprint(f"  Model:        {box_model}", 'cyan')
 
     # Get RAM info
     ram_output = ssh_run(host, user, password, "free", debug=debug, capture_output=True)
@@ -1474,7 +1526,93 @@ Examples:
     
     # Process firmware image options
     if args.image and not args.skip_firmware:
+        # Extract firmware metadata from the image archive
         cprint("\n" + "-"*70, 'dim')
+        cinfo("Reading firmware archive metadata...")
+        
+        # Extract ./var/content
+        try:
+            fw_content_output = subprocess.getoutput(f"tar -xOf '{args.image}' ./var/content 2>/dev/null")
+        except Exception as e:
+            cerror(f"Could not extract ./var/content from firmware image: {e}")
+            return 1
+        
+        if not fw_content_output or len(fw_content_output.strip()) == 0:
+            cerror("Firmware image does not contain valid ./var/content metadata!")
+            return 1
+        
+        # Parse ./var/content
+        fw_content = {}
+        for line in fw_content_output.splitlines():
+            line = line.strip()
+            if '=' in line:
+                key, value = line.split('=', 1)
+                fw_content[key.strip()] = value.strip()
+        
+        # Extract Product field
+        fw_product = fw_content.get('Product', 'Unknown')
+        fw_type = fw_content.get('Type', 'Unknown')
+        fw_version = fw_content.get('Version', 'Unknown')
+        fw_build = fw_content.get('Build', 'Unknown')
+        fw_oems = fw_content.get('OEMs', 'Unknown')
+        fw_countries = fw_content.get('Countries', 'Unknown')
+        fw_languages = fw_content.get('Languages', 'Unknown')
+        
+        # Display firmware information
+        cprint(f"\n{EMOJI['info']} Firmware archive information:", 'cyan')
+        cprint(f"  Product:    {fw_product}", 'cyan')
+        cprint(f"  Version:    {fw_version}", 'cyan')
+        
+        # Verify product compatibility
+        if fw_product != 'Unknown' and hasattr(router_config, 'product_id') and router_config.product_id != 'Unknown':
+            # Extract product ID from fw_product (format: "Fritz_Box_HW285 (FRITZ!Box 7690)")
+            fw_product_id = fw_product.split()[0] if ' ' in fw_product else fw_product
+            
+            if router_config.product_id not in fw_product:
+                cprint("")
+                cwarning(f"COMPATIBILITY WARNING:")
+                cwarning(f"  FRITZ!Box Product ID: {router_config.product_id}")
+                cwarning(f"  Firmware Product:     {fw_product}")
+                cprint("")
+                
+                if args.batch:
+                    cerror("Product ID mismatch detected in batch mode! Cannot proceed.")
+                    cerror("The firmware image is not compatible with this FRITZ!Box model.")
+                    return 1
+                else:
+                    cwarning("The firmware image may not be compatible with this FRITZ!Box model!")
+                    if not confirm("Do you want to proceed anyway? (NOT RECOMMENDED)", default=False):
+                        cinfo("Update cancelled by user due to product mismatch.")
+                        return 0
+        else:
+            cdebug("Could not verify product compatibility (missing product ID)", args.debug)
+
+        # Extract ./var/.packages
+        try:
+            fw_packages = subprocess.getoutput(f"tar -xOf '{args.image}' ./var/.packages 2>/dev/null")
+            if fw_packages and fw_packages.strip():
+                package_lines = fw_packages.strip().splitlines()
+                if len(package_lines) == 1:
+                    cinfo(f"Packages:  {fw_packages.strip()}")
+                else:
+                    cprint("")
+                    cinfo(f"Packages:  {len(package_lines)} packages included. List:")
+                    # Show first few packages as preview
+                    # Show packages two per line
+                    for i in range(0, min(30, len(package_lines)), 2):
+                        if i + 1 < len(package_lines):
+                            cprint(f"              {package_lines[i]:<30} {package_lines[i+1]}", 'cyan')
+                        else:
+                            cprint(f"              {package_lines[i]}", 'cyan')
+                    if len(package_lines) > 30:
+                        cprint(f"              ... and {len(package_lines) - 30} more", 'cyan')
+                cprint("")
+            else:
+                cdebug("No packages information found in firmware", args.debug)
+        except Exception as e:
+            cdebug(f"Could not extract ./var/.packages: {e}", args.debug)
+            fw_packages = ""
+        
         cinfo("Firmware Update Options:")
         # Propose to perform the reboot at the end
         if not args.skip_firmware and not args.skip_external and not args.no_reboot and not args.reboot_at_the_end:
