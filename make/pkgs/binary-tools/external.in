@@ -6,10 +6,10 @@ config EXTERNAL_FREETZ_PACKAGE_BINARY_TOOLS
 		Externalize binary-tools binaries to USB storage.
 		
 		Recommended for devices with limited flash memory.
-		The binary-tools package (~15MB) can be stored on external storage
+		The binary-tools package can be stored on external storage
 		to save internal flash space.
 		
-		Files externalized:
+		Files externalized (only those selected):
 		- /usr/bin/readelf
 		- /usr/bin/objdump
 		- /usr/bin/objcopy
@@ -20,3 +20,4 @@ config EXTERNAL_FREETZ_PACKAGE_BINARY_TOOLS
 		- /usr/bin/strip
 		- /usr/bin/addr2line
 		- /usr/bin/size
+		- /usr/bin/patchelf
