@@ -59,6 +59,7 @@
   - [Benutzerverwaltung](50_Security/user_management.md)
 
 ### [Development](60_Development/README.md)
+  - [Freetz-NG Package Development Guide [EN]](60_Development/coding_guide.en.md)
   - [Eigene Programme kompilieren](60_Development/compile_own_progs.md)
   - [Cross-Compiler / Toolchain erstellen](60_Development/create_cross-compiler_toolchain.md)
   - [Device Table](60_Development/device_table.md)

@@ -53,6 +53,8 @@ Latest changes
   - Build system:
 
   - Host tools:
+    * file 5.45
+    * precompiled host-tools 2025-10-21
     * python 3.13.8
 
   - AVM sources:
@@ -66,14 +68,19 @@ Latest changes
 
   - Packages:
     * BIND 9.11.37/9.20.13
+    * file 5.45
     * OpenSSH 9.3p2/10.2p1
     * procps-ng 4.0.5
+    * Stunnel 5.76
     * Tor 0.4.8.19
+    * Whois 5.6.5
 
   - Libraries:
     * harfbuzz 12.1.0
-    * openjp2 2.5.4
+    * libxml2 2.15.1
     * libyaml 0.2.5
+    * openjp2 2.5.4
+    * pcre2 10.47
 
   - Firmware updates:
     * Please see [FIRMWARES](FIRMWARES.md) for the list of currently supported devices and firmwares.
@@ -124,6 +131,7 @@ Latest changes
     * 1700     8.06 - 4.19.294
     * 2700     8.06 - 4.19.294
     * 3000 ax  8.02 - 4.4.271
+    * 6360     5.29 - 2.6.28.10
     * 6591     8.20 - 5.15.179
     * 5530     8.20 - 4.9.337
     * 7530 ax  8.20 - 4.19.183

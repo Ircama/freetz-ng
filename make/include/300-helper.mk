@@ -173,8 +173,37 @@ UNPACK_TARBALL_PREREQUISITES := kconfig-host busybox-host tar-host
 # $2: directory to apply the patches to
 # $3: (optional) exact name of the patch file
 # $4: (optional) redirect stdout to this target
+#If a patch exists with the same name in patches/_CONDITIONAL_PATCHES/,
+#the patch in patches/ is skipped. Use empty file to disable a patch.
 define APPLY_PATCHES
-	set -e; shopt -s nullglob; for i in $(strip $(foreach dir,$(strip $1),$(dir)/$(if $(strip $(3)),$(strip $(3)),*.patch*))); do \
+	@ \
+	NULLGLOB="$$(shopt -p nullglob)" ; \
+	shopt -s nullglob ; \
+	\
+	\
+	PATCH_FILTER="$(if $(strip $(3)),$(strip $(3)),*.patch*)"; \
+	\
+	FILTER_OTHER="$(foreach dir,$(filter-out $(firstword $(strip $1)),$(strip $1)),$(dir)/$(_dollar)PATCH_FILTER)" ; \
+	PATCHES_OTHER=(); \
+	for other in $$FILTER_OTHER; do PATCHES_OTHER+=("$(_dollar)other"); done; \
+	\
+	FILTER_FIRST="$(foreach dir,$(firstword $(strip $1)),$(dir)/$(_dollar)PATCH_FILTER)" ; \
+	PATCHES_FIRST=(); \
+	for first in $$FILTER_FIRST; do \
+	DUPLICATE=""; \
+	for other in "$(_dollar){PATCHES_OTHER[@]}"; do \
+	if [ "$(_dollar){first##*/}" == "$(_dollar){other##*/}" ]; then \
+	DUPLICATE="-"; \
+	break; \
+	fi; \
+	done; \
+	PATCHES_FIRST+=("$(_dollar)DUPLICATE$(_dollar){first}"); \
+	done; \
+	\
+	\
+	$(_dollar)NULLGLOB; \
+	\
+	set -e; for i in "$(_dollar){PATCHES_FIRST[@]}" "$(_dollar){PATCHES_OTHER[@]}"; do \
 		case $(_dollar)i in \
 			*.patch|*.patch.gz|*.patch.bzip2|*.patch.bz2|*.patch.bz|*.patch.xz|*.patch.lz|*.patch.lzma|*.patch.Z|*.patch.diff) ;; \
 			*) continue ;; \
