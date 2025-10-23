@@ -22,10 +22,7 @@ $(PKG)_MAKE_OPTIONS += generic
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
-
-# Zip doesn't need configuration, just create a marker file
-$(ZIP_DIR)/.configured: $(ZIP_DIR)/.unpacked
-	touch $@
+$(PKG_CONFIGURED_NOP)
 
 $(ZIP_BINARY_BUILD): $(ZIP_DIR)/.configured
 	$(SUBMAKE) -C $(ZIP_DIR) $(ZIP_MAKE_OPTIONS)
