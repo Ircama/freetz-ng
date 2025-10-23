@@ -28,6 +28,14 @@ PING_TIMEOUT = 1
 BOOT_WAIT_MAX_TRIES = 450  # one try every two seconds; 15 minutes
 SSH_TEST_CMD = 'pwd'
 SSH_LOG_FILE = '/tmp/ssh_firmware_update.log'
+REBOOT_CMD = (
+    "nohup sh -c 'prepare_fwupgrade end; "
+    "/etc/inittab.shutdown; "
+    "sync; "
+    "sleep 2; "
+    "sync; "
+    "reboot -d 2 -f' & >/dev/null 2>&1 < /dev/null"
+)
 
 # --- COLORS AND EMOJIS ---
 COLORS = {
@@ -129,7 +137,7 @@ def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_
     start_time = time.time()
     
     # Phase 1: Wait for ping response
-    cprint("Phase 1: Waiting for network connectivity", 'blue', 'ping')
+    cprint("Phase 1: Waiting for network connectivity...", 'blue', 'ping')
     for i in range(max_tries):
         if ping_router(host):
             cprint("")
@@ -143,7 +151,7 @@ def wait_router_boot(host, password, user=DEFAULT_USER, max_tries=BOOT_WAIT_MAX_
         return False
     
     # Phase 2: Wait for SSH availability
-    cprint("Phase 2: Waiting for SSH service", 'blue', 'wait')
+    cprint("Phase 2: Waiting for SSH service...", 'blue', 'wait')
     time.sleep(5)  # Give SSH daemon time to start
     for i in range(max_tries):
         try:
@@ -973,7 +981,7 @@ def extract_archive_with_progress(host, user, password, archive_file, target_dir
         return False
 
     print(f"\r   Extraction progress: 100% | {tar_count}/{tar_count} files extracted in {elapsed}s     ")
-    cprint(f"{EMOJI['ok']} Extraction complete", 'green')
+    cprint(f"{EMOJI['ok']} Extraction complete.", 'green')
     if target_dir != '/':
         ext_size = ssh_run(host, user, password, f"du -sh '{target_dir}' 2>/dev/null | awk '{{print $1}}'", debug=debug, capture_output=True).strip()
         cprint(f"   Size of the external directory: {ext_size}", 'cyan')
@@ -1089,7 +1097,7 @@ def firmware_update_process(host, user, password, image_file,
     result_txt, color = result_codes.get(exit_code, ("UNKNOWN_ERROR", "red"))
     cprint(f"Installation result: {exit_code} ({result_txt})", color, 'info' if color == 'green' else 'warning')
     
-    # Step 4: Verify and execute post_install if exists
+    # Step 4: Verify post_install if exists
     if exit_code == 1:
         cinfo("Step 4: Verifying post-installation script...")
         post_install_exists = ssh_run(
@@ -1099,30 +1107,6 @@ def firmware_update_process(host, user, password, image_file,
         ).strip()
         if post_install_exists == "exists":
             cprint(f"{EMOJI['ok']} Post-installation script found: /var/post_install", 'green')
-            cinfo("Executing post-installation script...")
-            # Execute post_install and capture exit code, logging to /tmp/var-post-install.out
-            # Use ( ... ) subshell to preserve exit code with tee
-            post_install_output = ssh_run(
-                host, user, password,
-                '/var/post_install 2>&1; echo -e "\n\nReturn code:\n$?"',
-                debug=debug, capture_output=True
-            )
-            if post_install_output:
-                lines = post_install_output.strip().splitlines()
-                post_exit_code = lines[-1] if lines else "1"
-                post_output = '\n'.join(lines[:-1]) if len(lines) > 1 else ""
-                
-                if post_exit_code == "0":
-                    cprint(f"{EMOJI['ok']} Post-installation script executed successfully", 'green')
-                else:
-                    cerror(f"Post-installation script failed with exit code {post_exit_code}")
-                    if post_output:
-                        cprint("Post-installation output and errors:", 'red', 'warning')
-                        print(post_output)
-                    return False
-            else:
-                cerror("Post-installation script executed but no output captured")
-                return False
         else:
             error("No post-installation script found")
             return False
@@ -1138,9 +1122,19 @@ def firmware_update_process(host, user, password, image_file,
         cprint("\n" + "="*60, 'bold')
         cprint("REBOOTING FRITZ!Box", 'bold', 'reboot')
         cprint("="*60 + "\n", 'bold')
-        reboot_cmd = "(sync; sleep 1; sync; reboot -d 2 -f) >/dev/null 2>&1 < /dev/null & exit"
-        ssh_run(host, user, password, reboot_cmd, capture_output=False, debug=debug)
-        return wait_router_boot(host, password, user, debug=debug)
+        ssh_run(host, user, password, REBOOT_CMD, capture_output=False, debug=debug)
+
+        if not wait_router_boot(host, password, user, debug=debug):
+            cerror("Router did not come back online in time after reboot!")
+            return False
+
+        # Read again FRITZ!Box configuration
+        cinfo("Gathering system information after reboot:")
+        router_config = read_device_config(host, user, password, debug, summary=True)
+        if router_config is None:
+            cerror("Cannot read Freetz-NG configuration!")
+            return False
+        return True
     elif exit_code == 1 and no_reboot:
         cwarning("Reboot required but --no-reboot flag is set")
         return True
@@ -1756,8 +1750,7 @@ Examples:
         if args.dry_run:
             cwarning("[DRY-RUN] Skipping reboot command")
         else:
-            reboot_cmd = "(sync; sleep 1; sync; reboot -d 2 -f) >/dev/null 2>&1 < /dev/null & exit"
-            ssh_run(args.host, args.user, args.password, reboot_cmd, capture_output=False, debug=args.debug)
+            ssh_run(args.host, args.user, args.password, REBOOT_CMD, capture_output=False, debug=args.debug)
             if not wait_router_boot(args.host, args.password, args.user, debug=args.debug):
                 cerror("Router did not come back online in time after reboot!")
                 return 1
