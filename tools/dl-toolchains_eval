@@ -72,6 +72,7 @@ case "${line%%_*}" in
 	mipsel)  ARCH="MIPS" ;;
 	mips)    ARCH="MIPS" ;;
 	arm)     ARCH="ARM " ;;
+	armeb)   ARCH="ARM " ;;
 	i686)    ARCH="X86 " ;;
 esac
 echo -n "if FREETZ_TARGET_ARCH_$ARCH" | tee -a out.kernel >> out.target

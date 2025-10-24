@@ -1,4 +1,4 @@
-# dos2unix 7.5.2
+# dos2unix 7.5.3
   - Homepage: [https://dos2unix.sourceforge.io/](https://dos2unix.sourceforge.io/)
   - Manpage: [https://waterlan.home.xs4all.nl/dos2unix/man1/dos2unix.htm](https://waterlan.home.xs4all.nl/dos2unix/man1/dos2unix.htm)
   - Changelog: [https://dos2unix.sourceforge.io/dos2unix/NEWS.txt](https://dos2unix.sourceforge.io/dos2unix/NEWS.txt)

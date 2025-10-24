@@ -35,12 +35,14 @@ config FREETZ_KERNEL_ARCH
 
 config FREETZ_TARGET_ARCH
 	string
+	default "armeb"  if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_arm11
 	default "arm"    if FREETZ_TARGET_ARCH_ARM
 	default "mips"   if FREETZ_TARGET_ARCH_MIPS
 	default "i686"   if FREETZ_TARGET_ARCH_X86
 
 config FREETZ_TARGET_ARCH_ENDIANNESS_DEPENDENT
 	string
+	default "armeb"  if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_arm11
 	default "arm"    if FREETZ_TARGET_ARCH_ARM
 	default "mips"   if FREETZ_TARGET_ARCH_MIPS && FREETZ_TARGET_ARCH_BE
 	default "mipsel" if FREETZ_TARGET_ARCH_MIPS && FREETZ_TARGET_ARCH_LE
