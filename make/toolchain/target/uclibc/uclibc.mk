@@ -83,6 +83,10 @@ $(UCLIBC_DIR)/.unpacked: $(DL_DIR)/$(UCLIBC_SOURCE) $(DL_DIR)/$(UCLIBC_LOCALE_DA
 	$(RM) -r $(UCLIBC_DIR)
 	$(call UNPACK_TARBALL,$(DL_DIR)/$(UCLIBC_SOURCE),$(TARGET_TOOLCHAIN_DIR))
 	$(call APPLY_PATCHES,$(UCLIBC_PATCHES_DIR)/avm $(UCLIBC_PATCHES_DIR),$(UCLIBC_DIR))
+ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0)),y)
+	@echo "#fixing ncurses detection bug" $(SILENT); \
+	$(SED) 's/^main()/int &/' -i "$(UCLIBC_DIR)/extra/config/lxdialog/check-lxdialog.sh" || true
+endif
 ifeq ($(FREETZ_TARGET_UCLIBC_0_9_33),y)
 # "remove"-part of 980-nptl_remove_duplicate_vfork_in_libpthread
 # instead of removing files using patch, we remove them using rm
@@ -166,14 +170,14 @@ uclibc-menuconfig: $(UCLIBC_DIR)/.config
 	cp -f $^ $(UCLIBC_CONFIG_FILE) && \
 	touch $^
 
-uclibc-olddefconfig: $(UCLIBC_DIR)/.config
+uclibc-oldconfig uclibc-olddefconfig: $(UCLIBC_DIR)/.config
 	$(UCLIBC_MAKE) -C $(UCLIBC_DIR) \
 		$(UCLIBC_COMMON_BUILD_FLAGS) \
 		PREFIX=$(TARGET_TOOLCHAIN_DIR)/$(UCLIBC_DEVEL_SUBDIR)/ \
 		DEVEL_PREFIX=/usr/ \
 		RUNTIME_PREFIX=$(TARGET_TOOLCHAIN_DIR)/$(UCLIBC_DEVEL_SUBDIR)/ \
 		HOSTCC="$(TOOLCHAIN_HOSTCC) $(UCLIBC_HOST_CFLAGS)" \
-		olddefconfig && \
+		$(if $(FREETZ_TARGET_UCLIBC_0),oldconfig,olddefconfig)
 	cp -f $^ $(UCLIBC_CONFIG_FILE) && \
 	touch $^
 
@@ -317,7 +321,7 @@ uclibc_target-dirclean:
 uclibc_target-distclean: uclibc_target-dirclean
 
 
-.PHONY: uclibc-source uclibc-unpacked uclibc-autofix uclibc-menuconfig uclibc-olddefconfig uclibc-configured
+.PHONY: uclibc-source uclibc-unpacked uclibc-autofix uclibc-menuconfig uclibc-oldconfig uclibc-olddefconfig uclibc-configured
 .PHONY: uclibc        uclibc-clean        uclibc-dirclean        uclibc-distclean
 .PHONY: uclibc_target uclibc_target-clean uclibc_target-dirclean uclibc_target-distclean
 
