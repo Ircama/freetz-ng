@@ -229,6 +229,7 @@ $($(PKG)_DIR)/.configured: $($(PKG)_DIR)/.build-prereq-checked $($(PKG)_DIR)/.un
 		-e 's!%FREETZ_TARGET_MESON_FAMILY%!$(call qstrip,$(FREETZ_TARGET_MESON_FAMILY))!' \
 		-e 's!%FREETZ_TARGET_MESON_CPU%!$(call qstrip,$(FREETZ_TARGET_MESON_CPU))!' \
 		-e 's!%FREETZ_TARGET_MESON_ENDIAN%!$(call qstrip,$(FREETZ_TARGET_MESON_ENDIAN))!' \
+		-e 's!%FREETZ_TARGET_MESON_ENDIAN_UPPER%!$(shell echo $(FREETZ_TARGET_MESON_ENDIAN) | sed 's/little/LE/;s/big/BE/')!' \
 		\
 		-e "s!%TARGET_CFLAGS%!$(foreach X,$(TARGET_CFLAGS) $($(PKG)_EXTRA_CFLAGS),'$(X)',)!g" \
 		-e "s!%TARGET_LDFLAGS%!$(foreach X,$(TARGET_LDFLAGS) $($(PKG)_EXTRA_LDFLAGS),'$(X)',)!g" \
