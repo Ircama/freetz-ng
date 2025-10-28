@@ -774,7 +774,7 @@ if [ -d "$ROOT_DIR/source/${BUILD_ARCH}" ]; then
                 ((NOT_STARTED++))
                 ((TOTAL++))
             fi
-        done < <(grep "^FREETZ_PACKAGE_[A-Z0-9_]*=y$" "$ROOT_DIR/.config" | grep -v "_WITH_\|_STATIC\|_DISABLE_\|_ENABLE_\|_AUTHORIZED_\|_VERSION_\|_SELECT_\|_MOD_\|_PYC\|_COMPRESS_\|_PORT_\|_BAUD_\|_WEBINTERFACE\|_DAEMON\|_SFTP_\|_OMIT_\|_TINY\|_NORMAL\|_HUGE\|_READELF\|_OBJDUMP\|_OBJCOPY\|_NM\|_STRINGS\|_AR\|_RANLIB\|_STRIP\|_ADDR2LINE\|_SIZE\|_PATCHELF")
+        done < <(grep "^FREETZ_PACKAGE_[A-Z0-9_]*=y$" "$ROOT_DIR/.config" | grep -v "_WITH_\|_STATIC\|_DISABLE_\|_ENABLE_\|_AUTHORIZED_\|_VERSION_\|_SELECT_\|_IS_SELECTABLE\|_MOD_\|_PYC\|_COMPRESS_\|_PORT_\|_BAUD_\|_WEBINTERFACE\|_DAEMON\|_SFTP_\|_OMIT_\|_TINY\|_NORMAL\|_HUGE\|_READELF\|_OBJDUMP\|_OBJCOPY\|_NM\|_STRINGS\|_AR\|_RANLIB\|_STRIP\|_ADDR2LINE\|_SIZE\|_PATCHELF")
     fi
 else
     # Early build stage - toolchain compilation only (no target dir yet)
@@ -858,7 +858,7 @@ else
             PKG_INFO+=("0|$pkg_name|0|0|$complexity")
             ((NOT_STARTED++))
             ((TOTAL++))
-        done < <(grep "^FREETZ_PACKAGE_[A-Z0-9_]*=y$" "$ROOT_DIR/.config" | grep -v "_WITH_\|_STATIC\|_DISABLE_\|_ENABLE_\|_AUTHORIZED_\|_VERSION_\|_SELECT_\|_MOD_\|_PYC\|_COMPRESS_\|_PORT_\|_BAUD_\|_WEBINTERFACE\|_DAEMON\|_SFTP_\|_OMIT_\|_TINY\|_NORMAL\|_HUGE\|_READELF\|_OBJDUMP\|_OBJCOPY\|_NM\|_STRINGS\|_AR\|_RANLIB\|_STRIP\|_ADDR2LINE\|_SIZE\|_PATCHELF")
+        done < <(grep "^FREETZ_PACKAGE_[A-Z0-9_]*=y$" "$ROOT_DIR/.config" | grep -v "_WITH_\|_STATIC\|_DISABLE_\|_ENABLE_\|_AUTHORIZED_\|_VERSION_\|_SELECT_\|_IS_SELECTABLE\|_MOD_\|_PYC\|_COMPRESS_\|_PORT_\|_BAUD_\|_WEBINTERFACE\|_DAEMON\|_SFTP_\|_OMIT_\|_TINY\|_NORMAL\|_HUGE\|_READELF\|_OBJDUMP\|_OBJCOPY\|_NM\|_STRINGS\|_AR\|_RANLIB\|_STRIP\|_ADDR2LINE\|_SIZE\|_PATCHELF")
     fi
 fi
 
