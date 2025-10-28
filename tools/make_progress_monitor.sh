@@ -498,10 +498,16 @@ if [ -n "$toolchain_dir" ]; then
         "gcc-initial:Toolchain: GCC (initial)"
         "uclibc:Toolchain: uClibc"
         "gcc:Toolchain: GCC compiler"
-        "binutils_target:Toolchain: Binutils on-device"
-        "uclibc_target:Toolchain: uClibc on-device"
-        "gcc_target:Toolchain: GCC on-device"
     )
+    
+    # Add on-device toolchain components only if GCC Toolchain package is selected
+    if [ -f "$ROOT_DIR/.config" ] && grep -q "^FREETZ_PACKAGE_GCC_TOOLCHAIN=y$" "$ROOT_DIR/.config" 2>/dev/null; then
+        toolchain_order+=(
+            "binutils_target:Toolchain: Binutils on-device"
+            "uclibc_target:Toolchain: uClibc on-device"
+            "gcc_target:Toolchain: GCC on-device"
+        )
+    fi
     
     # Find the index of the current component
     for i in "${!toolchain_order[@]}"; do
