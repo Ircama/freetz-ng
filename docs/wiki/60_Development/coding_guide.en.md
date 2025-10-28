@@ -2100,3 +2100,1144 @@ Consider implementing automated tests to verify:
 - [Shared Library Versioning](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html)
 - [ABI Compatibility](https://www.akkadia.org/drepper/dsohowto.pdf)
 - [GNU Libtool Versioning](https://www.gnu.org/software/libtool/manual/html_node/Libtool-versioning.html)
+
+---
+
+# Meson Cross-Compilation Configuration
+
+## Overview
+
+Freetz-NG supports **Meson build system** for cross-compiling packages to MIPS/ARM targets. Meson requires a **cross-compilation file** that describes the target environment, toolchain paths, and system properties.
+
+## Cross-Compilation File Structure
+
+Cross-compilation files are located in `include/meson.cross/` directory with the naming pattern:
+
+```
+meson-cross-ARCH-ENDIAN.conf
+```
+
+**Examples:**
+- `meson-cross-mips-be.conf` - MIPS Big-Endian
+- `meson-cross-mips-le.conf` - MIPS Little-Endian  
+- `meson-cross-arm-le.conf` - ARM Little-Endian
+
+## File Format
+
+### [binaries] Section
+
+Defines toolchain executables:
+
+```ini
+[binaries]
+c = '/path/to/gcc'
+cpp = '/path/to/g++'
+ar = '/path/to/ar'
+strip = '/path/to/strip'
+pkgconfig = '/path/to/pkg-config'
+```
+
+### [properties] Section
+
+**CRITICAL**: Must appear **exactly once** in the file!
+
+Defines target-specific properties:
+
+```ini
+[properties]
+sys_root = '/path/to/sysroot'
+pkg_config_libdir = '/path/to/pkgconfig'
+```
+
+### [host_machine] Section
+
+Describes the target architecture:
+
+```ini
+[host_machine]
+system = 'linux'
+cpu_family = 'mips'
+cpu = '24kc'
+endian = 'big'       # or 'little'
+```
+
+**Important Endianness Values:**
+- Use `'big'` for big-endian (NOT `'BIG'`)
+- Use `'little'` for little-endian (NOT `'LITTLE'`)
+
+## Common Issues and Solutions
+
+### Problem: Duplicate [properties] Section
+
+**Symptom:**
+```
+meson.build:1:0: ERROR: Only one [properties] section may exist
+```
+
+**Cause:** Configuration file has `[properties]` section defined multiple times
+
+**Solution:** Ensure **exactly ONE** `[properties]` section in the cross-file:
+
+```ini
+# WRONG - Two [properties] sections
+[properties]
+sys_root = '/path1'
+
+[properties]
+pkg_config_libdir = '/path2'
+
+# CORRECT - Single [properties] section
+[properties]
+sys_root = '/path1'
+pkg_config_libdir = '/path2'
+```
+
+### Problem: Wrong Endianness Placeholder
+
+**Symptom:**
+```
+meson.build:1:0: ERROR: Unknown value 'BIG' for endian
+```
+
+**Cause:** Using uppercase placeholders `BIG`/`LITTLE` instead of lowercase values
+
+**Solution:** Use correct values in meson.cross file generation:
+
+```makefile
+# WRONG - Uses uppercase
+sed 's|@ENDIAN@|BIG|g' template.conf
+
+# CORRECT - Uses lowercase
+sed 's|@ENDIAN@|big|g' template.conf
+# Or for little-endian:
+sed 's|@ENDIAN@|little|g' template.conf
+```
+
+### Problem: Unrecognized Configure Options
+
+**Symptom:**
+```
+configure: WARNING: unrecognized options: --with-tree, --disable-nls
+```
+
+**Cause:** Using configure options that don't exist in the library version being built
+
+**Solution:** Verify available options before using them:
+
+```bash
+# Check what options are available
+cd source/target-ARCH/PACKAGE-VERSION
+./configure --help | grep "with-tree\|disable-nls"
+
+# Only use options that actually exist
+```
+
+**Example - libxml2 2.15.x:**
+```makefile
+# These options NO LONGER EXIST in 2.15.x:
+--with-tree        # Removed (tree API always included)
+--with-lzma        # Removed  
+--disable-nls      # Removed
+
+# These options STILL EXIST:
+--with-html        # HTML support
+--with-relaxng     # Relax-NG schemas
+```
+
+## Makefile Integration
+
+### Generating Cross-File
+
+Typical pattern in package makefiles:
+
+```makefile
+$(PKG)_MESON_CROSS_FILE := $(TARGET_TOOLCHAIN_STAGING_DIR)/meson-cross.conf
+
+$($(PKG)_DIR)/.configured: $($(PKG)_DIR)/.unpacked
+	# Generate cross-file from template
+	sed -e 's|@CC@|$(TARGET_CC)|g' \
+	    -e 's|@CXX@|$(TARGET_CXX)|g' \
+	    -e 's|@AR@|$(TARGET_AR)|g' \
+	    -e 's|@STRIP@|$(TARGET_STRIP)|g' \
+	    -e 's|@ENDIAN@|$(FREETZ_TARGET_ENDIANNESS_DEPENDENT)|g' \
+	    -e 's|@SYSROOT@|$(TARGET_TOOLCHAIN_SYSROOT)|g' \
+	    include/meson.cross/template.conf > $(PKG_MESON_CROSS_FILE)
+	
+	# Run meson setup
+	cd $($(PKG)_DIR) && \
+	meson setup builddir \
+		--cross-file=$(PKG_MESON_CROSS_FILE) \
+		--prefix=/usr \
+		$(PKG_MESON_OPTIONS)
+	touch $@
+```
+
+### Build Pattern
+
+```makefile
+$($(PKG)_BINARY): $($(PKG)_DIR)/.configured
+	ninja -C $($(PKG)_DIR)/builddir
+```
+
+## Best Practices
+
+1. **Use Template Files**: Store meson cross-file templates in `include/meson.cross/` with placeholders
+
+2. **Validate Options**: Always check `./configure --help` or `meson configure` output before adding options
+
+3. **Test Both Endianness**: If supporting both BE/LE, test both configurations
+
+4. **Document Requirements**: Add meson version requirements to `Config.in` if needed:
+   ```kconfig
+   config FREETZ_PACKAGE_FOO
+       bool "foo"
+       depends on FREETZ_HOSTTOOLS_MESON_VERSION_MIN_0_61
+   ```
+
+5. **Clean on Reconfig**: Meson caches configuration, always clean when changing options:
+   ```makefile
+   $(pkg)-dirclean:
+       $(RM) -r $($(PKG)_DIR)/builddir
+   ```
+
+## Testing Meson Packages
+
+```bash
+# 1. Clean previous build
+make PACKAGE-dirclean
+
+# 2. Build with verbose output
+make PACKAGE-precompiled V=1
+
+# 3. Check generated cross-file
+cat toolchain/.../meson-cross.conf
+
+# 4. Verify endianness is correct
+grep "endian" toolchain/.../meson-cross.conf
+# Should show: endian = 'big' OR endian = 'little'
+```
+
+## Meson vs Autotools
+
+| Feature | Meson | Autotools |
+|---------|-------|-----------|
+| **Cross-file** | Required | Optional |
+| **Configuration** | `meson setup` | `./configure` |
+| **Build** | `ninja` | `make` |
+| **Out-of-tree** | Always | Optional |
+| **Speed** | Faster | Slower |
+| **Reconfigure** | Cached | From scratch |
+
+## Common Meson Options
+
+```makefile
+# Installation paths
+-Dprefix=/usr
+-Dlibdir=lib
+-Dbindir=bin
+
+# Build type
+-Dbuildtype=release
+-Doptimization=2
+-Ddebug=false
+
+# Features (library-specific)
+-Denable-feature=true
+-Dwith-backend=system
+```
+
+## Troubleshooting Meson Builds
+
+### Build fails with "cross file not found"
+
+**Solution**: Ensure cross-file is generated before meson setup:
+
+```makefile
+$(PKG_MESON_CROSS_FILE): $(TARGET_TOOLCHAIN_STAGING_DIR)/.installed
+	# Generate cross-file here
+	touch $@
+
+$($(PKG)_DIR)/.configured: $(PKG_MESON_CROSS_FILE)
+	meson setup ...
+```
+
+### Configuration changes not applied
+
+**Solution**: Meson caches configuration. Force reconfigure:
+
+```bash
+make PACKAGE-dirclean
+make PACKAGE-precompiled
+```
+
+Or use meson reconfigure:
+
+```bash
+cd source/.../PACKAGE/builddir
+meson configure -Doption=value
+ninja
+```
+
+### Wrong architecture detected
+
+**Solution**: Verify `[host_machine]` section in cross-file matches your target.
+
+---
+
+# Patch Management Best Practices
+
+## Overview
+
+This section covers advanced patch management techniques discovered during Freetz-NG development, particularly for handling patches across different package versions.
+
+## Patch Organization Strategies
+
+### Strategy 1: Old Patch Directory
+
+When updating a package to a new version where old patches no longer apply:
+
+**Directory Structure:**
+```
+make/pkgs/PACKAGE/patches/
+├── old/                    # Archive for obsolete patches
+│   ├── 010-fix.patch      # Was for version 1.x
+│   └── 020-another.patch
+└── 100-current.patch       # For version 2.x
+```
+
+**When to Use:**
+- Updating to a new upstream version
+- Old patches were integrated upstream
+- Want to keep patch history for reference
+
+**Example - ldd package:**
+```
+make/pkgs/ldd/patches/
+└── old/
+    ├── 010-open_3rd_param.upstream.patch    # Fixed in ldd 1.0.55
+    ├── 020-lib_segfault.upstream.patch      # Fixed in ldd 1.0.55
+    ├── 030-null-check.upstream.patch        # Fixed in ldd 1.0.55
+    └── 100-fix-byteswap32_to_host.patch     # Fixed in ldd 1.0.55
+```
+
+### Strategy 2: Conditional Patches by Version
+
+For packages with version selection (ABANDON vs CURRENT):
+
+**Directory Structure:**
+```
+make/pkgs/PACKAGE/patches/
+├── abandon/               # Patches for ABANDON version
+│   └── 100-old-fix.patch
+└── current/               # Patches for CURRENT version
+    └── 100-new-fix.patch
+```
+
+**Makefile Integration:**
+```makefile
+# Conditional patch directory
+$(PKG)_CONDITIONAL_PATCHES+=$(if $(FREETZ_PACKAGE_FOO_VERSION_ABANDON),abandon,current)
+```
+
+**When to Use:**
+- Package supports multiple versions
+- Patches differ significantly between versions
+- Need to maintain both versions actively
+
+### Strategy 3: Numbered Patch Series
+
+Use consistent numbering for patch series:
+
+```
+000-099: Upstream patches (will be integrated)
+100-199: Build system fixes
+200-299: Feature patches
+300-399: Cross-compilation fixes
+400-499: Freetz-specific modifications
+500-599: Security patches
+900-999: Temporary workarounds
+```
+
+**Example:**
+```
+010-fix-typo.upstream.patch           # Will go upstream
+100-disable-tests.patch               # Build system
+250-add-feature-x.patch               # New feature
+310-fix-mips-compilation.patch        # Cross-compile fix
+450-freetz-config-paths.patch         # Freetz paths
+510-CVE-2024-XXXXX.patch             # Security
+950-workaround-gcc-bug.patch          # Temporary
+```
+
+## Documenting Patch Status
+
+### Patch Headers
+
+Include comprehensive metadata in patch headers:
+
+```patch
+Description: Fix buffer overflow in parse_input()
+Bug: https://github.com/upstream/project/issues/123
+Forwarded: yes
+Author: Your Name <your@email.com>
+Last-Update: 2025-10-21
+
+This patch fixes a buffer overflow that occurs when processing
+inputs larger than 4096 bytes. The fix adds bounds checking.
+
+--- a/src/parser.c
++++ b/src/parser.c
+@@ -42,6 +42,8 @@
+ void parse_input(char *input) {
+     char buffer[4096];
++    if (strlen(input) >= sizeof(buffer))
++        return -1;
+     strcpy(buffer, input);
+ }
+```
+
+### Patch Status Markers
+
+Use filename suffixes to indicate patch status:
+
+```
+010-fix.upstream.patch       # Submitted/accepted upstream
+020-fix.pending.patch        # Submitted, awaiting review
+030-fix.freetz.patch         # Freetz-specific, won't go upstream
+040-fix.temporary.patch      # Workaround, will be removed
+```
+
+## Verifying Patches Still Needed
+
+Before updating a package, check if patches are still required:
+
+### Method 1: Manual Source Inspection
+
+```bash
+# Extract new version
+cd source/target-ARCH/PACKAGE-NEW-VERSION
+
+# Check if patch is already applied
+grep -r "fix_content" .
+# If found → patch no longer needed
+
+# Check specific function/line mentioned in patch
+vim src/file.c
+# Search for the function/code being patched
+```
+
+### Method 2: Attempt Patch Application
+
+```bash
+# Try applying old patch
+cd source/target-ARCH/PACKAGE-NEW-VERSION
+patch -p1 --dry-run < ../../../make/pkgs/PACKAGE/patches/010-fix.patch
+
+# Results:
+# - "Reversed (or previously applied) patch detected" → No longer needed
+# - "Hunk #1 succeeded" → Still needed
+# - "Hunk #1 FAILED" → Needs updating
+```
+
+### Method 3: Check Upstream Changelog
+
+```bash
+# Review upstream changes
+cat CHANGELOG.md | grep -A5 "version NEW_VERSION"
+cat NEWS | grep "fix\|bug"
+git log OLD_VERSION..NEW_VERSION
+```
+
+## Updating Patches for New Versions
+
+### When Patch Conflicts
+
+**Symptom:**
+```
+Hunk #1 FAILED at 248.
+1 out of 1 hunk FAILED -- saving rejects to file.c.rej
+```
+
+**Solution Process:**
+
+1. **Check .rej file:**
+   ```bash
+   cat file.c.rej
+   # Shows what couldn't be applied
+   ```
+
+2. **Find new location:**
+   ```bash
+   # Old patch tried to modify line 248
+   # Search for similar context
+   grep -n "function_name\|unique_string" file.c
+   ```
+
+3. **Regenerate patch:**
+   ```bash
+   # Make changes manually
+   vim file.c
+   
+   # Create new patch
+   diff -Naur original/file.c modified/file.c > new-patch.patch
+   ```
+
+4. **Test new patch:**
+   ```bash
+   make PACKAGE-dirclean
+   make PACKAGE-precompiled
+   ```
+
+### Rebasing Patch Series
+
+When updating package version:
+
+```bash
+# 1. Apply all old patches manually
+cd source/target-ARCH/NEW-VERSION
+for patch in ../../../../make/pkgs/PACKAGE/patches/*.patch; do
+    patch -p1 < "$patch" || echo "FAILED: $patch"
+done
+
+# 2. For failed patches, fix manually
+
+# 3. Regenerate patch series
+git init
+git add -A
+git commit -m "Baseline"
+
+# Make changes
+vim file.c
+git add file.c
+git commit -m "Fix: description"
+
+# Generate new patches
+git format-patch -1
+mv 0001-Fix-description.patch ../../../../make/pkgs/PACKAGE/patches/100-fix.patch
+```
+
+## Common Patch Mistakes
+
+### Mistake 1: Overly Broad Patches
+
+**Wrong:**
+```patch
+diff -Naur original modified
+# Includes .gitignore, Makefile.in, config.h changes
+# 500+ lines of auto-generated cruft
+```
+
+**Right:**
+```patch
+diff -Naur original/src/main.c modified/src/main.c
+# Only the specific file that needs changing
+# 10 lines, clear purpose
+```
+
+**Solution:** Use `--path=` or manually specify files:
+```bash
+svn diff src/main.c > fix.patch  # SVN
+git diff -- src/main.c > fix.patch  # Git
+```
+
+### Mistake 2: Including Binary Files
+
+**Wrong:**
+```patch
+diff -Naur original/logo.png modified/logo.png
+Binary files differ
+```
+
+**Right:** Don't include binary files in patches. If needed, place them in `make/pkgs/PACKAGE/files/` directory.
+
+### Mistake 3: Absolute Paths in Patches
+
+**Wrong:**
+```patch
+--- /home/user/freetz/source/package/file.c
++++ /home/user/freetz/source/package/file.c
+```
+
+**Right:**
+```patch
+--- original/file.c
++++ modified/file.c
+```
+
+Or better (patch -p1 style):
+```patch
+--- a/file.c
++++ b/file.c
+```
+
+### Mistake 4: No Context Lines
+
+**Wrong:**
+```patch
+@@ -42 +42 @@
+-    old line
++    new line
+```
+
+**Right:** Include 3+ context lines before and after:
+```patch
+@@ -40,7 +40,7 @@
+     context line 1
+     context line 2
+     context line 3
+-    old line
++    new line
+     context line 4
+     context line 5
+     context line 6
+```
+
+## Tools for Patch Management
+
+### quilt
+
+```bash
+# Initialize quilt for package
+cd source/target-ARCH/PACKAGE
+export QUILT_PATCHES=../../../../make/pkgs/PACKAGE/patches
+quilt push -a  # Apply all patches
+
+# Make changes
+quilt new 100-myfix.patch
+quilt add src/file.c
+vim src/file.c
+quilt refresh
+
+# Generate patch
+quilt header -e  # Add description
+```
+
+### git format-patch
+
+```bash
+# Work with git
+cd source/target-ARCH/PACKAGE
+git init
+git add -A && git commit -m "Baseline"
+
+# Make changes in commits
+vim file.c && git commit -am "Fix bug X"
+vim file2.c && git commit -am "Add feature Y"
+
+# Generate patches
+git format-patch -2  # Last 2 commits
+# Creates: 0001-Fix-bug-X.patch, 0002-Add-feature-Y.patch
+
+# Rename to Freetz convention
+mv 0001-*.patch ../../../../make/pkgs/PACKAGE/patches/100-fix.patch
+mv 0002-*.patch ../../../../make/pkgs/PACKAGE/patches/200-feature.patch
+```
+
+## Patch Testing Checklist
+
+Before committing patches:
+
+- [ ] Patch applies cleanly: `make PACKAGE-dirclean && make PACKAGE-source`
+- [ ] Build succeeds: `make PACKAGE-precompiled`
+- [ ] Runtime tested: Install on device, test functionality
+- [ ] Patch header complete: Description, author, upstream status
+- [ ] File paths relative: No absolute paths in patch
+- [ ] Minimal changes: Only necessary modifications
+- [ ] Context lines included: 3+ lines before/after
+- [ ] Forwarded upstream: If generally useful
+- [ ] Documented in commit: Why patch is needed
+
+---
+
+# Archive Directory Name Mismatches
+
+## Problem Description
+
+A common issue when packaging software is that the **archive filename** doesn't match the **directory name** after extraction.
+
+**Example:**
+```bash
+# Archive name
+zip30.tar.gz
+
+# Directory after extraction
+zip30/       # NOT zip-3.0/
+```
+
+This causes make to fail because it looks for `source/target-ARCH/zip-3.0/` but finds `source/target-ARCH/zip30/`.
+
+## Symptoms
+
+```
+make: *** No rule to make target 'source/target-mips/zip-3.0/.unpacked'
+ERROR: Directory not found: source/target-mips/zip-3.0
+```
+
+Or:
+
+```
+tar: cannot open source/target-mips/zip-3.0: No such file or directory
+```
+
+## Root Cause
+
+Default Freetz-NG naming assumes:
+```makefile
+$(PKG)_VERSION := 3.0
+$(PKG)_SOURCE := $(pkg)-$($(PKG)_VERSION).tar.gz  # "zip-3.0.tar.gz"
+$(PKG)_DIR := $($(PKG)_SOURCE_DIR)/$(pkg)-$($(PKG)_VERSION)  # "zip-3.0"
+```
+
+But upstream provides:
+- Archive: `zip30.tar.gz` (no hyphen!)
+- Directory: `zip30/` (version embedded, no hyphen!)
+
+## Solution: Override $(PKG)_DIR and $(PKG)_SOURCE
+
+```makefile
+$(call PKG_INIT_BIN, 3.0)
+
+# Custom source filename
+$(PKG)_SOURCE:=zip30.tar.gz
+$(PKG)_HASH:=<sha256>
+$(PKG)_SITE:=https://downloads.sourceforge.net/infozip
+
+# Override directory name to match actual extracted directory
+$(PKG)_SOURCE_DIR:=$(SOURCE_DIR)/$(PKG_LANG)
+$(PKG)_DIR:=$($(PKG)_SOURCE_DIR)/zip30  # Match actual extracted directory name!
+
+### WEBSITE:=https://infozip.sourceforge.net/Zip.html
+### SUPPORT:=YourUsername
+
+# Now all variables reference the correct directory
+$(PKG)_BINARY_BUILD := $(ZIP_DIR)/zip
+$(PKG)_BINARY_TARGET := $($(PKG)_DEST_DIR)/usr/bin/zip
+```
+
+**Key Points:**
+1. Set `$(PKG)_SOURCE` to exact filename: `zip30.tar.gz`
+2. Override `$(PKG)_DIR` to match extracted directory: `zip30`
+3. Use direct variable names (`ZIP_DIR`) in recipes, NOT nested variables (`$($(PKG)_DIR)`)
+
+## Common Patterns
+
+### Pattern 1: Version Embedded (No Separator)
+
+```makefile
+# Example: zip30, p7zip_16.02
+$(PKG)_VERSION := 3.0
+$(PKG)_SOURCE := zip$(subst .,,$($(PKG)_VERSION)).tar.gz  # "zip30.tar.gz"
+$(PKG)_DIR := $($(PKG)_SOURCE_DIR)/zip$(subst .,,$($(PKG)_VERSION))  # "zip30"
+```
+
+### Pattern 2: Different Separator
+
+```makefile
+# Example: package_1.2.3 instead of package-1.2.3
+$(PKG)_VERSION := 1.2.3
+$(PKG)_SOURCE := $(pkg)_$($(PKG)_VERSION).tar.gz  # "package_1.2.3.tar.gz"
+$(PKG)_DIR := $($(PKG)_SOURCE_DIR)/$(pkg)_$($(PKG)_VERSION)  # "package_1.2.3"
+```
+
+### Pattern 3: Project Name Differs
+
+```makefile
+# Example: archive "foo-src-1.0.tar.gz" extracts to "foo-1.0/"
+$(PKG)_VERSION := 1.0
+$(PKG)_SOURCE := $(pkg)-src-$($(PKG)_VERSION).tar.gz  # "foo-src-1.0.tar.gz"
+$(PKG)_DIR := $($(PKG)_SOURCE_DIR)/$(pkg)-$($(PKG)_VERSION)  # "foo-1.0"
+```
+
+### Pattern 4: Completely Custom Name
+
+```makefile
+# Example: archive "release-v1.0.tar.gz" extracts to "project-release-1.0/"
+$(PKG)_VERSION := 1.0
+$(PKG)_SOURCE := release-v$($(PKG)_VERSION).tar.gz
+$(PKG)_DIR := $($(PKG)_SOURCE_DIR)/project-release-$($(PKG)_VERSION)
+```
+
+## Verification Steps
+
+After setting `$(PKG)_DIR`, verify it's correct:
+
+```bash
+# 1. Download and extract manually
+cd dl
+wget <source_url>/archive.tar.gz
+tar -tzf archive.tar.gz | head -1
+# Shows: zip30/  (directory name in archive)
+
+# 2. Test with make
+make PACKAGE-source
+ls source/target-ARCH/
+# Should show the actual extracted directory
+
+# 3. Verify makefile variables
+make PACKAGE-show-vars | grep DIR
+# Should show correct paths
+```
+
+## Advanced: Handling $(transform)
+
+Some packages extract to a directory with `--strip-components`:
+
+```makefile
+# Archive contains: "projectname-1.0/src/..." 
+# But we want: "projectname-1.0/..."
+
+$(PKG_UNPACKED)
+	mkdir -p $($(PKG)_DIR)
+	$(call UNPACK_TARBALL,$(DL_DIR)/$($(PKG)_SOURCE),$($(PKG)_DIR),--transform='s|^[^/]*/||')
+	$(call APPLY_PATCHES,$($(PKG)_MAKE_DIR)/patches,$($(PKG)_DIR))
+	touch $@
+```
+
+## Complete Example: zip Package
+
+```makefile
+$(call PKG_INIT_BIN, 3.0)
+$(PKG)_SOURCE:=zip30.tar.gz
+$(PKG)_HASH:=f0e8bb1f9b7eb0b01285495a2699df3a4b766784c1765a8f1aeedf63c0806369
+$(PKG)_SITE:=https://downloads.sourceforge.net/infozip
+
+# CRITICAL: Override default directory name
+$(PKG)_SOURCE_DIR:=$(SOURCE_DIR)/$(PKG_LANG)
+$(PKG)_DIR:=$($(PKG)_SOURCE_DIR)/zip30  # Matches extracted directory!
+
+### WEBSITE:=https://infozip.sourceforge.net/Zip.html
+### SUPPORT:=Ircama
+
+$(PKG)_BINARY_BUILD := $(ZIP_DIR)/zip
+$(PKG)_BINARY_TARGET := $($(PKG)_DEST_DIR)/usr/bin/zip
+
+$(PKG)_MAKE_OPTIONS += -f unix/Makefile
+$(PKG)_MAKE_OPTIONS += CC="$(TARGET_CC)"
+$(PKG)_MAKE_OPTIONS += CPP="$(TARGET_CC) -E"
+$(PKG)_MAKE_OPTIONS += CFLAGS="$(TARGET_CFLAGS)"
+$(PKG)_MAKE_OPTIONS += generic
+
+$(PKG_SOURCE_DOWNLOAD)
+$(PKG_UNPACKED)
+
+# No configure script - create marker manually
+$(ZIP_DIR)/.configured: $(ZIP_DIR)/.unpacked
+	touch $@
+
+$(ZIP_BINARY_BUILD): $(ZIP_DIR)/.configured
+	$(SUBMAKE) -C $(ZIP_DIR) $(ZIP_MAKE_OPTIONS)
+
+$(ZIP_BINARY_TARGET): $(ZIP_BINARY_BUILD)
+	$(INSTALL_BINARY_STRIP)
+
+$(pkg):
+
+$(pkg)-precompiled: $(ZIP_BINARY_TARGET)
+
+$(pkg)-clean:
+	-$(SUBMAKE) -C $(ZIP_DIR) $(ZIP_MAKE_OPTIONS) clean
+
+$(pkg)-uninstall:
+	$(RM) $(ZIP_BINARY_TARGET)
+
+$(PKG_FINISH)
+```
+
+## Testing Archive Extraction
+
+```bash
+# Test extraction locally
+cd /tmp
+wget https://downloads.sourceforge.net/infozip/zip30.tar.gz
+tar -xzf zip30.tar.gz
+ls -la
+# Output: zip30/  <- This is the directory name to use!
+
+# Clean up
+rm -rf zip30/ zip30.tar.gz
+```
+
+---
+
+# Handling C++ Standard Library Requirements
+
+## Problem: uClibc++ Limitations
+
+**Background:** Freetz-NG uses **uClibc++**, a minimal C++ standard library designed for embedded systems. It **does NOT support**:
+
+- C++11/14/17/20 features fully
+- Modern STL containers (`unordered_map`, `unordered_set`)  
+- Smart pointers (`shared_ptr`, `unique_ptr`, `weak_ptr`)
+- Many `<algorithm>` functions
+- Regular expressions (`<regex>`)
+- Threading support (`<thread>`, `<mutex>`)
+
+**Impact:** Many modern C++ programs fail to compile:
+
+```
+fatal error: unordered_map: No such file or directory
+   27 | #include <unordered_map>
+      |          ^~~~~~~~~~~~~~~
+```
+
+## Solutions for C++ Packages
+
+### Solution 1: Use Older Package Version
+
+Find a version that uses C++03 or basic C++11:
+
+```makefile
+# Example: patchelf
+# Version 0.15+ requires C++17 (unordered_map)
+# Version 0.9 uses C++03 (compatible with uClibc++)
+
+$(call PKG_INIT_BIN, 0.9)  # Use old version
+```
+
+**How to Find Compatible Versions:**
+
+1. **Check release notes/CHANGELOG:**
+   ```bash
+   git log --oneline --all | grep -i "c++\|require"
+   ```
+
+2. **Inspect source code:**
+   ```bash
+   git show v0.15:src/patchelf.cc | grep -o "#include <[^>]*>" | sort -u
+   # Shows: unordered_map, memory, algorithm -> C++11+
+   
+   git show v0.9:src/patchelf.cc | grep -o "#include <[^>]*>" | sort -u
+   # Shows: vector, string, iostream -> C++03 compatible
+   ```
+
+3. **Check configure.ac/CMakeLists.txt:**
+   ```bash
+   grep "CXX.*STANDARD\|std=c++" configure.ac CMakeLists.txt
+   ```
+
+### Solution 2: Compile as Host-Tool Only
+
+If the tool isn't needed on the device, compile it as a **host-tool** instead:
+
+```makefile
+# make/host-tools/patchelf-host/patchelf-host.mk
+$(call TOOLS_INIT, 0.18.0)
+$(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_HASH:=...
+$(PKG)_SITE:=https://github.com/NixOS/patchelf/releases/download/$($(PKG)_VERSION)
+### WEBSITE:=https://github.com/NixOS/patchelf
+### SUPPORT:=Ircama
+
+$(PKG_SOURCE_DOWNLOAD)
+$(PKG_UNPACKED)
+$(PKG_CONFIGURED_CONFIGURE)
+
+# Host tools compile with system g++ (has full libstdc++)
+$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+	$(MAKE_IN) $($(PKG)_DIR)
+	@touch $@
+
+$($(PKG)_BINARY): $($(PKG)_DIR)/.compiled
+	$(MAKE_IN) $($(PKG)_DIR) install
+
+$(pkg)-precompiled: $($(PKG)_BINARY)
+```
+
+**When to Use:**
+- Tool is only needed during build (like patchelf)
+- Tool is for development/debugging (like readelf, objdump)
+- No runtime use on the Fritz!Box device
+
+### Solution 3: Separate Versions (Host vs Target)
+
+Maintain **two separate versions**:
+- **Modern version** (C++17) for host-tools
+- **Old version** (C++03) for target packages
+
+**Example: patchelf**
+
+```makefile
+# Host tool (modern version)
+# make/host-tools/patchelf-host/patchelf-host.mk
+$(call TOOLS_INIT, 0.18.0)  # Latest, requires C++17
+
+# Target package (compatible version)  
+# make/pkgs/binary-tools/binary-tools.mk
+BINARY_TOOLS_PATCHELF_VERSION := 0.9  # Old, C++03 compatible
+```
+
+**Important:** Don't make target package depend on host-tool source!
+
+```makefile
+# WRONG - Creates dependency on incompatible version
+$(PKG)_PATCHELF_DIR := $(PATCHELF_HOST_DIR)
+
+# CORRECT - Separate download and build
+BINARY_TOOLS_PATCHELF_VERSION := 0.9
+BINARY_TOOLS_PATCHELF_SOURCE := patchelf-$(BINARY_TOOLS_PATCHELF_VERSION).tar.bz2
+BINARY_TOOLS_PATCHELF_HASH := <hash_of_0.9>
+```
+
+### Solution 4: Exclude from Package (Mark as Broken)
+
+If no compatible version exists and host-only isn't appropriate:
+
+```kconfig
+# Config.in
+config FREETZ_PACKAGE_BINARY_TOOLS_PATCHELF
+	bool "patchelf"
+	depends on BROKEN  # Requires C++17, incompatible with uClibc++
+	default n
+	help
+		Modify ELF executables and libraries.
+		
+		NOTE: Currently broken due to C++ standard library requirements.
+		Use patchelf-host instead.
+```
+
+## Debugging C++ Compilation Issues
+
+### Check Required C++ Features
+
+```bash
+# 1. Find #include directives
+cd source/target-ARCH/PACKAGE-VERSION
+grep -rh "^#include <" --include="*.cc" --include="*.cpp" --include="*.cxx" | sort -u
+
+# 2. Check for C++11+ features
+grep -rn "std::" --include="*.cc" --include="*.cpp" | grep -E "unique_ptr|shared_ptr|unordered|regex|thread"
+
+# 3. Check configure requirements
+cat configure.ac CMakeLists.txt | grep -E "CXX.*STANDARD|std=c\+\+|REQUIRE.*CXX"
+```
+
+### Verify uClibc++ Capabilities
+
+```bash
+# Check what headers uClibc++ provides
+ls toolchain/build/ARCH/arm-linux-uclibcgnueabi/usr/include/uClibc++/
+
+# Common MISSING headers:
+# - unordered_map, unordered_set
+# - memory (for smart pointers)
+# - regex
+# - thread, mutex, condition_variable
+# - chrono (partially missing)
+
+# Common AVAILABLE headers:
+# - vector, list, map, set
+# - string, iostream
+# - algorithm (basic functions only)
+# - iterator
+```
+
+### Testing Compilation
+
+```bash
+# Try minimal test
+cat > test.cpp << 'EOF'
+#include <unordered_map>
+int main() {
+    std::unordered_map<int,int> m;
+    return 0;
+}
+EOF
+
+arm-linux-g++-wrapper -std=c++17 test.cpp
+# If fails: uClibc++ doesn't support this feature
+```
+
+## Best Practices
+
+1. **Default to Older Versions** for target packages
+   - Prefer C++03 compatible code
+   - Check release history for compatibility
+
+2. **Host Tools Can Be Modern**
+   - Use latest versions for host-tools
+   - System libstdc++ has full support
+
+3. **Document C++ Requirements**
+   ```makefile
+   ### NOTE: Requires C++17, only available as host-tool
+   ```
+
+4. **Provide Alternatives**
+   - If tool is useful, provide host-tool version
+   - Document in Config.in help text
+
+5. **Test Both Environments**
+   ```bash
+   # Test host compilation
+   make patchelf-host-precompiled
+   
+   # Test target compilation (if claiming support)
+   make binary-tools-precompiled
+   ```
+
+## Example: Complete patchelf Solution
+
+**Host Tool (modern):**
+```makefile
+# make/host-tools/patchelf-host/patchelf-host.mk
+$(call TOOLS_INIT, 0.18.0)
+$(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_HASH:=1952b2a782ba576279c211ee942e341748fdb44997f704dd53def46cd055470b
+$(PKG)_SITE:=https://github.com/NixOS/patchelf/releases/download/$($(PKG)_VERSION)
+### WEBSITE:=https://github.com/NixOS/patchelf
+### NOTE: Requires C++17 (std::unordered_map), not compatible with uClibc++
+
+$(PKG_SOURCE_DOWNLOAD)
+$(PKG_UNPACKED)
+$(PKG_CONFIGURED_CONFIGURE)
+
+$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+	$(MAKE_IN) $($(PKG)_DIR)
+	@touch $@
+
+$($(PKG)_BINARY): $($(PKG)_DIR)/.compiled
+	$(MAKE_IN) $($(PKG)_DIR) install
+
+$(pkg)-precompiled: $($(PKG)_BINARY)
+```
+
+**Target Package (compatible):**
+```makefile
+# make/pkgs/binary-tools/binary-tools.mk (excerpt)
+
+# Separate patchelf version for target
+BINARY_TOOLS_PATCHELF_VERSION := 0.9
+BINARY_TOOLS_PATCHELF_SOURCE := patchelf-$(BINARY_TOOLS_PATCHELF_VERSION).tar.bz2
+BINARY_TOOLS_PATCHELF_HASH := f2a...
+BINARY_TOOLS_PATCHELF_SITE := https://github.com/NixOS/patchelf/archive/refs/tags
+
+# Download separately (don't reuse patchelf-host source!)
+$(DL_DIR)/$(BINARY_TOOLS_PATCHELF_SOURCE):
+	$(DL_TOOL) $(DL_DIR) $(BINARY_TOOLS_PATCHELF_SOURCE) \
+		$(BINARY_TOOLS_PATCHELF_SITE)/$(BINARY_TOOLS_PATCHELF_VERSION).tar.gz \
+		$(BINARY_TOOLS_PATCHELF_HASH)
+
+# Build with uClibc++ (works because 0.9 uses C++03)
+$(BINARY_TOOLS_PATCHELF_BINARY): $(BINARY_TOOLS_DIR)/.configured
+	$(SUBMAKE) -C $(BINARY_TOOLS_PATCHELF_DIR)
+```
+
+## Summary Table
+
+| Scenario | Solution | Example |
+|----------|----------|---------|
+| Tool for build-time only | Host-tool (modern version) | patchelf 0.18 |
+| Tool for device, old version exists | Target package (old version) | patchelf 0.9 |
+| Tool for device, no compatible version | Mark as BROKEN | Some C++20 tools |
+| Library needed by other packages | Find C++03 compatible version | libfoo 1.x instead of 2.x |
+
+---
+
+## References
+
+- [Shared Library Versioning](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html)
+- [ABI Compatibility](https://www.akkadia.org/drepper/dsohowto.pdf)
+- [GNU Libtool Versioning](https://www.gnu.org/software/libtool/manual/html_node/Libtool-versioning.html)
+- [Meson Build System](https://mesonbuild.com/Cross-compilation.html)
+- [uClibc++ Documentation](https://cxx.uclibc.org/)
+- [C++ ABI Compatibility](https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html)
