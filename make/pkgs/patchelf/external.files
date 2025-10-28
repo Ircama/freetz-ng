@@ -1,0 +1,3 @@
+if [ "$EXTERNAL_FREETZ_PACKAGE_PATCHELF" == "y" ] ; then
+	EXTERNAL_FILES+=" /usr/bin/patchelf"
+fi

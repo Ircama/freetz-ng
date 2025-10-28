@@ -1,0 +1,16 @@
+config FREETZ_PACKAGE_PATCHELF
+	bool "patchelf 0.18.0 - Modify ELF executables and libraries"
+	select FREETZ_STDCXXLIB_FORCE_GNULIBSTDCXX
+	select FREETZ_LIB_STDCXXLIB
+	default n
+	help
+		Modifies existing ELF executables and libraries. Can change the interpreter,
+		RPATH, and other ELF metadata.
+		
+		Useful for modifying binaries to use different dynamic linker paths or
+		library search paths (RPATH/RUNPATH).
+		
+		Note: This tool requires GNU libstdc++ (will be automatically installed
+		to /usr/lib/freetz/)
+		
+		Homepage: https://github.com/NixOS/patchelf
