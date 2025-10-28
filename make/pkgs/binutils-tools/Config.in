@@ -1,98 +1,83 @@
-menuconfig FREETZ_PACKAGE_BINARY_TOOLS
-	bool "binary-tools - Binary analysis and manipulation toolkit"
+menuconfig FREETZ_PACKAGE_BINUTILS_TOOLS
+	bool "binutils 2.41 - Binary analysis and manipulation toolkit"
 	default n
 	help
 		Collection of essential tools for analyzing and manipulating ELF binaries.
-		Each tool can be selected individually to minimize flash usage.
+		All tools are selected by default for convenience.
 		
-		Total size when all selected: ~16MB
+		Total size with all tools: ~1.5MB
 		Can be externalized to save flash memory.
 
-if FREETZ_PACKAGE_BINARY_TOOLS
+if FREETZ_PACKAGE_BINUTILS_TOOLS
 
-config FREETZ_PACKAGE_BINARY_TOOLS_READELF
+config FREETZ_PACKAGE_BINUTILS_TOOLS_READELF
 	bool "readelf - Display information about ELF files"
-	default n
+	default y
 	help
 		Displays detailed information about ELF (Executable and Linkable Format) files,
 		including headers, sections, symbols, and more.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_OBJDUMP
+config FREETZ_PACKAGE_BINUTILS_TOOLS_OBJDUMP
 	bool "objdump - Display information from object files"
-	default n
+	default y
 	help
 		Displays information from object files, including disassembly,
 		section headers, and symbol tables.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_OBJCOPY
+config FREETZ_PACKAGE_BINUTILS_TOOLS_OBJCOPY
 	bool "objcopy - Copy and translate object files"
-	default n
+	default y
 	help
 		Copies and translates object files. Can be used to convert between
 		different object file formats or modify sections.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_NM
+config FREETZ_PACKAGE_BINUTILS_TOOLS_NM
 	bool "nm - List symbols from object files"
-	default n
+	default y
 	help
 		Lists symbols from object files, useful for debugging and understanding
 		which symbols are exported or required by a binary.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_STRINGS
+config FREETZ_PACKAGE_BINUTILS_TOOLS_STRINGS
 	bool "strings - Print printable character strings"
-	default n
+	default y
 	help
 		Prints sequences of printable characters from files. Very useful for
 		analyzing binaries and finding hardcoded strings.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_AR
+config FREETZ_PACKAGE_BINUTILS_TOOLS_AR
 	bool "ar - Create, modify, and extract from archives"
-	default n
+	default y
 	help
 		Maintains groups of files as a single archive file. Commonly used
 		for creating static libraries (.a files).
 
-config FREETZ_PACKAGE_BINARY_TOOLS_RANLIB
+config FREETZ_PACKAGE_BINUTILS_TOOLS_RANLIB
 	bool "ranlib - Generate index to archive contents"
-	default n
+	default y
 	help
 		Generates an index to the contents of an archive and stores it in the archive.
 		Used with static libraries created by 'ar'.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_STRIP
+config FREETZ_PACKAGE_BINUTILS_TOOLS_STRIP
 	bool "strip - Remove symbols from object files"
-	default n
+	default y
 	help
 		Removes debugging symbols and other unnecessary information from object files,
 		reducing their size. Note: BusyBox already provides a 'strip' command.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_ADDR2LINE
+config FREETZ_PACKAGE_BINUTILS_TOOLS_ADDR2LINE
 	bool "addr2line - Convert addresses to file names and line numbers"
-	default n
+	default y
 	help
 		Converts addresses into file names and line numbers. Useful for debugging
 		crash dumps and understanding stack traces.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_SIZE
+config FREETZ_PACKAGE_BINUTILS_TOOLS_SIZE
 	bool "size - Display section sizes in binary files"
-	default n
+	default y
 	help
 		Displays the sizes of sections inside binary files. Useful for understanding
 		memory usage and optimizing binary size.
 
-config FREETZ_PACKAGE_BINARY_TOOLS_PATCHELF
-	bool "patchelf - Modify ELF executables and libraries"
-	select FREETZ_STDCXXLIB_FORCE_GNULIBSTDCXX
-	select FREETZ_LIB_STDCXXLIB
-	default n
-	help
-		Modifies existing ELF executables and libraries. Can change the interpreter,
-		RPATH, and other ELF metadata.
-		
-		Useful for modifying binaries to use different dynamic linker paths or
-		library search paths (RPATH/RUNPATH).
-		
-		Note: This tool requires GNU libstdc++ (will be automatically installed
-		to /usr/lib/freetz/)
-
-endif # FREETZ_PACKAGE_BINARY_TOOLS
+endif # FREETZ_PACKAGE_BINUTILS_TOOLS

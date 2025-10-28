@@ -1,12 +1,12 @@
-config EXTERNAL_FREETZ_PACKAGE_BINARY_TOOLS
-	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_BINARY_TOOLS && EXTERNAL_SUBDIRS
-	bool "binary-tools (externalization recommended)"
+config EXTERNAL_FREETZ_PACKAGE_BINUTILS_TOOLS
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_BINUTILS_TOOLS && EXTERNAL_SUBDIRS
+	bool "binutils-tools (externalization recommended)"
 	default n
 	help
-		Externalize binary-tools binaries to USB storage.
+		Externalize binutils-tools binaries to USB storage.
 		
 		Recommended for devices with limited flash memory.
-		The binary-tools package can be stored on external storage
+		The binutils-tools package can be stored on external storage
 		to save internal flash space.
 		
 		Files externalized (only those selected):
@@ -20,4 +20,3 @@ config EXTERNAL_FREETZ_PACKAGE_BINARY_TOOLS
 		- /usr/bin/strip
 		- /usr/bin/addr2line
 		- /usr/bin/size
-		- /usr/bin/patchelf
