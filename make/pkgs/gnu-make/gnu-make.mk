@@ -12,8 +12,8 @@ $(PKG)_CONFIGURE_ENV += make_cv_sys_gnu_glob=no
 $(PKG)_CONFIGURE_ENV += GLOBINC='-Iglob/'
 $(PKG)_CONFIGURE_ENV += GLOBLIB=glob/libglob.a
 
-# Only define download rules if make-host is not being built
-ifndef MAKE_HOST_VERSION
+# make-host and gnu-make use different versions, so both need to download
+ifneq ($($(PKG)_SOURCE),$(MAKE_HOST_SOURCE))
 $(PKG_SOURCE_DOWNLOAD)
 endif
 $(PKG_UNPACKED)
