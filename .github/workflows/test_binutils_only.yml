@@ -1,4 +1,4 @@
-name: Test binutils-tools only
+name: TEST Binutils 2.45 Upgrade
 
 on:
   workflow_dispatch:
