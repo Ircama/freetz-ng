@@ -18,9 +18,12 @@ jobs:
 
     steps:
       - name: Checkout specified branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          set-safe-directory: true
+          repository: ${{ github.repository }}
 
       - name: Show branch info
         run: |
@@ -90,3 +93,4 @@ EOF
         with:
           name: binutils-tools-binaries
           path: packages/target-*/binutils-tools-*/root/usr/bin/*
+          retention-days: 7
