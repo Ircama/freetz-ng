@@ -1,10 +1,10 @@
-$(call PKG_INIT_BIN, 2.41)
+$(call PKG_INIT_BIN, 2.45)
 $(PKG)_SOURCE:=binutils-$($(PKG)_VERSION).tar.xz
-$(PKG)_HASH:=ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450
+$(PKG)_HASH:=c50c0e7f9cb188980e2cc97e4537626b1672441815587f1eab69d2a1bfbef5d2
 $(PKG)_SITE:=https://ftp.gnu.org/gnu/binutils,https://mirror.dogado.de/gnu/binutils
 ### WEBSITE:=https://www.gnu.org/software/binutils/
 ### MANPAGE:=https://sourceware.org/binutils/docs/
-### CHANGES:=https://sourceware.org/binutils/docs-2.41/binutils/
+### CHANGES:=https://sourceware.org/binutils/docs-2.45/binutils/
 ### CVSREPO:=https://sourceware.org/git/binutils-gdb.git
 ### SUPPORT:=Ircama
 
@@ -12,7 +12,6 @@ $(PKG)_CATEGORY:=Debug helpers
 
 # List of all available binutils tools
 $(PKG)_BINUTILS_SIMPLE := readelf objdump objcopy strings ar ranlib addr2line size
-$(PKG)_BINUTILS_RENAMED := nm strip
 
 # Selected binutils tools based on user configuration  
 $(PKG)_BINUTILS_SIMPLE_SELECTED := $(call PKG_SELECTED_SUBOPTIONS,$($(PKG)_BINUTILS_SIMPLE))
@@ -26,9 +25,6 @@ endif
 
 # Build directory paths for binutils tools
 $(PKG)_BINUTILS_SIMPLE_BUILD_DIR := $($(PKG)_BINUTILS_SIMPLE:%=$($(PKG)_DIR)/binutils/%)
-$(PKG)_BINUTILS_BUILD_DIR := $($(PKG)_BINUTILS_SIMPLE_BUILD_DIR)
-$(PKG)_BINUTILS_BUILD_DIR += $(BINUTILS_TOOLS_DIR)/binutils/nm-new
-$(PKG)_BINUTILS_BUILD_DIR += $(BINUTILS_TOOLS_DIR)/binutils/strip-new
 
 # Target directory paths for binutils tools
 $(PKG)_BINUTILS_TARGET_DIR := $($(PKG)_BINUTILS:%=$($(PKG)_DEST_DIR)/usr/bin/%)
