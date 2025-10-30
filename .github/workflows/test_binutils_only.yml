@@ -1,0 +1,96 @@
+name: Test binutils-tools only
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: true
+        default: 'binutils-tools-2.45-upgrade'
+        type: string
+
+jobs:
+  test-binutils:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/freetz-ng/firmware
+      options: --user 1001:1001
+
+    steps:
+      - name: Checkout specified branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          set-safe-directory: true
+          repository: ${{ github.repository }}
+
+      - name: Show branch info
+        run: |
+          echo "Testing branch: ${{ inputs.branch }}"
+          git branch -a
+          git log --oneline -3
+
+      - name: Configure minimal settings
+        run: |
+          # Use menuconfig to select binutils-tools
+          echo "Configuring Freetz-NG for binutils-tools..."
+          make menuconfig-nc << 'EOF' || true
+FREETZ_PACKAGE_BINUTILS_TOOLS=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_READELF=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_OBJDUMP=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_OBJCOPY=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_NM=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_STRINGS=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_AR=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_RANLIB=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_STRIP=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_ADDR2LINE=y
+FREETZ_PACKAGE_BINUTILS_TOOLS_SIZE=y
+EOF
+          cat .config | grep BINUTILS_TOOLS || echo "Config not set"
+
+      - name: Build binutils-tools
+        run: |
+          echo "Building binutils-tools..."
+          make binutils-tools-precompiled V=1 || {
+            echo "Build failed!"
+            echo "Checking what went wrong..."
+            ls -la source/target-* 2>/dev/null || echo "No source directories"
+            ls -la packages/target-* 2>/dev/null || echo "No package directories"
+            exit 1
+          }
+          
+      - name: Verify binaries
+        run: |
+          echo "=== Binaries created ==="
+          ls -lh packages/target-*/binutils-tools-*/root/usr/bin/ || echo "No binaries found"
+          
+          echo ""
+          echo "=== Checking for all 10 tools ==="
+          MISSING=0
+          for tool in readelf objdump objcopy nm strings ar ranlib strip addr2line size; do
+            if ls packages/target-*/binutils-tools-*/root/usr/bin/$tool 2>/dev/null; then
+              echo "✓ $tool found"
+            else
+              echo "✗ $tool MISSING!"
+              MISSING=1
+            fi
+          done
+          
+          if [ $MISSING -eq 1 ]; then
+            echo ""
+            echo "=== FAILURE: Some tools missing! ==="
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== SUCCESS: All 10 binutils tools compiled! ==="
+          
+      - name: Upload binaries as artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: binutils-tools-binaries
+          path: packages/target-*/binutils-tools-*/root/usr/bin/*
+          retention-days: 7
