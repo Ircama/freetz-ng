@@ -85,10 +85,10 @@ modpatch()
 	local _auto_fix_supported="y"
 
 	## skip patches marked by APPLY_PATCHES
-	if [ "$patch_file" != "${patch_file#-}" ]; then
-		echo2 "skipping patch file ${patch_file:1}"
+	if [ "$patch_file" != "${patch_file#SK1p-}" ]; then
+		echo2 "skipping patch file ${patch_file:5}"
 		[ "$is_verbose" == "y" ] && echo2 -- "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-		return
+		return 0
 	fi
 
 	## md5 start

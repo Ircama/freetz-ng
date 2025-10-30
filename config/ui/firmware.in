@@ -265,7 +265,7 @@ choice
 
 
 	comment "Cable"
-		depends on FREETZ_SERIES_4 || FREETZ_SERIES_5 || FREETZ_SERIES_6
+		depends on FREETZ_SERIES_3 || FREETZ_SERIES_4 || FREETZ_SERIES_5 || FREETZ_SERIES_6
 
 	config FREETZ_TYPE_6320
 		depends on FREETZ_SERIES_3

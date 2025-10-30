@@ -53,6 +53,7 @@ Latest changes
   - Build system:
 
   - Host tools:
+    * dos2unix 7.5.3
     * file 5.45
     * precompiled host-tools 2025-10-21
     * python 3.13.8
@@ -62,17 +63,24 @@ Latest changes
     * Gateway  8.20 - 5.4.213
 
   - Scripts:
+    * make_progress_monitor.sh - monitor cross-compilation progress for make
     * ssh_firmware_update.py - utility for upgrading firmware and external over SSH
 
   - Patches:
 
   - Packages:
-    * BIND 9.11.37/9.20.13
+    * BIND 9.11.37/9.20.15
     * file 5.45
+    * GNU Make 4.2.1/4.4.1
+    * hostapd_cli 2.7/2.10/2.11
+    * Info-ZIP 3.0
+    * ldd 0.1/1.0.55
     * OpenSSH 9.3p2/10.2p1
+    * PatchELF 0.18.0
     * procps-ng 4.0.5
     * Stunnel 5.76
     * Tor 0.4.8.19
+    * Unbound 1.24.1
     * Whois 5.6.5
 
   - Libraries:

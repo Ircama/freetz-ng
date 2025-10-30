@@ -18,6 +18,7 @@ cpp_link_args     = [%TARGET_LDFLAGS%]
 [properties]
 needs_exe_wrapper = true
 pkg_config_libdir = '%PKGCONFIG%'
+longdouble_format = 'IEEE_DOUBLE_%FREETZ_TARGET_MESON_ENDIAN_UPPER%'
 
 [binaries]
 ar                = arch + '-ar'

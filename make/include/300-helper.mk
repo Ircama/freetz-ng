@@ -192,8 +192,8 @@ define APPLY_PATCHES
 	for first in $$FILTER_FIRST; do \
 	DUPLICATE=""; \
 	for other in "$(_dollar){PATCHES_OTHER[@]}"; do \
-	if [ "$(_dollar){first##*/}" == "$(_dollar){other##*/}" ]; then \
-	DUPLICATE="-"; \
+	if [ "$(_dollar){first$(_hash)$(_hash)*/}" == "$(_dollar){other$(_hash)$(_hash)*/}" ]; then \
+	DUPLICATE="SK1p-"; \
 	break; \
 	fi; \
 	done; \

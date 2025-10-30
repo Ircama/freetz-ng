@@ -291,6 +291,25 @@ config FREETZ_SYSTEM_TYPE_CORE_SUFFIX
 
 # cpu model (the same variable name as in /proc/cpuinfo)
 
+config FREETZ_CPU_MODEL_ARM
+	bool
+	default y
+	depends on \
+		FREETZ_CPU_MODEL_ARM_arm11 || \
+		FREETZ_CPU_MODEL_ARM_cortex
+
+config FREETZ_CPU_MODEL_ARM_arm11
+	bool
+	default y
+	depends on \
+		FREETZ_CPU_MODEL_ARM_arm11_arm1176
+
+config FREETZ_CPU_MODEL_ARM_arm11_arm1176
+	bool
+	default y
+	depends on \
+		FREETZ_SYSTEM_TYPE_PUMA5
+
 config FREETZ_CPU_MODEL_ARM_cortex
 	bool
 	default y

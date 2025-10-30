@@ -37,7 +37,7 @@ TARGET_ARCH="arm"
 FORCE_OPTIONS_FOR_ARCH=y
 # CONFIG_ARM_OABI is not set
 CONFIG_ARM_EABI=y
-CONFIG_GENERIC_ARM=y
+# CONFIG_GENERIC_ARM is not set
 # CONFIG_ARM610 is not set
 # CONFIG_ARM710 is not set
 # CONFIG_ARM7TDMI is not set
@@ -47,7 +47,7 @@ CONFIG_GENERIC_ARM=y
 # CONFIG_ARM926T is not set
 # CONFIG_ARM10T is not set
 # CONFIG_ARM1136JF_S is not set
-# CONFIG_ARM1176JZ_S is not set
+CONFIG_ARM1176JZ_S=y
 # CONFIG_ARM1176JZF_S is not set
 # CONFIG_ARM_CORTEX_M3 is not set
 # CONFIG_ARM_CORTEX_M1 is not set
@@ -55,6 +55,7 @@ CONFIG_GENERIC_ARM=y
 # CONFIG_ARM_SA1100 is not set
 # CONFIG_ARM_XSCALE is not set
 # CONFIG_ARM_IWMMXT is not set
+USE_BX=y
 TARGET_SUBARCH=""
 
 #
@@ -252,7 +253,7 @@ UCLIBC_BUILD_NOEXECSTACK=y
 # uClibc development/debugging options
 #
 CROSS_COMPILER_PREFIX=""
-UCLIBC_EXTRA_CFLAGS="-fno-builtin-memcpy -fno-builtin-memset"
+UCLIBC_EXTRA_CFLAGS="-msoft-float -mbig-endian"
 # DODEBUG is not set
 # DODEBUG_PT is not set
 # DOSTRIP is not set

@@ -622,7 +622,7 @@ addTrailingSlash() {
 #
 # Dependencies: readlink, realpath, bash (uses bash specific functions).
 #
-symlinks-abs2rel() {
+symlinks_abs2rel() {
 	local USAGE="$(
 		echo -e "Usage:\t${FUNCNAME} [-v|-verbose] [-r|-recursive] TARGET_FS_ROOT DIR [MASK], where"
 		echo -e "\t\tTARGET_FS_ROOT is the directory pointing to the root directory of the target filesystem"
@@ -782,6 +782,12 @@ alter_service__use_old_wrap_sh() {
 # $1 - number (or mathematical expression) in bytes
 byte_to_mb() {
 	echo $(($1)) | awk '{ printf "%.1f MB", $1 /1024/1024 }'
+}
+
+# $1 - first number (or mathematical expression)
+# $2 - second number (or mathematical expression)
+numbers_to_perc() {
+	echo $(($1)) $(($2)) | awk '{ printf "%.1f %", $2 / $1 * 100 }'
 }
 
 # $1 - tarball filename
