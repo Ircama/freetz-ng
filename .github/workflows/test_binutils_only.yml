@@ -1,0 +1,47 @@
+name: Test binutils-tools only
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-binutils:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/freetz-ng/firmware
+      options: --user 1001:1001
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build only binutils-tools
+        run: |
+          echo "Building binutils-tools..."
+          make binutils-tools-precompiled || {
+            echo "Build failed, checking errors..."
+            exit 1
+          }
+          
+      - name: Verify binaries
+        run: |
+          echo "=== Binaries created ==="
+          ls -lh packages/target-*/binutils-tools-*/root/usr/bin/ || echo "No binaries found"
+          
+          echo ""
+          echo "=== Checking for all 10 tools ==="
+          MISSING=0
+          for tool in readelf objdump objcopy nm strings ar ranlib strip addr2line size; do
+            if ls packages/target-*/binutils-tools-*/root/usr/bin/$tool 2>/dev/null; then
+              echo "✓ $tool found"
+            else
+              echo "✗ $tool MISSING!"
+              MISSING=1
+            fi
+          done
+          
+          if [ $MISSING -eq 1 ]; then
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== SUCCESS: All 10 binutils tools compiled! ==="
