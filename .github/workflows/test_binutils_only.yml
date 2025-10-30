@@ -2,6 +2,12 @@ name: Test binutils-tools only
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: true
+        default: 'binutils-tools-2.45-upgrade'
+        type: string
 
 jobs:
   test-binutils:
@@ -11,14 +17,41 @@ jobs:
       options: --user 1001:1001
 
     steps:
-      - name: Checkout
+      - name: Checkout specified branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
-      - name: Build only binutils-tools
+      - name: Show branch info
+        run: |
+          echo "Testing branch: ${{ inputs.branch }}"
+          git branch -a
+          git log --oneline -3
+
+      - name: Configure minimal settings
+        run: |
+          # Create minimal config for binutils-tools
+          cat > .config << 'EOF'
+          FREETZ_TYPE_7590_06_5X=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_READELF=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_OBJDUMP=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_OBJCOPY=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_NM=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_STRINGS=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_AR=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_RANLIB=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_STRIP=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_ADDR2LINE=y
+          FREETZ_PACKAGE_BINUTILS_TOOLS_SIZE=y
+          EOF
+          make olddefconfig
+
+      - name: Build binutils-tools
         run: |
           echo "Building binutils-tools..."
-          make binutils-tools-precompiled || {
-            echo "Build failed, checking errors..."
+          make binutils-tools || {
+            echo "Build failed!"
             exit 1
           }
           
@@ -40,8 +73,17 @@ jobs:
           done
           
           if [ $MISSING -eq 1 ]; then
+            echo ""
+            echo "=== FAILURE: Some tools missing! ==="
             exit 1
           fi
           
           echo ""
           echo "=== SUCCESS: All 10 binutils tools compiled! ==="
+          
+      - name: Upload binaries as artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: binutils-tools-binaries
+          path: packages/target-*/binutils-tools-*/root/usr/bin/*
