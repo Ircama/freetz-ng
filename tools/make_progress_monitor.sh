@@ -20,6 +20,7 @@ DIM='\033[2m'
 NC='\033[0m' # No Color
 
 # Default settings
+LIST_PACKAGES_ONLY=false
 SHOW_LEGEND=true
 SHOW_HEADER=true
 SHOW_PACKAGES=true
@@ -91,6 +92,10 @@ while [[ $# -gt 0 ]]; do
                 fi
             done
             exit 0
+            ;;
+        --list-packages)
+            LIST_PACKAGES_ONLY=true
+            shift
             ;;
         --help|-h)
             echo "Freetz-NG Build Progress Monitor"
@@ -1161,6 +1166,28 @@ if [ $TOTAL_POINTS -gt 0 ]; then
     OVERALL_PERCENTAGE=$(( (COMPLETED_POINTS + IN_PROGRESS_POINTS) / TOTAL_ITEMS ))
 else
     OVERALL_PERCENTAGE=0
+fi
+
+# If --list-packages flag is set, output only package names and exit
+if $LIST_PACKAGES_ONLY; then
+    # Use associative array to ensure unique packages
+    declare -A unique_pkgs
+    for info in "${SORTED_PKG_INFO[@]}"; do
+        IFS='|' read -r timestamp pkg status percentage complexity <<< "$info"
+        # Skip toolchain components (they are not real packages)
+        [[ "$pkg" =~ ^Toolchain: ]] && continue
+        # Skip special toolchain packages that cannot be built standalone
+        [[ "$pkg" == "gcc-toolchain" ]] && continue
+        [[ "$pkg" == "binutils-toolchain" ]] && continue
+        unique_pkgs["$pkg"]=1
+    done
+    # Output comma-separated list of unique packages
+    pkg_list=""
+    for pkg in "${!unique_pkgs[@]}"; do
+        pkg_list="${pkg_list}${pkg},"
+    done
+    echo "${pkg_list%,}"
+    exit 0
 fi
 
 if [ "$OUTPUT_FORMAT" = "terminal" ]; then
