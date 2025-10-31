@@ -20,6 +20,17 @@ File necessari: make_package.yml  merge_all_prs.sh (nella directory "..")
 Installazione dei file:
 
 ```bash
+# Scarica TESTING_WORKFLOW.md
+wget https://raw.githubusercontent.com/Ircama/freetz-ng/testing-tools/TESTING_WORKFLOW.md
+
+# Scarica make_package.yml
+wget https://raw.githubusercontent.com/Ircama/freetz-ng/testing-tools/make_package.yml
+
+# Scarica merge_all_prs.sh
+wget https://raw.githubusercontent.com/Ircama/freetz-ng/testing-tools/merge_all_prs.sh
+chmod +x merge_all_prs.sh
+
+# Oppure:
 git checkout testing-tools
 cp TESTING_WORKFLOW.md make_package.yml merge_all_prs.sh ..
 git checkout master
