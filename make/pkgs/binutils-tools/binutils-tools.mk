@@ -28,11 +28,9 @@ $(PKG)_CONFIGURE_OPTIONS += --disable-sim
 $(PKG)_CONFIGURE_OPTIONS += --disable-gdb
 $(PKG)_CONFIGURE_OPTIONS += --without-included-gettext
 $(PKG)_CONFIGURE_OPTIONS += --enable-deterministic-archives
-# Disable gprofng on x86 uClibc (missing dlvsym, Dl_serinfo, RTLD_DI_SERINFOSIZE)
-# ARM/MIPS don't build gprofng by default, only x86 does
-ifeq ($(strip $(FREETZ_TARGET_ARCH_X86)),y)
+# Disable gprofng (requires glibc-only features: dlvsym, Dl_serinfo, RTLD_DI_SERINFOSIZE)
+# Not useful for embedded devices, only adds build complexity
 $(PKG)_CONFIGURE_OPTIONS += --disable-gprofng
-endif
 
 
 $(PKG_SOURCE_DOWNLOAD)
