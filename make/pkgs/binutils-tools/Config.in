@@ -1,6 +1,5 @@
 menuconfig FREETZ_PACKAGE_BINUTILS_TOOLS
 	bool "Binutils 2.45 (binary only)"
-	depends on !FREETZ_TARGET_ARCH_X86
 	default n
 	help
 		Collection of essential tools for analyzing and
