@@ -28,6 +28,8 @@ $(PKG)_CONFIGURE_OPTIONS += --disable-sim
 $(PKG)_CONFIGURE_OPTIONS += --disable-gdb
 $(PKG)_CONFIGURE_OPTIONS += --without-included-gettext
 $(PKG)_CONFIGURE_OPTIONS += --enable-deterministic-archives
+# Disable gprofng on uClibc (missing dlvsym, Dl_serinfo, RTLD_DI_SERINFOSIZE)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_AVM_PROP_LIBC_UCLIBC),--disable-gprofng,--enable-gprofng)
 
 
 $(PKG_SOURCE_DOWNLOAD)
