@@ -2,6 +2,10 @@
 
 # Script to merge all open PRs from upstream into local master
 # This will merge all your PR branches that are currently open on Freetz-NG/freetz-ng
+# 
+# Usage:
+#   ./merge_all_prs.sh                    # Merge all open PRs
+#   ./merge_all_prs.sh 1293 1292 1291    # Merge specific PRs by number
 
 set -e
 
@@ -26,13 +30,44 @@ fi
 echo -e "${GREEN}Updating master...${NC}"
 git pull origin master
 
-# Get list of open PRs
-echo -e "${GREEN}Fetching list of open PRs...${NC}"
-prs=$(gh pr list --repo Freetz-NG/freetz-ng --state open --json number,title,headRefName --limit 100)
-
-if [ -z "$prs" ] || [ "$prs" = "[]" ]; then
-    echo -e "${YELLOW}No open PRs found.${NC}"
-    exit 0
+# Check if specific PRs were provided as arguments
+if [ $# -gt 0 ]; then
+    # Merge specific PRs
+    echo -e "${GREEN}Fetching details for specified PRs: $@${NC}"
+    pr_numbers="$@"
+    
+    # Build JSON array of PR data
+    prs="["
+    first=true
+    for pr_num in $pr_numbers; do
+        if [ "$first" = true ]; then
+            first=false
+        else
+            prs+=","
+        fi
+        
+        pr_data=$(gh pr view "$pr_num" --repo Freetz-NG/freetz-ng --json number,title,headRefName 2>/dev/null || echo "")
+        if [ -z "$pr_data" ]; then
+            echo -e "${RED}Warning: PR #$pr_num not found, skipping...${NC}"
+            continue
+        fi
+        prs+="$pr_data"
+    done
+    prs+="]"
+    
+    if [ "$prs" = "[]" ]; then
+        echo -e "${RED}No valid PRs found.${NC}"
+        exit 1
+    fi
+else
+    # Get list of all open PRs
+    echo -e "${GREEN}Fetching list of all open PRs...${NC}"
+    prs=$(gh pr list --repo Freetz-NG/freetz-ng --state open --json number,title,headRefName --limit 100)
+    
+    if [ -z "$prs" ] || [ "$prs" = "[]" ]; then
+        echo -e "${YELLOW}No open PRs found.${NC}"
+        exit 0
+    fi
 fi
 
 # Extract branch names
