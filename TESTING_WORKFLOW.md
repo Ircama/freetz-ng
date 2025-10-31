@@ -15,7 +15,15 @@ git remote add upstream https://github.com/Freetz-NG/freetz-ng.git
 - Vai su: https://github.com/Ircama/freetz-ng/settings/actions
 - Seleziona: "Allow all actions and reusable workflows"
 
-Pacchetti necessari: make_package.yml  merge_all_prs.sh (nella directory "..")
+File necessari: make_package.yml  merge_all_prs.sh (nella directory "..")
+
+Installazione dei file:
+
+```bash
+git checkout testing-tools
+cp TESTING_WORKFLOW.md make_package.yml merge_all_prs.sh ..
+git checkout master
+```
 
 ## ============================================
 ## WORKFLOW PER TESTARE UN PACCHETTO
