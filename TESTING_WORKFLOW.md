@@ -77,31 +77,20 @@ make menuconfig
 
 ### Step 4: Copia le configurazioni
 ```bash
+rm .github/workflows/* # Cancella tutti i workflow
+
 # Copia la configurazione attuale nella directory workflows
-cp .config .github/myconfig
+cp .config .github/workflows/myconfig
 
 # Copia il workflow:
-rm .github/workflows/* # Cancella tutti i workflow
 cp ../make_package.yml .github/workflows/make_package.yml
+
+ls .github/workflows # La directory dei workflow deve contenere due file: make_package.yml e myconfig
 ```
 
 ### Step 5: Commit e push
 ```bash
-git add .github/workflows/myconfig
-# Se hai modificato anche il workflow:
-git add .github/workflows/make_package.yml
-```
-
-La directory dei workflow deve contenere due file: make_package.yml e myconfig
-
-```bash
-$ ls -l .github/workflows
-total 120
--rw-r--r-- 1 myuser myuser 21587 Oct 31 13:07 make_package.yml
--rw-r--r-- 1 myuser myuser 97827 Oct 31 13:06 myconfig
-```
-
-```bash
+git add .github/workflows/.
 git commit -m "CI: Update myconfig for testing $(date +%Y-%m-%d)"
 git push origin master
 ```
