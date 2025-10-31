@@ -29,6 +29,8 @@ $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2test-libreadline
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2test-libedit
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2grep-libz
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2grep-libbz2
+# Disable JIT on uClibc < 1.0.14 (missing posix_madvise)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_TARGET_UCLIBC_0_9_28)$(FREETZ_TARGET_UCLIBC_0_9_29)$(FREETZ_TARGET_UCLIBC_0_9_32)$(FREETZ_TARGET_UCLIBC_0_9_33),--disable-jit,--enable-jit)
 
 
 $(PKG_SOURCE_DOWNLOAD)
