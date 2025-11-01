@@ -262,8 +262,8 @@ jobs:
           sed -i 's/^FREETZ_VERBOSITY_LEVEL=[0-9]/# &/' .config
           sed -i 's/^FREETZ_USER_LEVEL_BEGINNER=y/# &/' .config
           sed -i 's/^FREETZ_USER_LEVEL_EXPERT=y/# &/' .config
-          # Comment out util-linux version to let Config.in auto-select based on toolchain
-          sed -i 's/^FREETZ_UTIL_LINUX_VERSION_.*/# &/' .config
+          # Remove util-linux version lines to let Config.in auto-select based on toolchain
+          sed -i '/^#\? \?FREETZ_UTIL_LINUX_VERSION_/d' .config
           
           echo 'FREETZ_MODULES_OWN=""'                                                                >> .config
           for x in  UDEVMOUNT                               ; do echo "# FREETZ_PATCH_$x is not set"  >> .config; done
