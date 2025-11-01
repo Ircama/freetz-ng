@@ -55,6 +55,11 @@ git push origin master --force    # Forza il push sul tuo fork
 **Opzione A - Merge di tutte le PR aperte:**
 ```bash
 ../merge_all_prs.sh
+
+# Oppure ../merge_all_prs.sh 1276
+
+# Se tutto va bene:
+git push origin master
 ```
 
 **Opzione B - Merge di una specifica PR:**
@@ -62,17 +67,17 @@ git push origin master --force    # Forza il push sul tuo fork
 git merge ircama-python3 --no-edit
 git merge ircama-php --no-edit
 # ... altre PR se necessario
+
+git push origin master
 ```
 
 ### Step 3: Configura i pacchetti da testare
 ```bash
 # Configura i pacchetti che vuoi testare
-make menuconfig
 
-# ⚠️ IMPORTANTE: Abilita le librerie necessarie, ad esempio:
-# - libxml2 (per PHP)
-# - libatomic (per vari pacchetti)
-# - ncurses (per vari pacchetti)
+# Eventualmente: rm .config
+
+make menuconfig
 ```
 
 ### Step 4: Copia le configurazioni
@@ -84,8 +89,9 @@ cp .config .github/workflows/myconfig
 
 # Copia il workflow:
 cp ../make_package.yml .github/workflows/make_package.yml
+cp ../make_toolchain.yml .github/workflows/make_toolchain.yml
 
-ls .github/workflows # La directory dei workflow deve contenere due file: make_package.yml e myconfig
+ls .github/workflows # La directory dei workflow deve contenere tre file: make_package.yml, myconfig, make_toolchain.yml
 ```
 
 ### Step 5: Commit e push
@@ -96,6 +102,10 @@ git push origin master
 ```
 
 ### Step 6: Esegui il workflow manualmente
+
+```bash
+gh workflow run make_package.yml -f make_target="util-linux-recompile"
+```
 
 **Via interfaccia web:**
 1. Vai su: https://github.com/Ircama/freetz-ng/actions

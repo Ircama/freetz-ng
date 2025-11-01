@@ -1,0 +1,142 @@
+name: make_toolchain
+
+on:
+  workflow_dispatch:
+    inputs:
+      make_target:
+        description: 'Toolchain target (e.g., 7590_AX-07_5X, 6690-08_0X)'
+        required: true
+        type: string
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  LANG: C
+
+jobs:
+  parse_target:
+    runs-on: ubuntu-latest
+    outputs:
+      device: ${{ steps.parse.outputs.device }}
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+      - id: parse
+        run: |
+          TARGET="${{ github.event.inputs.make_target }}"
+          DEVICE="${TARGET%%-*}"
+          VERSION="${TARGET#*-}"
+          echo "device=$DEVICE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building toolchain for: $DEVICE firmware $VERSION"
+
+  build_toolchain:
+    needs: parse_target
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/freetz-ng/firmware
+      options: --user freetz
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: config
+        run: |
+          echo "################################################################"
+          echo "Configuring for ${{ needs.parse_target.outputs.device }} - ${{ needs.parse_target.outputs.version }}"
+          echo "################################################################"
+          
+          # Select device and firmware version
+          echo "FREETZ_TYPE_FRITZBOX_${{ needs.parse_target.outputs.device }}=y" > .config
+          echo "FREETZ_AVM_VERSION_${{ needs.parse_target.outputs.version }}=y" >> .config
+          
+          # Disable firmware download (not needed for toolchain)
+          echo "# FREETZ_DL_FIRMWARE is not set" >> .config
+          
+          # Enable on-device GCC if supported
+          echo "FREETZ_PACKAGE_GCC=y" >> .config
+          echo "FREETZ_PACKAGE_GCC_COMPILER=y" >> .config
+          echo "FREETZ_PACKAGE_GCC_BINUTILS=y" >> .config
+          
+          # Build settings (compact output, download toolchain)
+          echo 'FREETZ_VERBOSITY_FWMOD_2=y' >> .config
+          echo 'FREETZ_VERBOSITY_LEVEL_0=y' >> .config
+          echo 'FREETZ_VERBOSITY_LEVEL=0' >> .config
+          echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y' >> .config
+          echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y' >> .config
+          
+          # Apply configuration
+          make olddefconfig
+          
+          # Check if on-device GCC was enabled
+          if grep -q "^FREETZ_PACKAGE_GCC=y" .config; then
+            echo "✓ On-device GCC enabled for this device"
+            echo "gcc_enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "✗ On-device GCC not available for this device"
+            echo "gcc_enabled=false" >> $GITHUB_OUTPUT
+          fi
+        id: config
+
+      - name: build-toolchain
+        run: |
+          echo "################################################################"
+          echo "Building cross-compiler toolchain"
+          echo "################################################################"
+          make tools
+          make toolchain
+          
+          # Show toolchain info
+          echo "################################################################"
+          echo "Toolchain built successfully:"
+          ls -lh toolchain/build/*/mips*/bin/ 2>/dev/null || ls -lh toolchain/build/*/arm*/bin/ 2>/dev/null || ls -lh toolchain/build/*/i686*/bin/ 2>/dev/null || true
+
+      - name: build-gcc-ondevice
+        if: steps.config.outputs.gcc_enabled == 'true'
+        run: |
+          echo "################################################################"
+          echo "Building on-device GCC package"
+          echo "################################################################"
+          make libs
+          make gcc-precompiled
+          
+          # Show package info
+          echo "################################################################"
+          echo "On-device GCC package built:"
+          find packages/target-*/gcc-*/root/usr/bin/ -type f 2>/dev/null || echo "No on-device GCC binaries found"
+
+      - name: result
+        run: |
+          echo "################################################################"
+          echo "Build Summary"
+          echo "################################################################"
+          echo ""
+          echo "Cross-compiler toolchain:"
+          TOOLCHAIN_DIR=$(find toolchain/build -maxdepth 1 -type d -name "*linux*" | head -1)
+          if [ -n "$TOOLCHAIN_DIR" ]; then
+            echo "  Location: $TOOLCHAIN_DIR"
+            echo "  Compiler: $(basename $TOOLCHAIN_DIR)"
+            echo "  Binaries:"
+            ls -1 $TOOLCHAIN_DIR/bin/*gcc* 2>/dev/null | head -3 || echo "    (not found)"
+          fi
+          
+          echo ""
+          if [ "${{ steps.config.outputs.gcc_enabled }}" = "true" ]; then
+            echo "On-device GCC package:"
+            GCC_PKG=$(find packages -name "gcc-*" -type d | head -1)
+            if [ -n "$GCC_PKG" ]; then
+              echo "  Package: $GCC_PKG"
+              echo "  Size: $(du -sh $GCC_PKG | cut -f1)"
+              echo "  Binaries:"
+              find $GCC_PKG/root/usr/bin -type f 2>/dev/null | wc -l | xargs echo "    Count:"
+            fi
+          else
+            echo "On-device GCC: Not available for this device"
+          fi
+
+      - name: upload-artifacts
+        if: steps.config.outputs.gcc_enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcc-ondevice-${{ needs.parse_target.outputs.device }}-${{ needs.parse_target.outputs.version }}
+          path: |
+            packages/target-*/gcc-*/
+          retention-days: 7

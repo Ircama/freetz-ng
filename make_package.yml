@@ -13,6 +13,7 @@ on:
       make_target:
         description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', or 'package-fullbuild' (builds full firmware)"
         required: false
+        type: string
         default: ""
 
 #concurrency:
@@ -26,7 +27,7 @@ jobs:
 #     image: ubuntu:20.04
 #     image: freetzng/generate
       image: ghcr.io/freetz-ng/generate
-      options: --user 1001:1001
+      options: --user freetz
     runs-on: ubuntu-latest
 
     outputs:
@@ -178,7 +179,7 @@ jobs:
 #     image: ubuntu:20.04
 #     image: freetzng/firmware
       image: ghcr.io/freetz-ng/firmware
-      options: --user 1001:1001
+      options: --user freetz
     needs: parse_matrix
     strategy:
       max-parallel: 16
@@ -254,6 +255,16 @@ jobs:
             echo "ERROR: .github/workflows/myconfig not found!"
             exit 1
           fi
+          
+          # Comment out conflicting settings from myconfig that will be overridden
+          sed -i 's/^FREETZ_VERBOSITY_FWMOD_[0-9]=y/# &/' .config
+          sed -i 's/^FREETZ_VERBOSITY_LEVEL_[0-9]=y/# &/' .config
+          sed -i 's/^FREETZ_VERBOSITY_LEVEL=[0-9]/# &/' .config
+          sed -i 's/^FREETZ_USER_LEVEL_BEGINNER=y/# &/' .config
+          sed -i 's/^FREETZ_USER_LEVEL_EXPERT=y/# &/' .config
+          # Comment out util-linux version to let Config.in auto-select based on toolchain
+          sed -i 's/^FREETZ_UTIL_LINUX_VERSION_.*=y/# &/' .config
+          
           echo 'FREETZ_MODULES_OWN=""'                                                                >> .config
           for x in  UDEVMOUNT                               ; do echo "# FREETZ_PATCH_$x is not set"  >> .config; done
           for x in  dummy loop usbserial                   ; do echo "# FREETZ_MODULE_$x is not set"  >> .config; done
