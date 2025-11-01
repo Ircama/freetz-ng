@@ -111,6 +111,9 @@ esac
 [ "$old" == "old" ] && dltc "FREETZ_TYPE_7590_W5     FREETZ_TYPE_FIRMWARE_07_0X"
 [ "$new" == "new" ] && dltc "FREETZ_TYPE_7590_W5     FREETZ_TYPE_FIRMWARE_07_2X"        # SEPARATE
 [ "$new" == "new" ] && dltc "FREETZ_TYPE_7590_W5     FREETZ_TYPE_FIRMWARE_07_5X"        # SEPARATE
+[ "$old" == "old" ] && dltc "FREETZ_TYPE_7590_W6     FREETZ_TYPE_FIRMWARE_07_5X"        # SEPARATE  Fritz!Box 7590 AX (WiFi 6) MIPS32
+[ "$old" == "old" ] && dltc "FREETZ_TYPE_7590_W6     FREETZ_TYPE_FIRMWARE_08_0X"        # SEPARATE  Fritz!Box 7590 AX (WiFi 6) MIPS32
+[ "$new" == "new" ] && dltc "FREETZ_TYPE_7590_W6     FREETZ_TYPE_FIRMWARE_08_2X"        # SEPARATE  Fritz!Box 7590 AX (WiFi 6) MIPS32
 
 
 [ "$old" == "old" ] && dltc "FREETZ_TYPE_1750        FREETZ_TYPE_FIRMWARE_07_0X"
