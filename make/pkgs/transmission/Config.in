@@ -59,6 +59,9 @@ if FREETZ_PACKAGE_TRANSMISSION
 
 	endchoice
 
+	comment "WARNING: Version 3 does not work with OpenSSL newer than 1.1.1"
+		depends on FREETZ_PACKAGE_TRANSMISSION_VERSION_ABANDON && FREETZ_PACKAGE_TRANSMISSION_WITH_OPENSSL && !FREETZ_OPENSSL_VERSION_11_MAX
+
 	config FREETZ_PACKAGE_TRANSMISSION_CLIENT
 		bool "Transmission client"
 		default n

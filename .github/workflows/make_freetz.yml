@@ -48,17 +48,17 @@ jobs:
 #     - name: locale
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
-      - name: sleep
-        run: |
-          SLEEP="$((1 + $(od -A n -t d -N 2 /dev/urandom | tr -d ' ') % 9))"
-          echo "Sleeping $SLEEP seconds ..."
-          sleep $SLEEP
+#     - name: sleep
+#       run: |
+#         SLEEP="$((1 + $(od -A n -t d -N 2 /dev/urandom | tr -d ' ') % 9))"
+#         echo "Sleeping $SLEEP seconds ..."
+#         sleep $SLEEP
 
-      - name: myips
-        run: |
-          echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
-#         echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
-#         echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
+#     - name: myips
+#       run: |
+#         echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
+##        echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
+##        echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
 
       - name: clone
         uses: actions/checkout@v5
@@ -83,7 +83,8 @@ jobs:
 
       - name: config
         run: |
-          truncate -s0 .config
+          truncate -s0                                                                                   .config
+          echo -n
           echo 'FREETZ_MODULES_OWN=""'                                                                >> .config
           for x in  UDEVMOUNT                               ; do echo "# FREETZ_PATCH_$x is not set"  >> .config; done
           for x in  dummy loop usbserial                   ; do echo "# FREETZ_MODULE_$x is not set"  >> .config; done
@@ -102,29 +103,30 @@ jobs:
           echo 'FREETZ_REAL_DEVELOPER_ONLY__DLURL="${{ secrets.ACTIONS_DLTCS }}"'                     >> .config
           echo '# FREETZ_DOWNLOAD_TOOLCHAIN is not set'                                               >> .config
           echo '# FREETZ_HOSTTOOLS_DOWNLOAD is not set'                                               >> .config
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}cfg" -O cfg 2>/dev/null && mv cfg .config || rm -f cfg
+          echo -n
+          URL="${{ secrets.ACTIONS_FREETZ }}"
+          echo -n "Downloading file '${URL##*/}': "
+          case "${URL##*.}" in \
+          '')                                                                       echo Skip ;; \
+          tar) wget -q "$URL" -O - 2>/dev/null | tar x  2>/dev/null && echo Done || echo Fail ;; \
+          tgz) wget -q "$URL" -O - 2>/dev/null | tar xz 2>/dev/null && echo Done || echo Fail ;; \
+          tbz) wget -q "$URL" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Fail ;; \
+          *)   wget -q "$URL" -O - 2>/dev/null > .config            && echo Done || echo Fail ;; \
+          esac
+          echo -n
           grep -q '^FREETZ_TYPE_' .config || echo 'FREETZ_TYPE_7530_W6_V1=y'                          >> .config
           grep -q '^FREETZ_TYPE_FIRMWARE_' .config || echo 'FREETZ_TYPE_FIRMWARE_08_0X=y'             >> .config
-          echo "################################################################" && du .config && wc -l .config
-
-      - name: addon
-        run: |
-          echo "################################################################"
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Null
-
-      - name: signature
-        run: |
-          mkdir -p ~/.freetz-signature/
-          for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
-          echo "################################################################" && ls -l ~/.freetz-signature/
+          echo "##########################################################" && echo -n "Lines=" && wc -l .config
 
       - name: generate
         run: |
           make && rm -f images/latest.image
-
+#     - name: progress
+#       run: |
+#         tools/make_progress_monitor.sh --no-legend
       - name: result
         run: |
-          echo "################################################################"
+          echo "##########################################################"
           ls -l images/
           sha256sum images/*
 
@@ -137,36 +139,37 @@ jobs:
           [ -n "$LINK" ] && echo "link=$LINK" >> $GITHUB_OUTPUT
           [ -n "$LAST" ] && echo "last=$LAST" >> $GITHUB_OUTPUT
           [ -n "$NAME" ] && echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "################################################################"
+          echo "##########################################################"
           echo "LINK=$LINK"
           echo "LAST=$LAST"
           echo "NAME=$NAME"
           test -n "$NAME"
-
-#     - name: cleanup
-#       env:
-#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         ACTIONS_NAME: ${{ steps.vars.outputs.name }}
-#       run: |
-#         git config --global --add safe.directory $GITHUB_WORKSPACE
-#         git config --local credential.helper '!x() { echo "password=$GITHUB_TOKEN"; };x'
-#         git tag -d $ACTIONS_NAME && git push --delete origin $ACTIONS_NAME || true
-#     - name: release
-#       uses: ncipollo/release-action@v1
-#       with:
-#         tag: ${{ steps.vars.outputs.name }}
-#         name: ${{ steps.vars.outputs.name }}
-#         body: |
-#           ${{ steps.vars.outputs.last }}
-#           ${{ steps.vars.outputs.link }}
-#         prerelease: false
-#         allowUpdates: true
-#         removeArtifacts: false
-#         artifacts: "images/*"
-#         token: ${{ secrets.GITHUB_TOKEN }}
-#         replacesArtifacts: false
-#         artifactErrorsFailBuild: true
-#         draft: true
+      - name: cleanup
+        if: github.repository == 'freetz-ng/freetz-ng'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIONS_NAME: ${{ steps.vars.outputs.name }}
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --local credential.helper '!x() { echo "password=$GITHUB_TOKEN"; };x'
+          git tag -d $ACTIONS_NAME && git push --delete origin $ACTIONS_NAME || true
+      - name: release
+        uses: ncipollo/release-action@v1
+        if: github.repository == 'freetz-ng/freetz-ng'
+        with:
+          tag: ${{ steps.vars.outputs.name }}
+          name: ${{ steps.vars.outputs.name }}
+          body: |
+            ${{ steps.vars.outputs.last }}
+            ${{ steps.vars.outputs.link }}
+          prerelease: false
+          allowUpdates: true
+          removeArtifacts: false
+          artifacts: "images/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          replacesArtifacts: false
+          artifactErrorsFailBuild: true
+          draft: true
 
       - name: cache_clear
         if: github.repository == 'freetz-ng/freetz-ng'

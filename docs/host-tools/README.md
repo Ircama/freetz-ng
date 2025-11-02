@@ -24,7 +24,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### D
 
-  * **[dos2unix 7.5.2](dos2unix-host.md)<a id='dos2unix-host'></a>**<br>
+  * **[dos2unix 7.5.3](dos2unix-host.md)<a id='dos2unix-host'></a>**<br>
 
   * **[dtc 1.7.2](dtc-host.md)<a id='dtc-host'></a>**<br>
 
@@ -37,6 +37,8 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[fakeroot 1.37.1.2](fakeroot-host.md)<a id='fakeroot-host'></a>**<br>
 
   * **[fastjar 0.98](fastjar-host.md)<a id='fastjar-host'></a>**<br>
+
+  * **[file 5.45](file-host.md)<a id='file-host'></a>**<br>
 
   * **[find-squashfs 1.0](find-squashfs-host.md)<a id='find-squashfs-host'></a>**<br>
 
@@ -144,7 +146,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[tichksum 1.0](tichksum-host.md)<a id='tichksum-host'></a>**<br>
 
-  * **[tools 2025-09-30](tools-host.md)<a id='tools-host'></a>**<br>
+  * **[tools 2025-10-21](tools-host.md)<a id='tools-host'></a>**<br>
 
 ### U
 

@@ -72,10 +72,10 @@ endif
 		echo "#fixing ncurses detection bug" $(SILENT); \
 		$(SED) 's/^main()/int &/' -i $(KERNEL_SOURCE_DIR)/scripts/kconfig/lxdialog/check-lxdialog.sh; \
 	fi;
-	@echo "#kernel version specific patches: $(KERNEL_PATCHES_DIR)" $(SILENT)
-	@$(call APPLY_PATCHES,$(KERNEL_PATCHES_DIR),$(KERNEL_DIR))
-	@echo "#firmware version specific patches: $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID)" $(SILENT)
-	@$(call APPLY_PATCHES,$(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID),$(KERNEL_DIR))
+	@echo "#applying patches" $(SILENT)
+	@echo "##kernel version specific patches dir: $(KERNEL_PATCHES_DIR)" $(SILENT)
+	@echo "##firmware version specific patches dir: $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID)" $(SILENT)
+	@$(call APPLY_PATCHES,$(KERNEL_PATCHES_DIR) $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID),$(KERNEL_DIR))
 	@echo "#additional generic fixes" $(SILENT)
 	@for i in $(KERNEL_LINKING_FILES); do \
 		f="$${i%%,*}"; symlink_location="$${i##*,}"; \

@@ -64,7 +64,7 @@ jobs:
       options: --user 1001:1001
     needs: matrizifizieren
     strategy:
-      max-parallel: 16
+      max-parallel: 17
       fail-fast: false
       matrix:
         fritz: ${{ fromJson(needs.matrizifizieren.outputs.matrix) }}

@@ -63,7 +63,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>bfusb: AVM BlueFRITZ! USB stick support (binary only)</u><a id='bfusb'></a>**<br>
     This package adds support for the AVM BlueFRITZ! USB stick.
 
-  * **[BIND 9.11.37/9.20.13](../../docs/make/bind.md)<a id='bind'></a>**<br>
+  * **[BIND 9.11.37/9.20.15](../../docs/make/bind.md)<a id='bind'></a>**<br>
     BIND is a suite of software for interacting with the Domain Name System (DNS). The name BIND stands for "Berkeley Internet Name Daemon".
      - [named.conf](../../docs/make/bind.md#namedconf)
 
@@ -314,7 +314,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>gntpsend 0.3.2-git (binary only) - DEPRECATED</u><a id='gntpsend'></a>**<br>
     Growl is a notification system for the Mac OS X. Applications can use Growl to display small notifications about events which the user deems important, in a consistent manner. This package provides a tool 'gntp-send' which allows to send notifications to Growl.
 
-  * **<u>GNU Make 4.2.1 (binary only) - DEPRECATED</u><a id='gnu-make'></a>**<br>
+  * **<u>GNU Make 4.2.1/4.4.1 (binary only)</u><a id='gnu-make'></a>**<br>
     Make is a tool which controls the generation of executables and other non-source files of a program from the program's source files.
 
   * **[GnuTLS 3.7.8 (binary only) - DEPRECATED](../../docs/make/gnutls.md)<a id='gnutls'></a>**<br>
@@ -344,6 +344,9 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[hol: Halt-On-Lan 1.0 - DEPRECATED](../../docs/make/hol.md)<a id='hol'></a>**<br>
     Halt-On-Lan is a package to run predefined actions on a remote host: shutdown, reboot, logoff, lock For successfull action poweroff.exe from http://users.telenet.be/jbosman/poweroff/poweroff.htm or similar compatible script or binary must be installed and run as service on the remote host. Moreover, in case of requested interaction this service should understand the syntax of poweroff.exe
+
+  * **[hostapd_cli 2.7/2.10/2.11 (binary only)](../../docs/make/hostapd_cli.md)<a id='hostapd-cli'></a>**<br>
+    Command line client for hostapd control interface. Useful to send BSS Transition Management (802.11v) and Neighbor Report (802.11k) commands to the running daemon.
 
   * **<u>html2text 1.3.2a (binary only) - DEPRECATED</u><a id='html2text'></a>**<br>
     html2text is a command line utility, written in C++, that converts HTML documents into plain text.
@@ -390,6 +393,9 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Benutzerdefiniert](../../docs/make/inetd.md#benutzerdefiniert)
      - [Konfiguration](../../docs/make/inetd.md#konfiguration)
      - [Für Entwickler](../../docs/make/inetd.md#für-entwickler)
+
+  * **[infozip: Info-ZIP 3.0 (binary only) - DEPRECATED](../../docs/make/infozip.md)<a id='infozip'></a>**<br>
+    Info-ZIP's purpose is to provide free, portable, high-quality versions of the Zip compressor-archiver utilities that are compatible with the the DOS-based PKZIP by PKWARE, Inc.
 
   * **[iodine 0.7.0 - DEPRECATED](../../docs/make/iodine.md)<a id='iodine'></a>**<br>
     iodine lets you tunnel IPv4 data through a DNS server. This can be usable in different situations where internet access is firewalled, but DNS queries are allowed.
@@ -607,7 +613,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Fehlerbehebung](../../docs/make/openntpd.md#fehlerbehebung)
      - [Alternative](../../docs/make/openntpd.md#alternative)
 
-  * **[OpenSSH 9.3p2/10.0p1](../../docs/make/openssh.md)<a id='openssh'></a>**<br>
+  * **[OpenSSH 9.3p2/10.2p1](../../docs/make/openssh.md)<a id='openssh'></a>**<br>
     OpenSSH is the premier connectivity tool for remote login with the SSH protocol. It encrypts all traffic to eliminate eavesdropping, connection hijacking, and other attacks. In addition, OpenSSH provides a large suite of secure tunneling capabilities, several authentication methods, and sophisticated configuration options.
 
   * **[OpenSSL 0.9.8zh/1.0.2u/1.1.1w/3.0.18/3.5.4 (binary only)](../../docs/make/openssl.md)<a id='openssl'></a>**<br>
@@ -691,6 +697,23 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Werbefilter](../../docs/make/privoxy.md#werbefilter)
      - [Installation](../../docs/make/privoxy.md#installation)
      - [Diskussion](../../docs/make/privoxy.md#diskussion)
+
+  * **[procps-ng 4.0.5 (binaries only)](../../docs/make/procps-ng.md)<a id='procps-ng'></a>**<br>
+    procps-ng - /proc filesystem utilities This package provides the full versions of procps utilities with the suffix "-ng" to avoid conflicts with BusyBox versions.
+     - [Process Information](../../docs/make/procps-ng.md#process-information)
+     - [Memory and System Information](../../docs/make/procps-ng.md#memory-and-system-information)
+     - [Process Management](../../docs/make/procps-ng.md#process-management)
+     - [Process Inspection](../../docs/make/procps-ng.md#process-inspection)
+     - [System Utilities](../../docs/make/procps-ng.md#system-utilities)
+     - [Basic Process Monitoring](../../docs/make/procps-ng.md#basic-process-monitoring)
+     - [Memory and System Info](../../docs/make/procps-ng.md#memory-and-system-info)
+     - [Advanced Process Analysis](../../docs/make/procps-ng.md#advanced-process-analysis)
+     - [System Configuration](../../docs/make/procps-ng.md#system-configuration)
+     - [Build Configuration](../../docs/make/procps-ng.md#build-configuration)
+     - [Known Limitations](../../docs/make/procps-ng.md#known-limitations)
+     - [Command not found](../../docs/make/procps-ng.md#command-not-found)
+     - [Permission denied](../../docs/make/procps-ng.md#permission-denied)
+     - [Externalization not working](../../docs/make/procps-ng.md#externalization-not-working)
 
   * **[ProxyChains-NG 4.17](../../docs/make/proxychains-ng.md)<a id='proxychains-ng'></a>**<br>
     A preloader which hooks calls to sockets in dynamically linked programs and redirects it through one or more socks/http proxies, tor is also supported. Usage: proxychains4 telnet mail.example.com 25
@@ -876,7 +899,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
     Streamripper records mp3 and ogg streams. For shoutcast style streams it finds the "meta data" or track separation data, and uses that as a marker for where the track should be separated.
      - [Verwendete Bibliotheken](../../docs/make/streamripper.md#verwendete-bibliotheken)
 
-  * **[Stunnel 5.75](../../docs/make/stunnel.md)<a id='stunnel'></a>**<br>
+  * **[Stunnel 5.76](../../docs/make/stunnel.md)<a id='stunnel'></a>**<br>
     Stunnel universal SSL proxy
      - [Konfiguration](../../docs/make/stunnel.md#konfiguration)
 
@@ -976,7 +999,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[uMurmur 0.2.20/0.3.1](../../docs/make/umurmur.md)<a id='umurmur'></a>**<br>
     umurmur is a minimalistic Mumble server primarily targeted to run on routers using less resources. It targets to fill the needs of a pretty small group of users communicating, which in part originates from the other goal of working well on a small system with a limited CPU and limited amount of disk space. It also aims to minimize writing to the disk since these kinds of systems usually only has a flash memory for disk. umurmur supports a subset of the features of Murmur. https://github.com/umurmur/umurmur
 
-  * **[Unbound 1.24.0](../../docs/make/unbound.md)<a id='unbound'></a>**<br>
+  * **[Unbound 1.24.1](../../docs/make/unbound.md)<a id='unbound'></a>**<br>
     Unbound is designed as a set of modular components, so that also DNSSEC (secure DNS) validation and stub-resolvers (that do not run as a server, but are linked into an application) are easily possible.
 
   * **[UNFS3 0.9.23 - DEPRECATED](../../docs/make/unfs3.md)<a id='unfs3'></a>**<br>
@@ -1027,7 +1050,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[Wget 1.25.0 (binary only)](../../docs/make/wget.md)<a id='wget'></a>**<br>
     GNU Wget is a free software package for retrieving files using HTTP, HTTPS and FTP, the most widely-used Internet protocols. It is a non-interactive commandline tool, so it may easily be called from scripts, cron jobs, terminals, etc.
 
-  * **[Whois 5.6.4 (binary only)](../../docs/make/whois.md)<a id='whois'></a>**<br>
+  * **[Whois 5.6.5 (binary only)](../../docs/make/whois.md)<a id='whois'></a>**<br>
     Whois - client for the whois directory service.
 
   * **[wireguard-tools 1.0.20250521](../../docs/make/wireguard.md)<a id='wireguard'></a>**<br>
@@ -1068,6 +1091,23 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 # Debug helpers
 
+  * **[binutils-tools: Binutils 2.45 (binary only)](../../docs/make/binutils-tools.md)<a id='binutils-tools'></a>**<br>
+    Collection of essential tools for analyzing and manipulating ELF binaries. Size of all binaries and libraries: ~1.5MB (uncompressed: ~4.5MB)
+     - [Available Tools](../../docs/make/binutils-tools.md#available-tools)
+     - [Inspecting Binaries](../../docs/make/binutils-tools.md#inspecting-binaries)
+     - [Debugging](../../docs/make/binutils-tools.md#debugging)
+     - [Binary Manipulation](../../docs/make/binutils-tools.md#binary-manipulation)
+     - [1. Debugging Crashes](../../docs/make/binutils-tools.md#1-debugging-crashes)
+     - [2. Analyzing Dependencies](../../docs/make/binutils-tools.md#2-analyzing-dependencies)
+     - [3. Fixing Dynamic Linker Issues](../../docs/make/binutils-tools.md#3-fixing-dynamic-linker-issues)
+     - [4. Reverse Engineering](../../docs/make/binutils-tools.md#4-reverse-engineering)
+     - [4. Reducing Binary Size](../../docs/make/binutils-tools.md#4-reducing-binary-size)
+     - ["command not found"](../../docs/make/binutils-tools.md#command-not-found)
+     - [Wrong Architecture Binaries](../../docs/make/binutils-tools.md#wrong-architecture-binaries)
+
+  * **[file 5.45 (binary only)](../../docs/make/file.md)<a id='file'></a>**<br>
+    file - determine file type The file command is used to identify a particular file according to the type of data contained by the file. File can identify many different file types, including ELF binaries, system libraries, RPM packages, and many different graphics formats. This utility is essential for analyzing binaries and file formats on the target system, especially useful for debugging cross-compilation issues.
+
   * **<u>gdb GNU debugger 6.8/7.9.1 (binary only) - DEPRECATED</u><a id='gdb'></a>**<br>
     Select the version of gdb you wish to use.
 
@@ -1080,7 +1120,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Log-Datei regelmäßig konsolidieren, um Platz zu sparen](../../docs/make/inotify-tools.md#log-datei-regelmäßig-konsolidieren-um-platz-zu-sparen)
      - [Schlußwort](../../docs/make/inotify-tools.md#schlußwort)
 
-  * **[ldd 0.1 (binary only) - DEPRECATED](../../docs/make/ldd.md)<a id='ldd'></a>**<br>
+  * **[ldd 0.1/1.0.55 (binary only)](../../docs/make/ldd.md)<a id='ldd'></a>**<br>
     ldd prints the shared libraries required by each program or shared library specified on the command line.
 
   * **[lsof 4.89 (binary only) - DEPRECATED](../../docs/make/lsof.md)<a id='lsof'></a>**<br>
@@ -1094,11 +1134,14 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Sicherheitshinweis](../../docs/make/nano-shell.md#sicherheitshinweis)
      - [Benutzung](../../docs/make/nano-shell.md#benutzung)
 
+  * **[PatchELF 0.18.0 (binary only)](../../docs/make/patchelf.md)<a id='patchelf'></a>**<br>
+    Modifies existing ELF executables and libraries. Can change the interpreter, RPATH, and other ELF metadata. Useful for modifying binaries to use different dynamic linker paths or library search paths (RPATH/RUNPATH).
+
   * **[pciutils 3.1.7 (binary only) - DEPRECATED](../../docs/make/pciutils.md)<a id='pciutils'></a>**<br>
     The PCI Utilities are a collection of programs for inspecting and manipulating configuration of PCI devices, all based on a common portable library libpci which offers access to the PCI configuration space on a variety of operating systems. lspci displays detailed information about all PCI buses and devices in the system. setpci allows reading from and writing to PCI device configuration registers. For example, you can adjust the latency timers with it.
 
   * **[strace 4.9/5.0/6.17 (binary only)](../../docs/make/strace.md)<a id='strace'></a>**<br>
-    strace - trace system calls and signals strace is a system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by a another process/program.
+    strace - trace system calls and signals strace is a system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program.
      - [Tip: Vermeiden von "unfinished" und "resumed" in strace-Logs](../../docs/make/strace.md#tip-vermeiden-von-unfinished-und-resumed-in-strace-logs)
 
   * **<u>target-tester - DEVELOPER</u><a id='target-tester'></a>**<br>
