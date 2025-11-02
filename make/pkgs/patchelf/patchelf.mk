@@ -47,7 +47,7 @@ $(PKG)_CONFIGURE_OPTIONS += --cache-file=config.cache
 
 $(PKG)_CONFIGURE_ENV += CXX="$(TARGET_CROSS)g++"
 # Fix i686 uClibc linking issue with pthread symbols (6591, 6660 devices)
-$(PKG)_CONFIGURE_ENV += $(if $(FREETZ_TARGET_ARCH_X86),LDFLAGS="-static-libgcc -static-libstdc++")
+$(PKG)_CONFIGURE_ENV += $(if $(FREETZ_TARGET_ARCH_X86),CXXFLAGS="$(TARGET_CFLAGS) -fPIC")
 
 $(PKG_CONFIGURED_CONFIGURE)
 
