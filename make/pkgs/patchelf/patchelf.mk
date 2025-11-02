@@ -46,8 +46,8 @@ $(PKG)_CONFIGURE_PRE_CMDS += export am_cv_CXX_dependencies_compiler_type=gcc3;
 $(PKG)_CONFIGURE_OPTIONS += --cache-file=config.cache
 
 $(PKG)_CONFIGURE_ENV += CXX="$(TARGET_CROSS)g++"
-
-$(PKG)_MAKE_ENV += LDFLAGS="-Wl,--exclude-libs=libpthread.a"
+# Fix i686 uClibc linking issue with pthread symbols (6591, 6660 devices)
+$(PKG)_CONFIGURE_ENV += $(if $(FREETZ_TARGET_ARCH_X86),LDFLAGS="-static-libgcc -static-libstdc++")
 
 $(PKG_CONFIGURED_CONFIGURE)
 
