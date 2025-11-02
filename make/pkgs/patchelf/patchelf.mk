@@ -47,6 +47,8 @@ $(PKG)_CONFIGURE_OPTIONS += --cache-file=config.cache
 
 $(PKG)_CONFIGURE_ENV += CXX="$(TARGET_CROSS)g++"
 
+$(PKG)_MAKE_ENV += LDFLAGS="-Wl,--exclude-libs=libpthread.a"
+
 $(PKG_CONFIGURED_CONFIGURE)
 
 $($(PKG)_BINARY_BUILD): $($(PKG)_DIR)/.configured
