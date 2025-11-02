@@ -11,57 +11,48 @@ on:
         description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER"
         required: false
         default: ""
+      verbosity:
+        description: "Verbosity level (0=quiet, 1=normal, 2=verbose)"
+        required: false
+        default: "0"
+        type: choice
+        options:
+          - "0"
+          - "1"
+          - "2"
+      download_toolchain:
+        description: "Try to download precompiled toolchain (may fail without AVX2)"
+        required: false
+        default: false
+        type: boolean
+      cancel_previous:
+        description: "Cancel previous runs of this workflow"
+        required: false
+        default: true
+        type: boolean
+      override_device:
+        description: "Override device (e.g., 7530_W6_V1, 7590_W5, empty to use config)"
+        required: false
+        default: ""
+      override_firmware:
+        description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config)"
+        required: false
+        default: ""
 
 concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+  group: ${{ github.event.inputs.cancel_previous != 'false' && github.workflow || format('{0}-{1}', github.workflow, github.run_id) }}
+  cancel-in-progress: ${{ github.event.inputs.cancel_previous != 'false' }}
 
 jobs:
   build:
     container:
-#     image: ubuntu:20.04
-#     image: freetzng/firmware
       image: ghcr.io/freetz-ng/firmware
       options: --user 1001:1001
-#   strategy:
-#     fail-fast: false
-#     max-parallel: 16
-#     matrix:
-#       fritz: [ "" ]
     runs-on: ubuntu-latest
-#   if: github.repository == 'freetz-ng/freetz-ng'
 
     env:
       CACHE_KEY: "${{ github.workflow }}"
     steps:
-
-#     - name: update
-#       run: apt-get -y update && apt-get -y upgrade && apt-get -y dist-upgrade
-#
-#     - name: install
-#       run: |
-#         DEBIAN_FRONTEND=noninteractive apt-get -y install \
-#           locales \
-#           pv cpio rsync kmod imagemagick inkscape graphicsmagick subversion git bc unar wget sudo gcc g++ binutils autoconf automake \
-#           autopoint libtool-bin make bzip2 libncurses5-dev libreadline-dev zlib1g-dev flex bison patch texinfo tofrodos gettext pkg-config ecj \
-#           perl libstring-crc32-perl ruby gawk libusb-dev unzip intltool libacl1-dev libcap-dev libc6-dev-i386 \
-#           lib32ncurses5-dev gcc-multilib bsdmainutils lib32stdc++6 libglib2.0-dev ccache cmake lib32z1-dev libsqlite3-dev sqlite3 libzstd-dev \
-#           netcat curl uuid-dev libssl-dev libgnutls28-dev u-boot-tools device-tree-compiler
-#
-#     - name: locale
-#       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
-
-#     - name: sleep
-#       run: |
-#         SLEEP="$((1 + $(od -A n -t d -N 2 /dev/urandom | tr -d ' ') % 9))"
-#         echo "Sleeping $SLEEP seconds ..."
-#         sleep $SLEEP
-
-#     - name: myips
-#       run: |
-#         echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
-##        echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
-##        echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
 
       - name: clone
         uses: actions/checkout@v5
@@ -110,12 +101,20 @@ jobs:
           sed '/FREETZ_HOSTTOOLS_DOWNLOAD/d'                                                          -i .config
           echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                          >> .config
           sed '/FREETZ_DOWNLOAD_TOOLCHAIN/d'                                                          -i .config
-          echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y'                                                          >> .config
+          if [ "${{ github.event.inputs.download_toolchain }}" = "true" ]; then
+            echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y'                                                        >> .config
+          else
+            echo '# FREETZ_DOWNLOAD_TOOLCHAIN is not set'                                             >> .config
+            sed '/FREETZ_BUILD_TOOLCHAIN/d'                                                           -i .config
+            echo 'FREETZ_BUILD_TOOLCHAIN=y'                                                           >> .config
+          fi
           sed '/FREETZ_VERBOSITY_FWMOD_/d'                                                            -i .config
           echo 'FREETZ_VERBOSITY_FWMOD_2=y'                                                           >> .config
           sed '/FREETZ_VERBOSITY_LEVEL/d'                                                             -i .config
-          echo 'FREETZ_VERBOSITY_LEVEL_0=y'                                                           >> .config
-          echo 'FREETZ_VERBOSITY_LEVEL=0'                                                             >> .config
+          VERBOSITY="${{ github.event.inputs.verbosity }}"
+          [ -z "$VERBOSITY" ] && VERBOSITY="0"
+          echo "FREETZ_VERBOSITY_LEVEL_${VERBOSITY}=y"                                                >> .config
+          echo "FREETZ_VERBOSITY_LEVEL=${VERBOSITY}"                                                  >> .config
           sed '/FREETZ_SIZEINFO_COMPRESSED/d'                                                         -i .config
           echo 'FREETZ_SIZEINFO_COMPRESSED=y'                                                         >> .config
           sed '/FREETZ_SIZEINFO_UNCOMPRESSED/d'                                                       -i .config
@@ -126,14 +125,89 @@ jobs:
           echo '# FREETZ_CHECK_CHANGED is not set'                                                    >> .config
           sed '/FREETZ_MODULES_TEST/d'                                                                -i .config
           echo '# FREETZ_MODULES_TEST is not set'                                                     >> .config
+          if [ -n "${{ github.event.inputs.override_device }}" ]; then
+            echo "Overriding device to: ${{ github.event.inputs.override_device }}"
+            sed -i 's/^FREETZ_TYPE_[0-9A-Z_]*=y/# &/' .config
+            echo "FREETZ_TYPE_${{ github.event.inputs.override_device }}=y"                           >> .config
+            make olddefconfig
+          fi
+          if [ -n "${{ github.event.inputs.override_firmware }}" ]; then
+            echo "Overriding firmware to: ${{ github.event.inputs.override_firmware }}"
+            sed -i 's/^FREETZ_TYPE_FIRMWARE_.*=y/# &/' .config
+            echo "FREETZ_TYPE_FIRMWARE_${{ github.event.inputs.override_firmware }}=y"                >> .config
+            make olddefconfig
+          fi
           echo "##########################################################" && echo -n "Lines=" && wc -l .config
+          echo "##########################################################"
+          echo "Configuration summary:"
+          echo "  Device:   $(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
+          echo "  Firmware: $(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
+          echo "  Kernel:   $(grep '^FREETZ_AVM_PROP_KERNEL_' .config | grep '=y' | sed 's/.*KERNEL_//;s/_/./g;s/=y//' | head -1)"
+          echo "  Arch:     $(grep '^FREETZ_AVM_PROP_ARCH_' .config | grep '=y' | sed 's/.*ARCH_//;s/=y//' | head -1)"
+          echo "  GCC:      $(grep '^FREETZ_TARGET_GCC_' .config | grep -v MIN | grep -v MAX | grep '=y' | sed 's/.*GCC_//;s/_/./g;s/=y//' | head -1)"
+          echo "  uClibc:   $(grep '^FREETZ_TARGET_UCLIBC_' .config | grep -v HAS | grep '=y' | sed 's/.*UCLIBC_//;s/_/./g;s/=y//' | head -1)"
+          echo ""
+          echo "User packages enabled:"
+          grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15 | sed 's/^/  - /'
+          echo "##########################################################"
 
       - name: generate
         run: |
           make && rm -f images/latest.image
-#     - name: progress
-#       run: |
-#         tools/make_progress_monitor.sh --no-legend
+        continue-on-error: true
+        id: build
+        
+      - name: debug-on-failure
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "##########################################################"
+          echo "Build failed - showing diagnostic information"
+          echo "##########################################################"
+          
+          # Test g++ compiler
+          GXX_PATH=$(find toolchain/build -name "arm-linux-uclibcgnueabi-g++" -type f 2>/dev/null | head -1)
+          if [ -n "$GXX_PATH" ]; then
+            echo ""
+            echo "=== G++ Compiler Information ==="
+            echo "Found g++ at: $GXX_PATH"
+            echo ""
+            echo "File info:"
+            file "$GXX_PATH" || true
+            echo ""
+            echo "Testing g++ version:"
+            "$GXX_PATH" --version 2>&1 || echo "ERROR: g++ --version failed"
+            echo ""
+            echo "Checking g++ dependencies:"
+            ldd "$GXX_PATH" 2>&1 || echo "ERROR: ldd failed"
+            echo ""
+            echo "Testing simple C++ compile:"
+            echo 'int main() { return 0; }' > /tmp/test.cpp
+            "$GXX_PATH" /tmp/test.cpp -o /tmp/test.out 2>&1 || echo "ERROR: Simple compile failed"
+            rm -f /tmp/test.cpp /tmp/test.out
+            echo ""
+            echo "Checking target ARM libstdc++:"
+            find toolchain/build -name "libstdc++.so*" -path "*/arm-linux-uclibcgnueabi/*" | head -5
+            echo ""
+            echo "Checking if g++-wrapper exists and what it points to:"
+            WRAPPER=$(find toolchain/build -name "arm-linux-uclibcgnueabi-g++-wrapper" | head -1)
+            if [ -n "$WRAPPER" ]; then
+              ls -la "$WRAPPER"
+              readlink -f "$WRAPPER" || true
+            fi
+            echo ""
+          else
+            echo "WARNING: g++ not found in toolchain"
+          fi
+          
+          # Show config.log for patchelf
+          echo "=== Patchelf config.log (last 200 lines) ==="
+          find source -name "config.log" -path "*/patchelf*/config.log" -exec echo "=== {} ===" \; -exec tail -200 {} \; 2>/dev/null || echo "No config.log found"
+          echo "##########################################################"
+          
+      - name: fail-if-build-failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
+
       - name: result
         run: |
           echo "##########################################################"
@@ -156,10 +230,10 @@ jobs:
           test -n "$NAME"
       - name: artifact
         id: artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         if: github.repository != 'freetz-ng/freetz-ng'
         with:
-          name: ${{ steps.vars.outputs.last }}
+          name: ${{ steps.vars.outputs.last }}.zip
           path: images/
           if-no-files-found: warn
           retention-days: 1
