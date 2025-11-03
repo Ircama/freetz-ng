@@ -38,6 +38,10 @@ on:
         description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config)"
         required: false
         default: ""
+        override_lang:
+          description: "Override language (EN or DE, empty to use config)"
+          required: false
+          default: ""
 
 concurrency:
   group: ${{ github.event.inputs.cancel_previous != 'false' && github.workflow || format('{0}-{1}', github.workflow, github.run_id) }}
@@ -137,6 +141,16 @@ jobs:
             echo "FREETZ_TYPE_FIRMWARE_${{ github.event.inputs.override_firmware }}=y"                >> .config
             make olddefconfig
           fi
+            if [ -n "${{ github.event.inputs.override_lang }}" ]; then
+              echo "Overriding language to: ${{ github.event.inputs.override_lang }}"
+              sed -i 's/^FREETZ_TYPE_LANG_[A-Z][A-Z]=y/# &/' .config
+              case "${{ github.event.inputs.override_lang }}" in
+                EN|en) echo "FREETZ_TYPE_LANG_EN=y" >> .config ;;
+                DE|de) echo "FREETZ_TYPE_LANG_DE=y" >> .config ;;
+                *) echo "Unknown language: ${{ github.event.inputs.override_lang }}" ;;
+              esac
+              make olddefconfig
+            fi
           echo "##########################################################" && echo -n "Lines=" && wc -l .config
           echo "##########################################################"
           echo "Configuration summary:"
