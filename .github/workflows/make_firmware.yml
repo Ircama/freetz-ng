@@ -21,7 +21,7 @@ on:
           - "1"
           - "2"
       download_toolchain:
-        description: "Try to download precompiled toolchain (may fail without AVX2, gh param: -f download_toolchain=true)"
+        description: "Try to download precompiled toolchain (gh param: -f download_toolchain=true)"
         required: false
         default: false
         type: boolean
