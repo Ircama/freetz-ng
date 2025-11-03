@@ -38,10 +38,10 @@ on:
         description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config)"
         required: false
         default: ""
-        override_lang:
-          description: "Override language (EN or DE, empty to use config)"
-          required: false
-          default: ""
+      override_lang:
+        description: "Override language (EN or DE, empty to use config)"
+        required: false
+        default: ""
 
 concurrency:
   group: ${{ github.event.inputs.cancel_previous != 'false' && github.workflow || format('{0}-{1}', github.workflow, github.run_id) }}
