@@ -1,18 +1,18 @@
-name: make_tester
+name: make_firmware
 
 on:
   push:
     branches: [ master ]
     paths:
-      - '.github/workflows/make_tester.yml'
+      - '.github/workflows/make_firmware.yml'
   workflow_dispatch:
     inputs:
       url:
-        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER"
+        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER (gh param: -f url=https://example.com/config)"
         required: false
         default: ""
       verbosity:
-        description: "Verbosity level (0=quiet, 1=normal, 2=verbose)"
+        description: "Verbosity level (0=quiet, 1=normal, 2=verbose, gh param: -f verbosity=2)"
         required: false
         default: "0"
         type: choice
@@ -21,21 +21,25 @@ on:
           - "1"
           - "2"
       download_toolchain:
-        description: "Try to download precompiled toolchain (may fail without AVX2)"
+        description: "Try to download precompiled toolchain (gh param: -f download_toolchain=true)"
         required: false
         default: false
         type: boolean
       cancel_previous:
-        description: "Cancel previous runs of this workflow"
+        description: "Cancel previous runs of this workflow (gh param: -f cancel_previous=false)"
         required: false
         default: true
         type: boolean
       override_device:
-        description: "Override device (e.g., 7530_W6_V1, 7590_W5, empty to use config)"
+        description: "Override device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use config, gh param: -f override_device=7530_W6_V1)"
         required: false
         default: ""
       override_firmware:
-        description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config)"
+        description: "Override firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use config, gh param: -f override_firmware=08_2X)"
+        required: false
+        default: ""
+      override_lang:
+        description: "Override language (EN or DE, empty to use config, gh param: -f override_lang=EN)"
         required: false
         default: ""
 
@@ -137,6 +141,16 @@ jobs:
             echo "FREETZ_TYPE_FIRMWARE_${{ github.event.inputs.override_firmware }}=y"                >> .config
             make olddefconfig
           fi
+            if [ -n "${{ github.event.inputs.override_lang }}" ]; then
+              echo "Overriding language to: ${{ github.event.inputs.override_lang }}"
+              sed -i 's/^FREETZ_TYPE_LANG_[A-Z][A-Z]=y/# &/' .config
+              case "${{ github.event.inputs.override_lang }}" in
+                EN|en) echo "FREETZ_TYPE_LANG_EN=y" >> .config ;;
+                DE|de) echo "FREETZ_TYPE_LANG_DE=y" >> .config ;;
+                *) echo "Unknown language: ${{ github.event.inputs.override_lang }}" ;;
+              esac
+              make olddefconfig
+            fi
           echo "##########################################################" && echo -n "Lines=" && wc -l .config
           echo "##########################################################"
           echo "Configuration summary:"
