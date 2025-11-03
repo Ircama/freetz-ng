@@ -2,44 +2,44 @@ name: make_firmware
 
 on:
   push:
-      description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER (gh param: -f url=https://example.com/config)"
+    branches: [ master ]
     paths:
-      description: "Verbosity level (0=quiet, 1=normal, 2=verbose, gh param: -f verbosity=2)"
+      - '.github/workflows/make_firmware.yml'
   workflow_dispatch:
-      description: "Try to download precompiled toolchain (may fail without AVX2, gh param: -f download_toolchain=true)"
+    inputs:
       url:
-      description: "Cancel previous runs of this workflow (gh param: -f cancel_previous=false)"
+        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER (gh param: -f url=https://example.com/config)"
         required: false
-      description: "Override device (e.g., 7530_W6_V1, 7590_W5, empty to use config, gh param: -f override_device=7530_W6_V1)"
+        default: ""
       verbosity:
-      description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config, gh param: -f override_firmware=08_2X)"
+        description: "Verbosity level (0=quiet, 1=normal, 2=verbose, gh param: -f verbosity=2)"
         required: false
-      description: "Override language (EN or DE, empty to use config, gh param: -f override_lang=EN)"
+        default: "0"
         type: choice
         options:
           - "0"
           - "1"
           - "2"
       download_toolchain:
-        description: "Try to download precompiled toolchain"
+        description: "Try to download precompiled toolchain (may fail without AVX2, gh param: -f download_toolchain=true)"
         required: false
         default: false
         type: boolean
       cancel_previous:
-        description: "Cancel previous runs of this workflow"
+        description: "Cancel previous runs of this workflow (gh param: -f cancel_previous=false)"
         required: false
         default: true
         type: boolean
       override_device:
-        description: "Override device (e.g., 7530_W6_V1, 7590_W5, empty to use config)"
+        description: "Override device (e.g., 7530_W6_V1, 7590_W5, empty to use config, gh param: -f override_device=7530_W6_V1)"
         required: false
         default: ""
       override_firmware:
-        description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config)"
+        description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config, gh param: -f override_firmware=08_2X)"
         required: false
         default: ""
       override_lang:
-        description: "Override language (EN or DE, empty to use config)"
+        description: "Override language (EN or DE, empty to use config, gh param: -f override_lang=EN)"
         required: false
         default: ""
 
