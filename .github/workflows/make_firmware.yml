@@ -30,16 +30,16 @@ on:
         required: false
         default: true
         type: boolean
-      override_device:
-        description: "Override device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use config, gh param: -f override_device=7530_W6_V1)"
+      custom_device:
+        description: "Custom device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use config, gh param: -f custom_device=7530_W6_V1)"
         required: false
         default: ""
-      override_firmware:
-        description: "Override firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use config, gh param: -f override_firmware=08_2X)"
+      custom_firmware:
+        description: "Custom firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use config, gh param: -f custom_firmware=08_2X)"
         required: false
         default: ""
-      override_lang:
-        description: "Override language (EN or DE, empty to use config, gh param: -f override_lang=EN)"
+      custom_lang:
+        description: "Custom language (EN or DE, empty to use config, gh param: -f custom_lang=EN)"
         required: false
         default: ""
 
@@ -49,7 +49,7 @@ concurrency:
 
 jobs:
   build:
-    name: "${{ (github.event.inputs.override_device || github.event.inputs.override_firmware || github.event.inputs.override_lang) && format('Build {0} {1} {2}', github.event.inputs.override_device || 'default-device', github.event.inputs.override_firmware || 'default-firmware', github.event.inputs.override_lang || 'default-lang') || 'Build firmware' }}"
+    name: "${{ (github.event.inputs.custom_device || github.event.inputs.custom_firmware || github.event.inputs.custom_lang) && format('Build {0} {1} {2}', github.event.inputs.custom_device || 'default-device', github.event.inputs.custom_firmware || 'default-firmware', github.event.inputs.custom_lang || 'default-lang') || 'Build firmware' }}"
     container:
       image: ghcr.io/freetz-ng/firmware
       options: --user 1001:1001
@@ -69,9 +69,9 @@ jobs:
           [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
           [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && HAS_PARAMS="yes"
           [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && HAS_PARAMS="yes"
-          [ -n "${{ github.event.inputs.override_device }}" ] && HAS_PARAMS="yes"
-          [ -n "${{ github.event.inputs.override_firmware }}" ] && HAS_PARAMS="yes"
-          [ -n "${{ github.event.inputs.override_lang }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_device }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_firmware }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_lang }}" ] && HAS_PARAMS="yes"
           
           if [ -z "$HAS_PARAMS" ]; then
             echo "gh workflow run ${{ github.workflow }}.yml"
@@ -81,9 +81,9 @@ jobs:
             [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
             [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
             [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && echo "  -f cancel_previous=false \\"
-            [ -n "${{ github.event.inputs.override_device }}" ] && echo "  -f override_device='${{ github.event.inputs.override_device }}' \\"
-            [ -n "${{ github.event.inputs.override_firmware }}" ] && echo "  -f override_firmware='${{ github.event.inputs.override_firmware }}' \\"
-            [ -n "${{ github.event.inputs.override_lang }}" ] && echo "  -f override_lang='${{ github.event.inputs.override_lang }}'"
+            [ -n "${{ github.event.inputs.custom_device }}" ] && echo "  -f custom_device='${{ github.event.inputs.custom_device }}' \\"
+            [ -n "${{ github.event.inputs.custom_firmware }}" ] && echo "  -f custom_firmware='${{ github.event.inputs.custom_firmware }}' \\"
+            [ -n "${{ github.event.inputs.custom_lang }}" ] && echo "  -f custom_lang='${{ github.event.inputs.custom_lang }}'"
           fi
           
           echo "##########################################################"
@@ -159,25 +159,25 @@ jobs:
           echo '# FREETZ_CHECK_CHANGED is not set'                                                    >> .config
           sed '/FREETZ_MODULES_TEST/d'                                                                -i .config
           echo '# FREETZ_MODULES_TEST is not set'                                                     >> .config
-          if [ -n "${{ github.event.inputs.override_device }}" ]; then
-            echo "Overriding device to: ${{ github.event.inputs.override_device }}"
+          if [ -n "${{ github.event.inputs.custom_device }}" ]; then
+            echo "Overriding device to: ${{ github.event.inputs.custom_device }}"
             sed -i 's/^FREETZ_TYPE_[0-9A-Z_]*=y/# &/' .config
-            echo "FREETZ_TYPE_${{ github.event.inputs.override_device }}=y"                           >> .config
+            echo "FREETZ_TYPE_${{ github.event.inputs.custom_device }}=y"                           >> .config
             make olddefconfig
           fi
-          if [ -n "${{ github.event.inputs.override_firmware }}" ]; then
-            echo "Overriding firmware to: ${{ github.event.inputs.override_firmware }}"
+          if [ -n "${{ github.event.inputs.custom_firmware }}" ]; then
+            echo "Overriding firmware to: ${{ github.event.inputs.custom_firmware }}"
             sed -i 's/^FREETZ_TYPE_FIRMWARE_.*=y/# &/' .config
-            echo "FREETZ_TYPE_FIRMWARE_${{ github.event.inputs.override_firmware }}=y"                >> .config
+            echo "FREETZ_TYPE_FIRMWARE_${{ github.event.inputs.custom_firmware }}=y"                >> .config
             make olddefconfig
           fi
-            if [ -n "${{ github.event.inputs.override_lang }}" ]; then
-              echo "Overriding language to: ${{ github.event.inputs.override_lang }}"
+            if [ -n "${{ github.event.inputs.custom_lang }}" ]; then
+              echo "Overriding language to: ${{ github.event.inputs.custom_lang }}"
               sed -i 's/^FREETZ_TYPE_LANG_[A-Z][A-Z]=y/# &/' .config
-              case "${{ github.event.inputs.override_lang }}" in
+              case "${{ github.event.inputs.custom_lang }}" in
                 EN|en) echo "FREETZ_TYPE_LANG_EN=y" >> .config ;;
                 DE|de) echo "FREETZ_TYPE_LANG_DE=y" >> .config ;;
-                *) echo "Unknown language: ${{ github.event.inputs.override_lang }}" ;;
+                *) echo "Unknown language: ${{ github.event.inputs.custom_lang }}" ;;
               esac
               make olddefconfig
             fi

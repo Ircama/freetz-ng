@@ -33,16 +33,16 @@ on:
         required: false
         default: false
         type: boolean
-      override_device:
-        description: "Custom device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains, gh param: -f override_device=7530_W6_V1)"
+      custom_device:
+        description: "Custom device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains, gh param: -f custom_device=7530_W6_V1)"
         required: false
         default: ""
-      override_firmware:
-        description: "Custom firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains, gh param: -f override_firmware=08_2X)"
+      custom_firmware:
+        description: "Custom firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains, gh param: -f custom_firmware=08_2X)"
         required: false
         default: ""
-      override_lang:
-        description: "Custom language (EN or DE, empty to use matrix toolchains, gh param: -f override_lang=EN)"
+      custom_lang:
+        description: "Custom language (EN or DE, empty to use matrix toolchains, gh param: -f custom_lang=EN)"
         required: false
         default: ""
       add_or_override:
@@ -84,9 +84,9 @@ jobs:
           [ -n "${{ github.event.inputs.url }}" ] && HAS_PARAMS="yes"
           [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
           [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && HAS_PARAMS="yes"
-          [ -n "${{ github.event.inputs.override_device }}" ] && HAS_PARAMS="yes"
-          [ -n "${{ github.event.inputs.override_firmware }}" ] && HAS_PARAMS="yes"
-          [ -n "${{ github.event.inputs.override_lang }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_device }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_firmware }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_lang }}" ] && HAS_PARAMS="yes"
           [ "${{ github.event.inputs.add_or_override }}" != "add" ] && HAS_PARAMS="yes"
           
           if [ -z "$HAS_PARAMS" ]; then
@@ -97,9 +97,9 @@ jobs:
             [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
             [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
             [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
-            [ -n "${{ github.event.inputs.override_device }}" ] && echo "  -f override_device='${{ github.event.inputs.override_device }}' \\"
-            [ -n "${{ github.event.inputs.override_firmware }}" ] && echo "  -f override_firmware='${{ github.event.inputs.override_firmware }}' \\"
-            [ -n "${{ github.event.inputs.override_lang }}" ] && echo "  -f override_lang='${{ github.event.inputs.override_lang }}' \\"
+            [ -n "${{ github.event.inputs.custom_device }}" ] && echo "  -f custom_device='${{ github.event.inputs.custom_device }}' \\"
+            [ -n "${{ github.event.inputs.custom_firmware }}" ] && echo "  -f custom_firmware='${{ github.event.inputs.custom_firmware }}' \\"
+            [ -n "${{ github.event.inputs.custom_lang }}" ] && echo "  -f custom_lang='${{ github.event.inputs.custom_lang }}' \\"
             [ "${{ github.event.inputs.add_or_override }}" != "add" ] && echo "  -f add_or_override='${{ github.event.inputs.add_or_override }}'"
           fi
           
@@ -190,7 +190,7 @@ jobs:
           
           # Check if override is requested
           has_override=""
-          [ -n "${{ github.event.inputs.override_device }}" ] || [ -n "${{ github.event.inputs.override_firmware }}" ] || [ -n "${{ github.event.inputs.override_lang }}" ] && has_override="yes"
+          [ -n "${{ github.event.inputs.custom_device }}" ] || [ -n "${{ github.event.inputs.custom_firmware }}" ] || [ -n "${{ github.event.inputs.custom_lang }}" ] && has_override="yes"
           
           if [ -z "$has_override" ] || [ "${{ github.event.inputs.add_or_override }}" = "add" ]; then
             # Process each package (replace , with newline for iteration)
@@ -273,9 +273,9 @@ jobs:
             esac
             
             # Build custom toolchain string from overrides
-            custom_device="${{ github.event.inputs.override_device }}"
-            custom_firmware="${{ github.event.inputs.override_firmware }}"
-            custom_lang="${{ github.event.inputs.override_lang }}"
+            custom_device="${{ github.event.inputs.custom_device }}"
+            custom_firmware="${{ github.event.inputs.custom_firmware }}"
+            custom_lang="${{ github.event.inputs.custom_lang }}"
             
             # Default values if not specified
             [ -z "$custom_device" ] && custom_device="7530_W6_V1"

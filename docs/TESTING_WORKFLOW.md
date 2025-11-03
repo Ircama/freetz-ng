@@ -29,9 +29,9 @@ Both workflows support manual triggering via `workflow_dispatch` and automatic t
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
 | `cancel_previous` | boolean | No | `true` | Cancel previous runs of this workflow |
-| `override_device` | string | No | `""` | Override device type (e.g., `7530_W6_V1`, `7590_W5`) - empty uses config |
-| `override_firmware` | string | No | `""` | Override firmware version (e.g., `08_2X`, `07_5X`) - empty uses config |
-| `override_lang` | string | No | `""` | Override language (EN or DE) - empty uses config |
+| `custom_device` | string | No | `""` | Override device type (e.g., `7530_W6_V1`, `7590_W5`) - empty uses config |
+| `custom_firmware` | string | No | `""` | Override firmware version (e.g., `08_2X`, `07_5X`) - empty uses config |
+| `custom_lang` | string | No | `""` | Override language (EN or DE) - empty uses config |
 
 **Behavior**:
 - Downloads and applies configuration from URL or secrets
@@ -62,9 +62,9 @@ Both workflows support manual triggering via `workflow_dispatch` and automatic t
 | `url` | string | No | `""` | URL of config file or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2) |
-| `override_device` | string | No | `""` | Override device (e.g., `7530_W6_V1`, `7590_W6`, `6670`) - empty uses matrix toolchains |
-| `override_firmware` | string | No | `""` | Override firmware version (e.g., `08_2X`, `08_0X`, `07_5X`) - empty uses matrix toolchains |
-| `override_lang` | string | No | `""` | Override language (EN or DE) - empty uses matrix toolchains |
+| `custom_device` | string | No | `""` | Override device (e.g., `7530_W6_V1`, `7590_W6`, `6670`) - empty uses matrix toolchains |
+| `custom_firmware` | string | No | `""` | Override firmware version (e.g., `08_2X`, `08_0X`, `07_5X`) - empty uses matrix toolchains |
+| `custom_lang` | string | No | `""` | Override language (EN or DE) - empty uses matrix toolchains |
 | `add_or_override` | choice | No | `"add"` | Add custom config to matrix or override with only custom config |
 
 **Matrix Strategy**:
@@ -263,7 +263,7 @@ gh workflow run make_firmware.yml -f url="https://example.com/myconfig.config"
 gh workflow run make_firmware.yml -f verbosity="2" -f download_toolchain="true"
 
 # Test specific device/firmware/language combination
-gh workflow run make_firmware.yml -f override_device="7590_W5" -f override_firmware="08_2X" -f override_lang="DE" -f verbosity="1"
+gh workflow run make_firmware.yml -f custom_device="7590_W5" -f custom_firmware="08_2X" -f custom_lang="DE" -f verbosity="1"
 ```
 
 ### make_package.yml Examples
@@ -285,10 +285,10 @@ gh workflow run make_package.yml -f make_target="patchelf-recompile,ncurses-reco
 gh workflow run make_package.yml -f make_target="gcc-toolchain-fullbuild"
 
 # Test package on specific device/firmware (add to matrix)
-gh workflow run make_package.yml -f make_target="php" -f override_device="6670" -f override_firmware="07_5X" -f add_or_override="add"
+gh workflow run make_package.yml -f make_target="php" -f custom_device="6670" -f custom_firmware="07_5X" -f add_or_override="add"
 
 # Test package ONLY on custom configuration (override matrix)
-gh workflow run make_package.yml -f make_target="php" -f override_device="6670" -f override_firmware="07_5X" -f override_lang="EN" -f add_or_override="override"
+gh workflow run make_package.yml -f make_target="php" -f custom_device="6670" -f custom_firmware="07_5X" -f custom_lang="EN" -f add_or_override="override"
 ```
 
 ## Automatic Triggers
