@@ -57,6 +57,19 @@ jobs:
     env:
       CACHE_KEY: "${{ github.workflow }}"
     steps:
+      - name: Show command-line
+        run: |
+          echo "##########################################################"
+          echo "GitHub CLI command used to trigger this workflow:"
+          echo "gh workflow run make_firmware.yml \\"
+          [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
+          [ -n "${{ github.event.inputs.verbosity }}" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
+          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
+          [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && echo "  -f cancel_previous=false \\"
+          [ -n "${{ github.event.inputs.override_device }}" ] && echo "  -f override_device='${{ github.event.inputs.override_device }}' \\"
+          [ -n "${{ github.event.inputs.override_firmware }}" ] && echo "  -f override_firmware='${{ github.event.inputs.override_firmware }}' \\"
+          [ -n "${{ github.event.inputs.override_lang }}" ] && echo "  -f override_lang='${{ github.event.inputs.override_lang }}'"
+          echo "##########################################################"
 
       - name: clone
         uses: actions/checkout@v5

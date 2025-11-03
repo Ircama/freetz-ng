@@ -212,7 +212,16 @@ jobs:
       CACHE_KEY: "make_freetz"
     steps:
 
-#     - name: update
+      - name: Show command-line
+        run: |
+          echo "##########################################################"
+          echo "GitHub CLI command used to trigger this workflow:"
+          echo "gh workflow run make_package.yml \\"
+          [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
+          [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
+          [ -n "${{ github.event.inputs.verbosity }}" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
+          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true"
+          echo "##########################################################"
 #       run: apt-get -y update && apt-get -y upgrade && apt-get -y dist-upgrade
 #
 #     - name: install
