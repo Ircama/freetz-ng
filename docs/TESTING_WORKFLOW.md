@@ -27,7 +27,7 @@ Both workflows support manual triggering via `workflow_dispatch` and automatic t
 |-----------|------|----------|---------|-------------|
 | `url` | string | No | `""` | URL of config file (.tar, .tgz, .tbz, .config) or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
-| `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain |
+| `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
 | `cancel_previous` | boolean | No | `true` | Cancel previous runs of this workflow |
 | `override_device` | string | No | `""` | Override device type (e.g., `7530_W6_V1`, `7590_W5`) - empty uses config |
 | `override_firmware` | string | No | `""` | Override firmware version (e.g., `08_2X`, `07_5X`) - empty uses config |
@@ -60,7 +60,7 @@ Both workflows support manual triggering via `workflow_dispatch` and automatic t
 | `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, or `'package-fullbuild'` |
 | `url` | string | No | `""` | URL of config file or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
-| `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain |
+| `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2) |
 
 **Matrix Strategy**:
 - Tests packages across all available toolchains
