@@ -21,6 +21,7 @@ $(PKG_SOURCE_DOWNLOAD)
 endif
 $(PKG_UNPACKED)
 
+# Force CXX to real compiler to bypass ccache wrapper issues during cross-compilation
 $(PKG)_CONFIGURE_ENV += CXX="$(TARGET_CROSS)g++"
 # Fix i686 uClibc linking issue with pthread symbols (6591, 6660 devices)
 $(PKG)_CONFIGURE_ENV += $(if $(FREETZ_TARGET_ARCH_X86),CXXFLAGS="$(TARGET_CFLAGS) -fPIC")
