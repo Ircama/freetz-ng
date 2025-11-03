@@ -34,15 +34,15 @@ on:
         default: false
         type: boolean
       override_device:
-        description: "Override device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains)"
+        description: "Custom device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains)"
         required: false
         default: ""
       override_firmware:
-        description: "Override firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains)"
+        description: "Custom firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains)"
         required: false
         default: ""
       override_lang:
-        description: "Override language (EN or DE, empty to use matrix toolchains)"
+        description: "Custom language (EN or DE, empty to use matrix toolchains)"
         required: false
         default: ""
       add_or_override:
