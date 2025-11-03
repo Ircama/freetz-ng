@@ -2,19 +2,19 @@ name: make_firmware
 
 on:
   push:
-    branches: [ master ]
+      description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER (gh param: -f url=https://example.com/config)"
     paths:
-      - '.github/workflows/make_firmware.yml'
+      description: "Verbosity level (0=quiet, 1=normal, 2=verbose, gh param: -f verbosity=2)"
   workflow_dispatch:
-    inputs:
+      description: "Try to download precompiled toolchain (may fail without AVX2, gh param: -f download_toolchain=true)"
       url:
-        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER"
+      description: "Cancel previous runs of this workflow (gh param: -f cancel_previous=false)"
         required: false
-        default: ""
+      description: "Override device (e.g., 7530_W6_V1, 7590_W5, empty to use config, gh param: -f override_device=7530_W6_V1)"
       verbosity:
-        description: "Verbosity level (0=quiet, 1=normal, 2=verbose)"
+      description: "Override firmware version (e.g., 08_2X, 07_5X, empty to use config, gh param: -f override_firmware=08_2X)"
         required: false
-        default: "0"
+      description: "Override language (EN or DE, empty to use config, gh param: -f override_lang=EN)"
         type: choice
         options:
           - "0"
