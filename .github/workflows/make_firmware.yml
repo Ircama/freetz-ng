@@ -1,10 +1,10 @@
-name: make_tester
+name: make_firmware
 
 on:
   push:
     branches: [ master ]
     paths:
-      - '.github/workflows/make_tester.yml'
+      - '.github/workflows/make_firmware.yml'
   workflow_dispatch:
     inputs:
       url:
