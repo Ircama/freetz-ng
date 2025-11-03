@@ -242,7 +242,7 @@ jobs:
               # Clear existing entries for override mode
               rm -f /tmp/matrix_entries.txt
             else
-              echo "Adding custom override entry to matrix..."
+              echo "Adding custom configuration entry to matrix..."
             fi
             
             # Use first package from pkg_list for the override entry, or default if none
