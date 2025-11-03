@@ -11,16 +11,16 @@ on:
   workflow_dispatch:
     inputs:
       make_target:
-        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', or 'package-fullbuild' (builds full firmware)"
+        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', or 'package-fullbuild' (builds full firmware, gh param: -f make_target=php)"
         required: false
         type: string
         default: ""
       url:
-        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER"
+        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER (gh param: -f url=https://example.com/config)"
         required: false
         default: ""
       verbosity:
-        description: "Verbosity level (0=quiet, 1=normal, 2=verbose)"
+        description: "Verbosity level (0=quiet, 1=normal, 2=verbose, gh param: -f verbosity=2)"
         required: false
         default: "0"
         type: choice
@@ -29,24 +29,24 @@ on:
           - "1"
           - "2"
       download_toolchain:
-        description: "Try to download precompiled toolchain"
+        description: "Try to download precompiled toolchain (gh param: -f download_toolchain=true)"
         required: false
         default: false
         type: boolean
       override_device:
-        description: "Custom device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains)"
+        description: "Custom device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains, gh param: -f override_device=7530_W6_V1)"
         required: false
         default: ""
       override_firmware:
-        description: "Custom firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains)"
+        description: "Custom firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains, gh param: -f override_firmware=08_2X)"
         required: false
         default: ""
       override_lang:
-        description: "Custom language (EN or DE, empty to use matrix toolchains)"
+        description: "Custom language (EN or DE, empty to use matrix toolchains, gh param: -f override_lang=EN)"
         required: false
         default: ""
       add_or_override:
-        description: "Add custom configuration to matrix or override with only custom configuration"
+        description: "Add custom configuration to matrix or override with only custom configuration (gh param: -f add_or_override=override)"
         required: false
         default: "add"
         type: choice
