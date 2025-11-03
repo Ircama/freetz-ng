@@ -1,10 +1,10 @@
 name: make_firmware
 
 on:
-  push:
-    branches: [ master ]
-    paths:
-      - '.github/workflows/make_firmware.yml'
+  # push:
+  #   branches: [ master ]
+  #   paths:
+  #     - '.github/workflows/make_firmware.yml'
   workflow_dispatch:
     inputs:
       url:
@@ -49,6 +49,7 @@ concurrency:
 
 jobs:
   build:
+    name: "${{ (github.event.inputs.override_device || github.event.inputs.override_firmware || github.event.inputs.override_lang) && format('Build {0} {1} {2}', github.event.inputs.override_device || 'default-device', github.event.inputs.override_firmware || 'default-firmware', github.event.inputs.override_lang || 'default-lang') || 'Build firmware' }}"
     container:
       image: ghcr.io/freetz-ng/firmware
       options: --user 1001:1001
@@ -60,15 +61,31 @@ jobs:
       - name: Show command-line
         run: |
           echo "##########################################################"
-          echo "GitHub CLI command used to trigger this workflow:"
-          echo "gh workflow run make_firmware.yml \\"
-          [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
-          [ -n "${{ github.event.inputs.verbosity }}" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
-          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
-          [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && echo "  -f cancel_previous=false \\"
-          [ -n "${{ github.event.inputs.override_device }}" ] && echo "  -f override_device='${{ github.event.inputs.override_device }}' \\"
-          [ -n "${{ github.event.inputs.override_firmware }}" ] && echo "  -f override_firmware='${{ github.event.inputs.override_firmware }}' \\"
-          [ -n "${{ github.event.inputs.override_lang }}" ] && echo "  -f override_lang='${{ github.event.inputs.override_lang }}'"
+          echo "💡 GitHub CLI command used to trigger this workflow:"
+          
+          # Check if all parameters are at default values
+          HAS_PARAMS=""
+          [ -n "${{ github.event.inputs.url }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.override_device }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.override_firmware }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.override_lang }}" ] && HAS_PARAMS="yes"
+          
+          if [ -z "$HAS_PARAMS" ]; then
+            echo "gh workflow run ${{ github.workflow }}.yml"
+          else
+            echo "gh workflow run ${{ github.workflow }}.yml \\"
+            [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
+            [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
+            [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
+            [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && echo "  -f cancel_previous=false \\"
+            [ -n "${{ github.event.inputs.override_device }}" ] && echo "  -f override_device='${{ github.event.inputs.override_device }}' \\"
+            [ -n "${{ github.event.inputs.override_firmware }}" ] && echo "  -f override_firmware='${{ github.event.inputs.override_firmware }}' \\"
+            [ -n "${{ github.event.inputs.override_lang }}" ] && echo "  -f override_lang='${{ github.event.inputs.override_lang }}'"
+          fi
+          
           echo "##########################################################"
 
       - name: clone
@@ -100,13 +117,13 @@ jobs:
           echo -n
           URL="$(echo '${{ github.event.inputs.url }}' | sed 's/^ *//;s/ *$//')"
           [ -z "$URL" ] && URL="${{ secrets.ACTIONS_TESTER }}"
-          echo -n "Downloading file '${URL##*/}': "
+          echo -n "Downloading file '${URL}': "
           case "${URL##*.}" in \
-          '')                                                                       echo Skip ;; \
-          tar) wget -q "$URL" -O - 2>/dev/null | tar x  2>/dev/null && echo Done || echo Fail ;; \
-          tgz) wget -q "$URL" -O - 2>/dev/null | tar xz 2>/dev/null && echo Done || echo Fail ;; \
-          tbz) wget -q "$URL" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Fail ;; \
-          *)   wget -q "$URL" -O - 2>/dev/null > .config            && echo Done || echo Fail ;; \
+          '')                                                                       echo "Skip" ;; \
+          tar) wget -q "$URL" -O - 2>/dev/null | tar x  2>/dev/null && echo "Done ✓" || echo "Fail ❌" ;; \
+          tgz) wget -q "$URL" -O - 2>/dev/null | tar xz 2>/dev/null && echo "Done ✓" || echo "Fail ❌" ;; \
+          tbz) wget -q "$URL" -O - 2>/dev/null | tar xj 2>/dev/null && echo "Done ✓" || echo "Fail ❌" ;; \
+          *)   wget -q "$URL" -O - 2>/dev/null > .config            && echo "Done ✓" || echo "Fail ❌" ;; \
           esac
           echo -n
           sed '/FREETZ_SERIES_/d'                                                                     -i .config
@@ -166,16 +183,20 @@ jobs:
             fi
           echo "##########################################################" && echo -n "Lines=" && wc -l .config
           echo "##########################################################"
-          echo "Configuration summary:"
+          echo "💡 Configuration summary:"
           echo "  Device:   $(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
           echo "  Firmware: $(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
+          echo "  Language: $(grep '^FREETZ_TYPE_LANG_[A-Z][A-Z]=y' .config | sed 's/FREETZ_TYPE_LANG_//;s/=y//' | head -1)"
           echo "  Kernel:   $(grep '^FREETZ_AVM_PROP_KERNEL_' .config | grep '=y' | sed 's/.*KERNEL_//;s/_/./g;s/=y//' | head -1)"
           echo "  Arch:     $(grep '^FREETZ_AVM_PROP_ARCH_' .config | grep '=y' | sed 's/.*ARCH_//;s/=y//' | head -1)"
           echo "  GCC:      $(grep '^FREETZ_TARGET_GCC_' .config | grep -v MIN | grep -v MAX | grep '=y' | sed 's/.*GCC_//;s/_/./g;s/=y//' | head -1)"
           echo "  uClibc:   $(grep '^FREETZ_TARGET_UCLIBC_' .config | grep -v HAS | grep '=y' | sed 's/.*UCLIBC_//;s/_/./g;s/=y//' | head -1)"
+          echo "  GCC ABI:  $(grep '^FREETZ_GCC_ABI=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  GCC Arch: $(grep '^FREETZ_GCC_ARCH=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  GCC CPU:  $(grep '^FREETZ_GCC_CPU=' .config | sed 's/.*=//' | tr -d '"')"
           echo ""
-          echo "User packages enabled:"
-          grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15 | sed 's/^/  - /'
+          echo "💡 User packages enabled:"
+          grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|IPTABLES_IS_SELECTABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15 | sed 's/^/  - /'
           echo "##########################################################"
 
       - name: generate
@@ -227,8 +248,8 @@ jobs:
           fi
           
           # Show config.log for patchelf
-          echo "=== Patchelf config.log (last 200 lines) ==="
-          find source -name "config.log" -path "*/patchelf*/config.log" -exec echo "=== {} ===" \; -exec tail -200 {} \; 2>/dev/null || echo "No config.log found"
+          echo "=== Patchelf config.log (last 300 lines) ==="
+          find source -name "config.log" -path "*/patchelf*/config.log" -exec echo "=== {} ===" \; -exec tail -300 {} \; 2>/dev/null || echo "No config.log found"
           echo "##########################################################"
           
       - name: fail-if-build-failed
@@ -260,7 +281,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: github.repository != 'freetz-ng/freetz-ng'
         with:
-          name: ${{ steps.vars.outputs.last }}.zip
+          name: ${{ steps.vars.outputs.last }}
           path: images/
           if-no-files-found: warn
           retention-days: 1

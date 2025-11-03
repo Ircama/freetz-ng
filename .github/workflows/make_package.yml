@@ -1,13 +1,13 @@
 name: make_package
 
 on:
-  push:
-    branches: [ master ]
-    paths:
-      - '.github/workflows/make_package.yml'
-      - 'docs/CHANGELOG.md'
-      - 'make/pkgs/**'
-      - 'make/libs/**'
+  # push:
+  #   branches: [ master ]
+  #   paths:
+  #     - '.github/workflows/make_package.yml'
+  #     - 'docs/CHANGELOG.md'
+  #     - 'make/pkgs/**'
+  #     - 'make/libs/**'
   workflow_dispatch:
     inputs:
       make_target:
@@ -33,6 +33,26 @@ on:
         required: false
         default: false
         type: boolean
+      override_device:
+        description: "Override device (e.g., 7530_W6_V1, 7590_W6, 6670, empty to use matrix toolchains)"
+        required: false
+        default: ""
+      override_firmware:
+        description: "Override firmware version (e.g., 08_2X, 08_0X, 07_5X, empty to use matrix toolchains)"
+        required: false
+        default: ""
+      override_lang:
+        description: "Override language (EN or DE, empty to use matrix toolchains)"
+        required: false
+        default: ""
+      add_or_override:
+        description: "Add custom configuration to matrix or override with only custom configuration"
+        required: false
+        default: "add"
+        type: choice
+        options:
+          - "add"
+          - "override"
 
 #concurrency:
 # group: ${{ github.workflow }}
@@ -52,6 +72,38 @@ jobs:
       matrix: ${{ steps.parse.outputs.matrix }}
 
     steps:
+
+      - name: Show command-line
+        run: |
+          echo "##########################################################"
+          echo "💡 GitHub CLI command used to trigger this workflow:"
+          
+          # Check if all parameters are at default values
+          HAS_PARAMS=""
+          [ -n "${{ github.event.inputs.make_target }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.url }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.override_device }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.override_firmware }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.override_lang }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.add_or_override }}" != "add" ] && HAS_PARAMS="yes"
+          
+          if [ -z "$HAS_PARAMS" ]; then
+            echo "gh workflow run ${{ github.workflow }}.yml"
+          else
+            echo "gh workflow run ${{ github.workflow }}.yml \\"
+            [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
+            [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
+            [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
+            [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
+            [ -n "${{ github.event.inputs.override_device }}" ] && echo "  -f override_device='${{ github.event.inputs.override_device }}' \\"
+            [ -n "${{ github.event.inputs.override_firmware }}" ] && echo "  -f override_firmware='${{ github.event.inputs.override_firmware }}' \\"
+            [ -n "${{ github.event.inputs.override_lang }}" ] && echo "  -f override_lang='${{ github.event.inputs.override_lang }}' \\"
+            [ "${{ github.event.inputs.add_or_override }}" != "add" ] && echo "  -f add_or_override='${{ github.event.inputs.add_or_override }}'"
+          fi
+          
+          echo "##########################################################"
 
       - uses: ahmadnassri/action-workflow-queue@v1
         with:
@@ -136,46 +188,107 @@ jobs:
           # Build matrix by writing to temp file (avoid subshell variable issues)
           rm -f /tmp/matrix_entries.txt
           
-          # Process each package (replace , with newline for iteration)
-          echo "$pkg_list" | tr ',' '\n' | while IFS= read -r pkg; do
-            pkg="$(echo "$pkg" | tr -d ' ')"
-            [ -z "$pkg" ] && continue
+          # Check if override is requested
+          has_override=""
+          [ -n "${{ github.event.inputs.override_device }}" ] || [ -n "${{ github.event.inputs.override_firmware }}" ] || [ -n "${{ github.event.inputs.override_lang }}" ] && has_override="yes"
+          
+          if [ -z "$has_override" ] || [ "${{ github.event.inputs.add_or_override }}" = "add" ]; then
+            # Process each package (replace , with newline for iteration)
+            echo "$pkg_list" | tr ',' '\n' | while IFS= read -r pkg; do
+              pkg="$(echo "$pkg" | tr -d ' ')"
+              [ -z "$pkg" ] && continue
+              
+              # Extract package name and target suffix using simple string operations
+              pkg_name="$pkg"
+              pkg_target="precompiled"
+              
+              # Check for target suffix and remove it
+              case "$pkg" in
+                *-fullbuild)
+                  pkg_name="${pkg%-fullbuild*}"
+                  pkg_target="fullbuild"
+                  ;;
+                *-precompile|*-precompiled)
+                  pkg_name="${pkg%-precompile*}"
+                  pkg_target="precompiled"
+                  ;;
+                *-recompile|*-recompiled)
+                  pkg_name="${pkg%-recompile*}"
+                  pkg_target="recompile"
+                  ;;
+                *-compile|*-compiled)
+                  pkg_name="${pkg%-compile*}"
+                  pkg_target="compile"
+                  ;;
+              esac
+              
+              echo "  Adding package: $pkg_name with target: -$pkg_target"
+              
+              # Process each toolchain line
+              echo "$toolchain_list" | while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                # Use basic sed without -r (extended regex)
+                name="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1 - \2/g')"
+                tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
+                echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
+              done
+            done
+          fi
+          
+          # Add custom override entry if specified
+          if [ -n "$has_override" ]; then
+            if [ "${{ github.event.inputs.add_or_override }}" = "override" ]; then
+              echo "Overriding matrix with custom configuration only..."
+              # Clear existing entries for override mode
+              rm -f /tmp/matrix_entries.txt
+            else
+              echo "Adding custom override entry to matrix..."
+            fi
             
-            # Extract package name and target suffix using simple string operations
-            pkg_name="$pkg"
-            pkg_target="precompiled"
+            # Use first package from pkg_list for the override entry, or default if none
+            override_pkg="${pkg_list%%,*}"
+            [ -z "$override_pkg" ] && override_pkg="dropbear"
             
-            # Check for target suffix and remove it
-            case "$pkg" in
+            # Extract package name and target suffix for override entry
+            override_pkg_name="$override_pkg"
+            override_pkg_target="precompiled"
+            
+            case "$override_pkg" in
               *-fullbuild)
-                pkg_name="${pkg%-fullbuild*}"
-                pkg_target="fullbuild"
+                override_pkg_name="${override_pkg%-fullbuild*}"
+                override_pkg_target="fullbuild"
                 ;;
               *-precompile|*-precompiled)
-                pkg_name="${pkg%-precompile*}"
-                pkg_target="precompiled"
+                override_pkg_name="${override_pkg%-precompile*}"
+                override_pkg_target="precompiled"
                 ;;
               *-recompile|*-recompiled)
-                pkg_name="${pkg%-recompile*}"
-                pkg_target="recompile"
+                override_pkg_name="${override_pkg%-recompile*}"
+                override_pkg_target="recompile"
                 ;;
               *-compile|*-compiled)
-                pkg_name="${pkg%-compile*}"
-                pkg_target="compile"
+                override_pkg_name="${override_pkg%-compile*}"
+                override_pkg_target="compile"
                 ;;
             esac
             
-            echo "  Adding package: $pkg_name with target: -$pkg_target"
+            # Build custom toolchain string from overrides
+            custom_device="${{ github.event.inputs.override_device }}"
+            custom_firmware="${{ github.event.inputs.override_firmware }}"
+            custom_lang="${{ github.event.inputs.override_lang }}"
             
-            # Process each toolchain line
-            echo "$toolchain_list" | while IFS= read -r line; do
-              [ -z "$line" ] && continue
-              # Use basic sed without -r (extended regex)
-              name="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1 - \2/g')"
-              tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
-              echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
-            done
-          done
+            # Default values if not specified
+            [ -z "$custom_device" ] && custom_device="7530_W6_V1"
+            [ -z "$custom_firmware" ] && custom_firmware="08_0X"
+            [ -z "$custom_lang" ] && custom_lang="EN"
+            
+            # Create custom name and tcs
+            custom_name="$custom_device - $custom_firmware ($custom_lang)"
+            custom_tcs="_$custom_device _FIRMWARE_$custom_firmware _LANG_$custom_lang"
+            
+            echo "  Custom override: $override_pkg_name with target: -$override_pkg_target on $custom_name"
+            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+          fi
           
           # Read matrix from file and output
           if [ -f /tmp/matrix_entries.txt ] && [ -s /tmp/matrix_entries.txt ]; then
@@ -212,16 +325,6 @@ jobs:
       CACHE_KEY: "make_freetz"
     steps:
 
-      - name: Show command-line
-        run: |
-          echo "##########################################################"
-          echo "GitHub CLI command used to trigger this workflow:"
-          echo "gh workflow run make_package.yml \\"
-          [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
-          [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
-          [ -n "${{ github.event.inputs.verbosity }}" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
-          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true"
-          echo "##########################################################"
 #       run: apt-get -y update && apt-get -y upgrade && apt-get -y dist-upgrade
 #
 #     - name: install
