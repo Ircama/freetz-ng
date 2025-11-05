@@ -87,7 +87,7 @@ jobs:
 
       - name: vars
         run: |
-          echo "################################################################"
+          echo "##########################################################"
           echo "matrix=${{ steps.parse.outputs.matrix }}" | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
@@ -132,11 +132,11 @@ jobs:
           echo "Sleeping $SLEEP seconds ..."
           sleep $SLEEP
 
-      - name: myips
-        run: |
-          echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
-#         echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
-#         echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
+#     - name: myips
+#       run: |
+#         echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
+##        echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
+##        echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
 
       - name: clone
         uses: actions/checkout@v5
@@ -182,21 +182,9 @@ jobs:
           echo 'FREETZ_REAL_DEVELOPER_ONLY__DLURL="${{ secrets.ACTIONS_DLTCS }}"'                     >> .config
           echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y'                                                          >> .config
           echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                          >> .config
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}cfg" -O cfg 2>/dev/null && mv cfg .config || rm -f cfg
           grep -q '^FREETZ_TYPE_' .config || echo "FREETZ_TYPE_$BOX=y"                                >> .config
           grep -q '^FREETZ_TYPE_FIRMWARE_' .config || echo "FREETZ_TYPE_FIRMWARE_$FOS=y"              >> .config
-          echo "################################################################" && du .config && wc -l .config
-
-      - name: addon
-        run: |
-          echo "################################################################"
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Null
-
-      - name: signature
-        run: |
-          mkdir -p ~/.freetz-signature/
-          for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
-          echo "################################################################" && ls -l ~/.freetz-signature/
+          echo "##########################################################" && echo -n "Lines=" && wc -l .config
 
       - name: generate
         run: |
@@ -204,49 +192,9 @@ jobs:
 
       - name: result
         run: |
-          echo "################################################################"
+          echo "##########################################################"
           ls -l images/
           sha256sum images/*
-
-      - name: vars
-        id: vars
-        run: |
-          LINK="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          LAST="$(ls images/*.image | sed 's,.*/,,;s,\.image$,,')"
-          NAME="$(ls images/*.image | sed 's,.*/,,;s,_[0-9].*,,')"
-          [ -n "$LINK" ] && echo "link=$LINK" >> $GITHUB_OUTPUT
-          [ -n "$LAST" ] && echo "last=$LAST" >> $GITHUB_OUTPUT
-          [ -n "$NAME" ] && echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "################################################################"
-          echo "LINK=$LINK"
-          echo "LAST=$LAST"
-          echo "NAME=$NAME"
-          test -n "$NAME"
-
-#     - name: cleanup
-#       env:
-#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         ACTIONS_NAME: ${{ steps.vars.outputs.name }}
-#       run: |
-#         git config --global --add safe.directory $GITHUB_WORKSPACE
-#         git config --local credential.helper '!x() { echo "password=$GITHUB_TOKEN"; };x'
-#         git tag -d $ACTIONS_NAME && git push --delete origin $ACTIONS_NAME || true
-#     - name: release
-#       uses: ncipollo/release-action@v1
-#       with:
-#         tag: ${{ steps.vars.outputs.name }}
-#         name: ${{ steps.vars.outputs.name }}
-#         body: |
-#           ${{ steps.vars.outputs.last }}
-#           ${{ steps.vars.outputs.link }}
-#         prerelease: false
-#         allowUpdates: true
-#         removeArtifacts: false
-#         artifacts: "images/*"
-#         token: ${{ secrets.GITHUB_TOKEN }}
-#         replacesArtifacts: false
-#         artifactErrorsFailBuild: true
-#         draft: true
 
       - name: cache_clear
         if: github.repository == 'freetz-ng/freetz-ng'

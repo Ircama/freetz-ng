@@ -24,6 +24,9 @@ config FREETZ_GCC_ABI
 config FREETZ_GCC_ARCH
 	string
 	#
+	default "armv6zk" if \
+		FREETZ_CPU_MODEL_ARM_ARM11
+	#
 	default "armv7-a" if \
 		FREETZ_CPU_MODEL_ARM_cortex
 	#
@@ -52,6 +55,8 @@ config FREETZ_GCC_CPU
 	#
 	# There are currently only 2 devices with A73 and they are the only one with kernel 5.4
 	#
+	default "arm1176jz-s" if \
+		FREETZ_CPU_MODEL_ARM_arm11_arm1176
 	default "cortex-a73" if \
 		FREETZ_CPU_MODEL_ARM_cortex_a73
 #	default "cortex-a53" if \
@@ -107,12 +112,13 @@ config FREETZ_GCC_FPU
 # -mfloat-abi=% (ARM) / -m%-float (MIPS)
 config FREETZ_GCC_FLOAT_ABI
 	string
-	default "softfp"   if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_cortex    && !FREETZ_SYSTEM_TYPE_BCM63138
-	default "soft"     if FREETZ_TARGET_ARCH_MIPS || \
-		             (FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_cortex_a9 &&  FREETZ_SYSTEM_TYPE_BCM63138)
+	default "softfp"   if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_cortex && !FREETZ_SYSTEM_TYPE_BCM63138
+	default "soft"     if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_cortex &&  FREETZ_SYSTEM_TYPE_BCM63138
+	default "soft"     if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_arm11
+	default "soft"     if FREETZ_TARGET_ARCH_MIPS
 
 # -mmode=%
 config FREETZ_GCC_MODE
 	string
-	default "arm"      if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM_cortex
+	default "arm"      if FREETZ_TARGET_ARCH_ARM  && FREETZ_CPU_MODEL_ARM
 

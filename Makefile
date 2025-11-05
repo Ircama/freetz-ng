@@ -99,7 +99,8 @@ CHECK_PREREQ_TOOL:=$(TOOLS_DIR)/prerequisites
 GENERATE_IN_TOOL:=$(TOOLS_DIR)/genin
 TAR:=$(TOOLS_DIR)/tar-gnu
 SED:=sed
-PATCHELF:=patchelf
+PATCHELF_HOST:=patchelf
+PATCHELF_TARGET:=patchelf-target
 PYTHON3=python3
 MESON=meson
 CMAKE=cmake
@@ -490,7 +491,7 @@ $(filter $(TOOLS_BUILD_LOCAL),$(TOOLS)): % : %-precompiled
 
 $(patsubst %,%-autofix,$(TOOLS)): %-autofix : %-dirclean
 	$(MAKE) AUTO_FIX_PATCHES=y $*-unpacked
-$(patsubst %,%-recompile,$(TOOLS)): %-recompile : %-dirclean %-precompiled
+$(patsubst %,%-recompile,$(TOOLS)): %-recompile : %-distclean %-precompiled
 
 $(patsubst %,%-fixhardcoded,$(TOOLS)): %-fixhardcoded : 
 

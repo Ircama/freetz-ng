@@ -119,7 +119,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[libdaemon (libdaemon.so) 0.14](libdaemon.md)<a id='libdaemon'></a>**<br>
     Libdaemon is a lightweight C library that eases the writing of UNIX daemons.
 
-  * **[libdeflate (libdeflate.so) 1.24](libdeflate.md)<a id='libdeflate'></a>**<br>
+  * **[libdeflate (libdeflate.so) 1.25](libdeflate.md)<a id='libdeflate'></a>**<br>
     Heavily optimized library for DEFLATE/zlib/gzip compression and decompression
 
   * **[libdnet (libdnet.so) 665](libdnet.md)<a id='libdnet'></a>**<br>
@@ -236,7 +236,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[libvorbis (libvorbis.so) 1.3.5](libvorbis.md)<a id='libvorbis'></a>**<br>
     Vorbis is the name of a specific audio compression scheme that's designed to be contained in Ogg. libvorbis is a BSD-style license software implementation of the Vorbis specification by the Xiph.Org Foundation.
 
-  * **[libxml2 (libxml2.so) 2.15.0](libxml2.md)<a id='libxml2'></a>**<br>
+  * **[libxml2 (libxml2.so) 2.15.1](libxml2.md)<a id='libxml2'></a>**<br>
     XML toolkit from the GNOME project
 
   * **[linux-atm (libatm.so) 2.5.2](linux-atm.md)<a id='linux-atm'></a>**<br>
@@ -252,7 +252,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### M
 
-  * **[mbedtls: mbedCrypto (libmbedcrypto.so) 2.7.19/2.28.10/3.6.4](mbedtls.md)<a id='mbedtls'></a>**<br>
+  * **[mbedtls: mbedCrypto (libmbedcrypto.so) 2.7.19/2.28.10/3.6.5](mbedtls.md)<a id='mbedtls'></a>**<br>
     Enables support for the Blowfish block cipher.
 
   * **[mpc: GNU MPC Library (libmpc.so) 1.1.0](mpc.md)<a id='mpc'></a>**<br>
@@ -297,7 +297,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[pcre: libpcre (libpcre.so) - DEPRECATED 8.45](pcre.md)<a id='pcre'></a>**<br>
     A Perl Compatible Regular Expression library
 
-  * **[pcre2: libpcre2 (libpcre2-8.so) 10.46](pcre2.md)<a id='pcre2'></a>**<br>
+  * **[pcre2: libpcre2 (libpcre2-8.so) 10.47](pcre2.md)<a id='pcre2'></a>**<br>
     A Perl Compatible Regular Expression library
 
   * **[Pixman (libpixman-1.so) 0.46.4](pixman.md)<a id='pixman'></a>**<br>

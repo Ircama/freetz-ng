@@ -72,10 +72,16 @@ endif
 		echo "#fixing ncurses detection bug" $(SILENT); \
 		$(SED) 's/^main()/int &/' -i $(KERNEL_SOURCE_DIR)/scripts/kconfig/lxdialog/check-lxdialog.sh; \
 	fi;
-	@echo "#kernel version specific patches: $(KERNEL_PATCHES_DIR)" $(SILENT)
-	@$(call APPLY_PATCHES,$(KERNEL_PATCHES_DIR),$(KERNEL_DIR))
-	@echo "#firmware version specific patches: $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID)" $(SILENT)
-	@$(call APPLY_PATCHES,$(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID),$(KERNEL_DIR))
+	@echo "#fixing hardcoded depmod path" $(SILENT); \
+	find $(KERNEL_SOURCE_DIR)/ -name Makefile | while read -r file; do \
+		grep -q '/sbin/depmod' "$${file}" || continue; \
+		echo "# - $${file}" $(SILENT); \
+		$(SED) 's,/sbin/depmod,depmod,g' -i "$${file}"; \
+	done;
+	@echo "#applying patches" $(SILENT)
+	@echo "##kernel version specific patches dir: $(KERNEL_PATCHES_DIR)" $(SILENT)
+	@echo "##firmware version specific patches dir: $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID)" $(SILENT)
+	@$(call APPLY_PATCHES,$(KERNEL_PATCHES_DIR) $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID),$(KERNEL_DIR))
 	@echo "#additional generic fixes" $(SILENT)
 	@for i in $(KERNEL_LINKING_FILES); do \
 		f="$${i%%,*}"; symlink_location="$${i##*,}"; \
@@ -231,7 +237,7 @@ endif
 
 kernel-autofix: kernel-dirclean
 	$(MAKE) AUTO_FIX_PATCHES=y $(KERNEL_DIR)/.configured
-kernel-recompile: kernel-dirclean kernel-precompiled
+kernel-recompile: kernel-distclean kernel-precompiled
 .PHONY: kernel-autofix kernel-recompile
 
 $(KERNEL_SOURCE_DIR)$(KERNEL_IMAGE_BUILD_SUBDIR)/$(KERNEL_IMAGE): $(KERNEL_DIR)/.prepared $(KERNEL_BUILD_DEPENDENCIES) | $(KERNEL_DEPENDS_ON)

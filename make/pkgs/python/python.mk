@@ -8,6 +8,8 @@ $(PKG)_SITE:=https://www.python.org/ftp/python/$($(PKG)_VERSION)
 ### CHANGES:=https://www.python.org/downloads/
 ### CVSREPO:=https://github.com/python/cpython
 
+$(PKG)_DEPENDS_ON+=patchelf-target-host
+
 $(PKG)_LOCAL_INSTALL_DIR:=$($(PKG)_DIR)/_install
 
 $(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/bin/python$($(PKG)_MAJOR_VERSION).bin
@@ -107,7 +109,7 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 		\
 		find usr/lib/python$(PYTHON_MAJOR_VERSION)/ -name "*.pyo" -delete; \
 		\
-		[ "$(FREETZ_SEPARATE_AVM_UCLIBC)" == "y" ] && $(PATCHELF) --set-interpreter /usr/lib/freetz/ld-uClibc.so.1 usr/bin/python$(PYTHON_MAJOR_VERSION); \
+		[ "$(FREETZ_SEPARATE_AVM_UCLIBC)" != "y" ] || $(PATCHELF_TARGET) --set-interpreter /usr/lib/freetz/ld-uClibc.so.1 usr/bin/python$(PYTHON_MAJOR_VERSION); \
 		\
 		$(TARGET_STRIP) \
 			usr/bin/python$(PYTHON_MAJOR_VERSION) \
