@@ -20,6 +20,10 @@ $(PKG)_POSIX_STAGING_BINARY:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/$($(PKG)_PO
 $(PKG)_POSIX_TARGET_BINARY:=$($(PKG)_TARGET_DIR)/$($(PKG)_POSIX_LIBNAME)
 
 $(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libpcre2_WITH_JIT
+$(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_29
+
+# JIT and test tools are not supported on uClibc 0.9.29 due to missing posix_madvise()
+$(PKG)_JIT_SUPPORTED := $(if $(FREETZ_TARGET_UCLIBC_0_9_29),,y)
 
 $(PKG)_CONFIGURE_OPTIONS += --enable-shared
 $(PKG)_CONFIGURE_OPTIONS += --enable-static
@@ -27,7 +31,9 @@ $(PKG)_CONFIGURE_OPTIONS += --enable-pcre2-8
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2-16
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2-32
 $(PKG)_CONFIGURE_OPTIONS += --enable-unicode
-$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_LIB_libpcre2_WITH_JIT),--enable-jit,--disable-jit)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(and $(FREETZ_LIB_libpcre2_WITH_JIT),$($(PKG)_JIT_SUPPORTED)),--enable-jit,--disable-jit)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_TARGET_UCLIBC_0_9_29),--disable-pcre2test,--enable-pcre2test)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_TARGET_UCLIBC_0_9_29),--disable-pcre2grep,--enable-pcre2grep)
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2test-libreadline
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2test-libedit
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2grep-libz
