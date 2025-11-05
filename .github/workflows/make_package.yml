@@ -1,26 +1,26 @@
 name: make_package
 
 on:
-  push:
-    branches: [ master ]
-    paths:
-      - '.github/workflows/make_package.yml'
-      - 'docs/CHANGELOG.md'
-      - 'make/pkgs/**'
-      - 'make/libs/**'
+  # push:
+  #   branches: [ master ]
+  #   paths:
+  #     - '.github/workflows/make_package.yml'
+  #     - 'docs/CHANGELOG.md'
+  #     - 'make/pkgs/**'
+  #     - 'make/libs/**'
   workflow_dispatch:
     inputs:
       make_target:
-        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', or 'package-fullbuild' (builds full firmware)"
+        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
         required: false
         type: string
         default: ""
       url:
-        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER"
+        description: "URL of .tar, .tgz, .tbz or .config, empty for URL in secrets.ACTIONS_TESTER (gh param: -f url=https://example.com/config)"
         required: false
         default: ""
       verbosity:
-        description: "Verbosity level (0=quiet, 1=normal, 2=verbose)"
+        description: "Verbosity level (0=quiet, 1=normal, 2=verbose, gh param: -f verbosity=2)"
         required: false
         default: "0"
         type: choice
@@ -29,21 +29,51 @@ on:
           - "1"
           - "2"
       download_toolchain:
-        description: "Try to download precompiled toolchain"
+        description: "Try to download precompiled toolchain (gh param: -f download_toolchain=true)"
+        required: false
+        default: false
+        type: boolean
+      download_hosttools:
+        description: "Try to download precompiled host tools (gh param: -f download_hosttools=true)"
+        required: false
+        default: false
+        type: boolean
+      cancel_previous:
+        description: "Cancel previous runs of this workflow (gh param: -f cancel_previous=false)"
+        required: false
+        default: true
+        type: boolean
+      use_queue:
+        description: "Use workflow queue to prevent concurrent runs (gh param: -f use_queue=false)"
+        required: false
+        default: true
+        type: boolean
+      custom_config:
+        description: "Custom device/firmware/language (e.g., '7530_W6_V1 08_2X EN' or '7590 08_0X' or just '7530', separators: space/tab/comma/semicolon/pipe/dash, gh param: -f custom_config='7530_W6_V1 08_2X EN')"
+        required: false
+        default: ""
+      add_or_override:
+        description: "Add custom configuration to matrix or override with only custom configuration (gh param: -f add_or_override=override)"
+        required: false
+        default: "add"
+        type: choice
+        options:
+          - "add"
+          - "override"
+      create_artifacts:
+        description: "Create and upload build artifacts (gh param: -f create_artifacts=true)"
         required: false
         default: false
         type: boolean
 
-#concurrency:
-# group: ${{ github.workflow }}
-# cancel-in-progress: false
+concurrency:
+  group: ${{ github.event.inputs.cancel_previous != 'false' && github.workflow || format('{0}-{1}', github.workflow, github.run_id) }}
+  cancel-in-progress: ${{ github.event.inputs.cancel_previous != 'false' }}
 
 jobs:
 
   parse_matrix:
     container:
-#     image: ubuntu:20.04
-#     image: freetzng/generate
       image: ghcr.io/freetz-ng/generate
       options: --user freetz
     runs-on: ubuntu-latest
@@ -53,7 +83,43 @@ jobs:
 
     steps:
 
+      - name: Show command-line
+        run: |
+          # Command-line when executing the workflow with the 'gh' CLI:
+          echo "##########################################################"
+          echo "ℹ️ GitHub CLI command used to trigger this workflow:"
+          
+          # Check if all parameters are at default values
+          HAS_PARAMS=""
+          [ -n "${{ github.event.inputs.make_target }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.url }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_config }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.add_or_override }}" != "add" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.create_artifacts }}" = "true" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.use_queue }}" = "false" ] && HAS_PARAMS="yes"
+          
+          if [ -z "$HAS_PARAMS" ]; then
+            echo "gh workflow run ${{ github.workflow }}.yml"
+          else
+            echo "gh workflow run ${{ github.workflow }}.yml \\"
+            [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
+            [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
+            [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
+            [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true \\"
+            [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && echo "  -f cancel_previous=false \\"
+            [ -n "${{ github.event.inputs.custom_config }}" ] && echo "  -f custom_config='${{ github.event.inputs.custom_config }}' \\"
+            [ "${{ github.event.inputs.add_or_override }}" != "add" ] && echo "  -f add_or_override='${{ github.event.inputs.add_or_override }}' \\"
+            [ "${{ github.event.inputs.create_artifacts }}" = "true" ] && echo "  -f create_artifacts=true"
+            [ "${{ github.event.inputs.use_queue }}" = "false" ] && echo "  -f use_queue=false"
+          fi
+          
+          echo "##########################################################"
+
       - uses: ahmadnassri/action-workflow-queue@v1
+        if: github.event.inputs.use_queue != 'false'
         with:
           timeout: "18000000"
           delay: "10000"
@@ -73,7 +139,7 @@ jobs:
       - name: parse
         id: parse
         run: |
-          # Get make target from manual input or commit message
+          # Produce the target list:
           make_cmd="$(echo "${{ github.event.inputs.make_target }}" | tr -d ' ')"
           if [ -z "$make_cmd" ]; then
             # Extract from commit message (look for "make" or "make-*")
@@ -106,7 +172,7 @@ jobs:
           
           # Parse the make command
           if [ "$make_cmd" = "make" ]; then
-            # Full build - not supported
+            # firmware - not supported
             echo "Full 'make' without arguments not supported"
             echo 'matrix=["skip"]' >> $GITHUB_OUTPUT
             echo "⚠️ Specify package names: 'make pkg1,pkg2' or use 'make package-precompiled'"
@@ -118,7 +184,7 @@ jobs:
             pkg_list="$(echo "$make_cmd" | sed 's/^make-\?//')"
             echo "Multiple packages requested: $pkg_list"
           elif [ -z "$make_cmd" ]; then
-            echo "No valid make target found"
+            echo "⚠️ No valid make target found"
             echo 'matrix=["skip"]' >> $GITHUB_OUTPUT
             exit 0
           else
@@ -136,46 +202,123 @@ jobs:
           # Build matrix by writing to temp file (avoid subshell variable issues)
           rm -f /tmp/matrix_entries.txt
           
-          # Process each package (replace , with newline for iteration)
-          echo "$pkg_list" | tr ',' '\n' | while IFS= read -r pkg; do
-            pkg="$(echo "$pkg" | tr -d ' ')"
-            [ -z "$pkg" ] && continue
+          # Parse custom_config parameter (format: "device firmware lang" with flexible separators)
+          custom_config="${{ github.event.inputs.custom_config }}"
+          custom_device=""
+          custom_firmware=""
+          custom_lang=""
+          
+          if [ -n "$custom_config" ]; then
+            # Normalize separators to spaces (support: space, tab, comma, semicolon, pipe, dash)
+            custom_config="$(echo "$custom_config" | tr ',;|\t-' ' ' | tr -s ' ')"
             
-            # Extract package name and target suffix using simple string operations
-            pkg_name="$pkg"
-            pkg_target="precompiled"
+            # Parse up to 3 fields
+            custom_device="$(echo "$custom_config" | awk '{print $1}')"
+            custom_firmware="$(echo "$custom_config" | awk '{print $2}')"
+            custom_lang="$(echo "$custom_config" | awk '{print $3}')"
             
-            # Check for target suffix and remove it
-            case "$pkg" in
-              *-fullbuild)
-                pkg_name="${pkg%-fullbuild*}"
-                pkg_target="fullbuild"
+            echo "Parsed custom_config:"
+            echo "  Device:   ${custom_device:-<not specified>}"
+            echo "  Firmware: ${custom_firmware:-<not specified>}"
+            echo "  Language: ${custom_lang:-<not specified>}"
+          fi
+          
+          # Check if override is requested
+          has_override=""
+          [ -n "$custom_device" ] || [ -n "$custom_firmware" ] || [ -n "$custom_lang" ] && has_override="yes"
+          
+          if [ -z "$has_override" ] || [ "${{ github.event.inputs.add_or_override }}" = "add" ]; then
+            # Process each package (replace , with newline for iteration)
+            echo "$pkg_list" | tr ',' '\n' | while IFS= read -r pkg; do
+              pkg="$(echo "$pkg" | tr -d ' ')"
+              [ -z "$pkg" ] && continue
+              
+              # Extract package name and target suffix using simple string operations
+              pkg_name="$pkg"
+              pkg_target="precompiled"
+              
+              # Check for target suffix and remove it
+              case "$pkg" in
+                *firmware)
+                  pkg_name="$pkg"
+                  pkg_target=""
+                  ;;
+                *-precompile|*-precompiled)
+                  pkg_name="${pkg%-precompile*}"
+                  pkg_target="precompiled"
+                  ;;
+                *-recompile|*-recompiled)
+                  pkg_name="${pkg%-recompile*}"
+                  pkg_target="recompile"
+                  ;;
+              esac
+              
+              if [ "$pkg_target" ];then
+                echo "  Adding package: $pkg_name with target: -$pkg_target"
+              else
+                echo "  Build: $pkg_name."
+              fi
+              
+              # Process each toolchain line
+              echo "$toolchain_list" | while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                # Use basic sed without -r (extended regex)
+                name="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1 - \2/g')"
+                tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
+                echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
+              done
+            done
+          fi
+          
+          # Add custom override entry if specified
+          if [ -n "$has_override" ]; then
+            if [ "${{ github.event.inputs.add_or_override }}" = "override" ]; then
+              echo "Overriding matrix with custom configuration only..."
+              # Clear existing entries for override mode
+              rm -f /tmp/matrix_entries.txt
+            else
+              echo "Adding custom configuration entry to matrix..."
+            fi
+            
+            # Use first package from pkg_list for the override entry, or default if none
+            override_pkg="${pkg_list%%,*}"
+            [ -z "$override_pkg" ] && override_pkg="dropbear"
+            
+            # Extract package name and target suffix for override entry
+            override_pkg_name="$override_pkg"
+            override_pkg_target="precompiled"
+            
+            case "$override_pkg" in
+              *firmware)
+                override_pkg_name="$override_pkg"
+                override_pkg_target=""
                 ;;
               *-precompile|*-precompiled)
-                pkg_name="${pkg%-precompile*}"
-                pkg_target="precompiled"
+                override_pkg_name="${override_pkg%-precompile*}"
+                override_pkg_target="precompiled"
                 ;;
               *-recompile|*-recompiled)
-                pkg_name="${pkg%-recompile*}"
-                pkg_target="recompile"
-                ;;
-              *-compile|*-compiled)
-                pkg_name="${pkg%-compile*}"
-                pkg_target="compile"
+                override_pkg_name="${override_pkg%-recompile*}"
+                override_pkg_target="recompile"
                 ;;
             esac
             
-            echo "  Adding package: $pkg_name with target: -$pkg_target"
+            # Default values if not specified
+            [ -z "$custom_device" ] && custom_device="7530_W6_V1"
+            [ -z "$custom_firmware" ] && custom_firmware="08_0X"
+            [ -z "$custom_lang" ] && custom_lang="EN"
             
-            # Process each toolchain line
-            echo "$toolchain_list" | while IFS= read -r line; do
-              [ -z "$line" ] && continue
-              # Use basic sed without -r (extended regex)
-              name="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1 - \2/g')"
-              tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
-              echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
-            done
-          done
+            # Create custom name and tcs
+            custom_name="$custom_device - $custom_firmware ($custom_lang)"
+            custom_tcs="_$custom_device _FIRMWARE_$custom_firmware _LANG_$custom_lang"
+            
+            if [ "$pkg_target" ];then
+              echo "  Custom override: $override_pkg_name with target: -$override_pkg_target on $custom_name"
+            else
+              echo "  Custom override: $override_pkg_name on $custom_name"
+            fi
+            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+          fi
           
           # Read matrix from file and output
           if [ -f /tmp/matrix_entries.txt ] && [ -s /tmp/matrix_entries.txt ]; then
@@ -189,8 +332,9 @@ jobs:
 
       - name: vars
         run: |
+          # List matrix data:
           echo "################################################################"
-          echo "matrix=${{ steps.parse.outputs.matrix }}" | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
+          printf "matrix=%s\n" '${{ steps.parse.outputs.matrix }}' | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
     container:
@@ -212,16 +356,6 @@ jobs:
       CACHE_KEY: "make_freetz"
     steps:
 
-      - name: Show command-line
-        run: |
-          echo "##########################################################"
-          echo "GitHub CLI command used to trigger this workflow:"
-          echo "gh workflow run make_package.yml \\"
-          [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
-          [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
-          [ -n "${{ github.event.inputs.verbosity }}" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
-          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && echo "  -f download_toolchain=true"
-          echo "##########################################################"
 #       run: apt-get -y update && apt-get -y upgrade && apt-get -y dist-upgrade
 #
 #     - name: install
@@ -239,12 +373,14 @@ jobs:
 
       - name: sleep
         run: |
+          # Random sleep to avoid race conditions
           SLEEP="$((1 + $(od -A n -t d -N 2 /dev/urandom | tr -d ' ') % 9))"
           echo "Sleeping $SLEEP seconds ..."
           sleep $SLEEP
 
       - name: myips
         run: |
+          # Show IP addresses for debugging:
           echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
 #         echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
 #         echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
@@ -272,73 +408,105 @@ jobs:
 
       - name: download
         run: |
+          # Download .config from URL if specified
           truncate -s0                                                                                  .config
           echo -n
           URL="$(echo '${{ github.event.inputs.url }}' | sed 's/^ *//;s/ *$//')"
           [ -z "$URL" ] && URL="${{ secrets.ACTIONS_TESTER }}"
-          echo -n "Downloading file '${URL##*/}': "
+          [ "$URL" ] && echo -n "Downloading configuration file '${URL}': "
           case "${URL##*.}" in \
-          '')                                                                       echo Skip ;; \
-          tar) wget -q "$URL" -O - 2>/dev/null | tar x  2>/dev/null && echo Done || echo Fail ;; \
-          tgz) wget -q "$URL" -O - 2>/dev/null | tar xz 2>/dev/null && echo Done || echo Fail ;; \
-          tbz) wget -q "$URL" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Fail ;; \
-          *)   wget -q "$URL" -O - 2>/dev/null > .config            && echo Done || echo Fail ;; \
+          '') echo "ℹ️ No configuration file URL provided. Checking 'myconfig'." ;; \
+          tar) wget -q "$URL" -O - 2>/dev/null | tar x  2>/dev/null && echo "✓ Done." || echo "❌ URL download failed." ;; \
+          tgz) wget -q "$URL" -O - 2>/dev/null | tar xz 2>/dev/null && echo "✓ Done." || echo "❌ URL download failed." ;; \
+          tbz) wget -q "$URL" -O - 2>/dev/null | tar xj 2>/dev/null && echo "✓ Done." || echo "❌ URL download failed." ;; \
+          *)   wget -q "$URL" -O - 2>/dev/null > .config            && echo "✓ Done." || echo "❌ URL download failed." ;; \
           esac
           echo -n
-          sed '/FREETZ_SERIES_/d'                                                                     -i .config
-          echo 'FREETZ_SERIES_ALL=y'                                                                  >> .config
-          sed '/FREETZ_TOOLCHAIN_CCACHE/d'                                                            -i .config
-          echo '# FREETZ_TOOLCHAIN_CCACHE is not set'                                                 >> .config
-          sed '/FREETZ_USER_LEVEL_/d'                                                                 -i .config
-          echo 'FREETZ_USER_LEVEL_DEVELOPER=y'                                                        >> .config
-          sed '/FREETZ_HOSTTOOLS_DOWNLOAD/d'                                                          -i .config
-          echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                          >> .config
-          sed '/FREETZ_DOWNLOAD_TOOLCHAIN/d'                                                          -i .config
-          if [ "${{ github.event.inputs.download_toolchain }}" = "true" ]; then
-            echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y'                                                        >> .config
-          else
-            echo '# FREETZ_DOWNLOAD_TOOLCHAIN is not set'                                             >> .config
-            sed '/FREETZ_BUILD_TOOLCHAIN/d'                                                           -i .config
-            echo 'FREETZ_BUILD_TOOLCHAIN=y'                                                           >> .config
-          fi
-          sed '/FREETZ_VERBOSITY_FWMOD_/d'                                                            -i .config
-          echo 'FREETZ_VERBOSITY_FWMOD_2=y'                                                           >> .config
-          sed '/FREETZ_VERBOSITY_LEVEL/d'                                                             -i .config
-          VERBOSITY="${{ github.event.inputs.verbosity }}"
-          [ -z "$VERBOSITY" ] && VERBOSITY="0"
-          echo "FREETZ_VERBOSITY_LEVEL_${VERBOSITY}=y"                                                >> .config
-          echo "FREETZ_VERBOSITY_LEVEL=${VERBOSITY}"                                                  >> .config
-          sed '/FREETZ_SIZEINFO_COMPRESSED/d'                                                         -i .config
-          echo 'FREETZ_SIZEINFO_COMPRESSED=y'                                                         >> .config
-          sed '/FREETZ_SIZEINFO_UNCOMPRESSED/d'                                                       -i .config
-          echo 'FREETZ_SIZEINFO_UNCOMPRESSED=y'                                                       >> .config
-          sed '/FREETZ_JLEVEL/d'                                                                      -i .config
-          echo 'FREETZ_JLEVEL=0'                                                                      >> .config
-          sed '/FREETZ_CHECK_CHANGED/d'                                                               -i .config
-          echo '# FREETZ_CHECK_CHANGED is not set'                                                    >> .config
-          sed '/FREETZ_MODULES_TEST/d'                                                                -i .config
-          echo '# FREETZ_MODULES_TEST is not set'                                                     >> .config
-          echo "##########################################################" && echo -n "Lines=" && wc -l .config
-
+          echo "##########################################################" && echo -n "Number of lines in '.config' file: " && wc -l .config
+          
       - name: config
         run: |
+          # Prepare .config based on downloaded file (or myconfig fallback)
           TCS="${{ matrix.fritz.tcs }}"
-          # Check if .config was downloaded successfully, otherwise use myconfig
-          if [ -s .config ] && grep -q "FREETZ_SERIES_ALL=y" .config; then
+          HAS_CONFIG_FILE=yes
+          
+          # Check if .config was downloaded successfully
+          if [ -s .config ] && grep -q "^FREETZ_" .config 2>/dev/null; then
+            echo "################################################################"
             echo "Using downloaded configuration from URL"
+            echo "################################################################"
           else
-            echo "Download failed or no URL provided, using myconfig as fallback"
+            echo "################################################################"
+            echo "No valid configuration downloaded from URL - trying local 'myconfig' file as fallback"
+            echo "################################################################"
             truncate -s0 .config
+            
             # Load custom config from .github/workflows/myconfig (base configuration)
             if [ -f .github/workflows/myconfig ]; then
               echo "Loading custom base configuration from .github/workflows/myconfig..."
               cat .github/workflows/myconfig >> .config
             else
-              echo "ERROR: .github/workflows/myconfig not found!"
-              exit 1
+              #echo "❌ ERROR: .github/workflows/myconfig not found!"
+              #exit 1
+              echo "⚠️ .github/workflows/myconfig configuration file not found. Generating default .config file."
+              HAS_CONFIG_FILE=
+              echo "################################################################"
+              make olddefconfig
+              
+              # Add package to .config if not firmware
+              pkg="${{ matrix.fritz.pkg }}"
+              
+              # Determine which package to add to config
+              if echo "$pkg" | grep -q "firmware"; then
+                if [ "$pkg" = "firmware" ]; then
+                  # Pure firmware build, no package to add
+                  pkg_to_add=""
+                else
+                  # Combined firmware + package build, extract package name
+                  pkg_to_add="$(echo "$pkg" | sed 's/-firmware$//')"
+                fi
+              else
+                # Standard package build
+                pkg_to_add="$pkg"
+              fi
+              
+              if [ -n "$pkg_to_add" ]; then
+                # Parse additional suffixes for package builds within firmware
+                pkg_to_add_base="$pkg_to_add"
+                case "$pkg_to_add" in
+                  *-precompile|*-precompiled)
+                    pkg_to_add_base="${pkg_to_add%-precompile*}"
+                    ;;
+                  *-recompile|*-recompiled)
+                    pkg_to_add_base="${pkg_to_add%-recompile*}"
+                    ;;
+                esac
+                
+                pkg_to_add_base="$(echo "$pkg_to_add_base" | tr '[:upper:]' '[:lower:]')"
+                PKG_TO_ADD="$(echo "$pkg_to_add_base" | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"
+                
+                TYPE=""
+                for x in pkgs libs; do [ -d make/$x/$pkg_to_add_base ] && TYPE=$x; done
+                
+                if [ "$TYPE" = "pkgs" ]; then
+                  sed -i "/^#\? \?FREETZ_PACKAGE_${PKG_TO_ADD}[ =]/d" .config
+                  echo "FREETZ_PACKAGE_$PKG_TO_ADD=y" >> .config
+                  sed -i "/^#\? \?FREETZ_LIB_lib${pkg_to_add_base}[ =]/d" .config
+                  echo "FREETZ_LIB_lib$pkg_to_add_base=y" >> .config
+                fi
+                
+                if [ "$TYPE" = "libs" ]; then
+                  for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg_to_add_base/Config.in); do
+                    sed -i "/^#\? \?FREETZ_LIB_$x[ =]/d" .config
+                    echo "FREETZ_LIB_$x=y" >> .config
+                  done
+                fi
+              fi
             fi
           fi
           
+          # Configuration transformation section (applies to both downloaded and myconfig)
+          echo "Applying configuration transformations..."
           # Comment out conflicting settings from config that will be overridden
           sed -i 's/^FREETZ_VERBOSITY_FWMOD_[0-9]=y/# &/' .config
           sed -i 's/^FREETZ_VERBOSITY_LEVEL_[0-9]=y/# &/' .config
@@ -348,6 +516,34 @@ jobs:
           # Remove util-linux version lines to let Config.in auto-select based on toolchain
           sed -i '/^#\? \?FREETZ_UTIL_LINUX_VERSION_/d' .config
           
+          # Remove existing settings before adding new ones to avoid override warnings
+          sed -i '/FREETZ_MODULES_OWN/d' .config
+          sed -i '/FREETZ_PATCH_UDEVMOUNT/d' .config
+          sed -i '/FREETZ_MODULE_dummy/d' .config
+          sed -i '/FREETZ_MODULE_loop/d' .config
+          sed -i '/FREETZ_MODULE_usbserial/d' .config
+          sed -i '/FREETZ_PACKAGE_DROPBEAR/d' .config
+          sed -i '/FREETZ_PACKAGE_LDD/d' .config
+          sed -i '/FREETZ_SIZEINFO_COMPRESSED/d' .config
+          sed -i '/FREETZ_SIZEINFO_UNCOMPRESSED/d' .config
+          sed -i '/FREETZ_TOOLCHAIN_CCACHE/d' .config
+          sed -i '/FREETZ_VERBOSITY_FWMOD_/d' .config
+          sed -i '/FREETZ_VERBOSITY_LEVEL_/d' .config
+          sed -i '/FREETZ_VERBOSITY_LEVEL=/d' .config
+          sed -i '/FREETZ_SERIES_ALL/d' .config
+          sed -i '/FREETZ_USER_LEVEL_DEVELOPER/d' .config
+          sed -i '/FREETZ_MODULES_TEST/d' .config
+          sed -i '/FREETZ_DL_SITE_USER/d' .config
+          sed -i '/FREETZ_REAL_DEVELOPER_ONLY__DLIMG/d' .config
+          sed -i '/FREETZ_REAL_DEVELOPER_ONLY__DLURL/d' .config
+          sed -i '/FREETZ_DOWNLOAD_TOOLCHAIN/d' .config
+          sed -i '/FREETZ_BUILD_TOOLCHAIN/d' .config
+          sed -i '/FREETZ_HOSTTOOLS_DOWNLOAD/d' .config
+          sed -i '/FREETZ_AVM_PROP_NAME/d' .config
+          sed -i '/FREETZ_AVM_PROP_MAJOR/d' .config
+          sed -i '/FREETZ_AVM_PROP_HWREV/d' .config
+          
+          # Apply standardized settings
           echo 'FREETZ_MODULES_OWN=""'                                                                >> .config
           for x in  UDEVMOUNT                               ; do echo "# FREETZ_PATCH_$x is not set"  >> .config; done
           for x in  dummy loop usbserial                   ; do echo "# FREETZ_MODULE_$x is not set"  >> .config; done
@@ -366,23 +562,77 @@ jobs:
           echo 'FREETZ_DL_SITE_USER="https://raw.githubusercontent.com/Freetz-NG/dl-mirror/master"'   >> .config
           echo 'FREETZ_REAL_DEVELOPER_ONLY__DLIMG="${{ secrets.ACTIONS_IMAGE }}"'                     >> .config
           echo 'FREETZ_REAL_DEVELOPER_ONLY__DLURL="${{ secrets.ACTIONS_DLTCS }}"'                     >> .config
+          
+          # Parametric toolchain download (currently disabled, build instead)
           if [ "${{ github.event.inputs.download_toolchain }}" = "true" ]; then
             echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y'                                                        >> .config
           else
             echo 'FREETZ_BUILD_TOOLCHAIN=y'                                                           >> .config
           fi
-          echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                          >> .config
+          
+          # Parametric hosttools download
+          if [ "${{ github.event.inputs.download_hosttools }}" = "true" ]; then
+            echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                        >> .config
+          else
+            echo '# FREETZ_HOSTTOOLS_DOWNLOAD is not set'                                             >> .config
+          fi
+          
+          # Commented out JLEVEL and CHECK_CHANGED (can be uncommented if needed)
+          #sed -i '/FREETZ_JLEVEL/d' .config
+          #sed -i '/FREETZ_CHECK_CHANGED/d' .config
+          #echo 'FREETZ_JLEVEL=0'                                                                      >> .config
+          #echo '# FREETZ_CHECK_CHANGED is not set'                                                    >> .config
+          
           # Override device settings from matrix (test on all toolchains)
-          for x in $TCS; do echo "$x=y" | sed 's/^_/FREETZ_TYPE_/'; done                              >> .config
+          for x in $TCS; do
+            var_name="$(echo "$x" | sed 's/^_/FREETZ_TYPE_/')"
+            sed -i "/${var_name}/d" .config
+            echo "${var_name}=y" >> .config
+          done
           grep -q '^FREETZ_TYPE_' .config || echo 'FREETZ_TYPE_7530_W6_V1=y'                          >> .config
           grep -q '^FREETZ_TYPE_FIRMWARE_' .config || echo 'FREETZ_TYPE_FIRMWARE_08_0X=y'             >> .config
-          echo "################################################################" && du .config && wc -l .config
+
+          # Extract device and firmware from .config
+          DEVICE_CONFIG="$(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
+          FIRMWARE_CONFIG="$(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
+          
+          # Extract from matrix.fritz.name
+          MATRIX_NAME="${{ matrix.fritz.name }}"
+          DEVICE_MATRIX="$(echo "$MATRIX_NAME" | sed 's/ - .*//')"
+          FIRMWARE_MATRIX="$(echo "$MATRIX_NAME" | sed 's/.* - \([^ ]*\) .*/\1/')"
+          # LANG_MATRIX="$(echo "$MATRIX_NAME" | sed 's/.*(\([^)]*\)).*/\1/')"
+          if [ "$DEVICE_CONFIG" != "$DEVICE_MATRIX" ] || [ "$FIRMWARE_CONFIG" != "$FIRMWARE_MATRIX" ]; then
+              [ "$HAS_CONFIG_FILE" ] && echo "ℹ️ Note: original .config had $DEVICE_CONFIG $FIRMWARE_CONFIG; target will be $DEVICE_MATRIX $FIRMWARE_MATRIX"
+          fi
+
+          make olddefconfig
+          echo "##########################################################"
+          echo "👉 Configuration summary:"
+          echo "  - Device:   $(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
+          echo "  - Firmware: $(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
+          echo "  - Language: $(grep '^FREETZ_TYPE_LANG_[A-Z][A-Z]=y' .config | sed 's/FREETZ_TYPE_LANG_//;s/=y//' | head -1)"
+          echo "  - Kernel:   $(grep '^FREETZ_AVM_PROP_KERNEL_' .config | grep '=y' | sed 's/.*KERNEL_//;s/_/./g;s/=y//' | head -1)"
+          echo "  - Arch:     $(grep '^FREETZ_AVM_PROP_ARCH_' .config | grep '=y' | sed 's/.*ARCH_//;s/=y//' | head -5 | tr '\n' ' ')"
+          echo "  - GCC:      $(grep '^FREETZ_TARGET_GCC_' .config | grep -v MIN | grep -v MAX | grep '=y' | sed 's/.*GCC_//;s/_/./g;s/=y//' | head -1)"
+          echo "  - uClibc:   $(grep '^FREETZ_TARGET_UCLIBC_' .config | grep -v HAS | grep '=y' | sed 's/.*UCLIBC_//;s/_/./g;s/=y//' | head -1)"
+          echo "  - GCC ABI:  $(grep '^FREETZ_GCC_ABI=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - GCC Arch: $(grep '^FREETZ_GCC_ARCH=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - GCC CPU:  $(grep '^FREETZ_GCC_CPU=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - DevName:  $(grep '^FREETZ_AVM_PROP_NAME=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - Major:    $(grep '^FREETZ_AVM_PROP_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - HWRev:    $(grep '^FREETZ_AVM_PROP_HWREV=' .config | sed 's/.*=//' | tr -d '"')"
+                              
+          echo ""
+          echo "👉 User packages enabled:"
+          grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|IPTABLES_IS_SELECTABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15 | sed 's/^/  - /'
+          echo "##########################################################"
 
       - name: addon
         if: matrix.fritz != 'skip'
         run: |
+          # Download additional files if specified in secrets.ACTIONS_CUSTOM (e.g., patches, scripts, etc.)
           echo "################################################################"
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Null
+          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo "✓ Additional files successfully Downloaded." || echo Null
 
 #     - name: signature
 #       if: matrix.fritz != 'skip'
@@ -394,129 +644,293 @@ jobs:
       - name: generate
         id: generate
         if: matrix.fritz != 'skip'
+        continue-on-error: true
         run: |
+          # Build package or firmware based on matrix entry
           pkg="${{ matrix.fritz.pkg }}"
           target="${{ matrix.fritz.target }}"
           pkg="$(echo "$pkg" | tr '[:upper:]' '[:lower:]')"
           PKG="$(echo "$pkg" | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"
           echo "pkg=$pkg" >> $GITHUB_OUTPUT
           
-          # Check if this is a full build target
-          if [ "$target" = "fullbuild" ]; then
-            echo "Full firmware build requested for package: $pkg"
+          # Check if this is a firmware target
+          if echo "$pkg" | grep -q "firmware"; then
+            # Build firmware image
+            make olddefconfig
+            echo "⏳ Building firmware image..."
+            make
+            echo "bad=n" >> $GITHUB_OUTPUT
+            
+          # Standard package-only build
+          else
             TYPE=""
             for x in pkgs libs; do [ -d make/$x/$pkg ] && TYPE=$x; done
-            [ -z "$TYPE" ] && echo "No directory for package $pkg" && exit 1
+            [ -z "$TYPE" ] && echo -n 'Waiting ' && for x in $(seq 60); do echo -n '.' && sleep 1; done && echo ' done.' && git pull
+            for x in pkgs libs; do [ -d make/$x/$pkg ] && TYPE=$x; done
+            [ -z "$TYPE" ] && echo "❌ No directory." && exit
             
-            # Enable the package in config
-            [ "$TYPE" = "pkgs" ] && sed "/[^ ]FREETZ_PACKAGE_${PKG}[ =]/d" -i .config
-            [ "$TYPE" = "pkgs" ] && echo "FREETZ_PACKAGE_$PKG=y" >> .config
-            
-            # Enable EXTERNAL for packages that require it (like gcc-toolchain)
-            if grep -q "depends on EXTERNAL_ENABLED" make/$TYPE/$pkg/Config.in 2>/dev/null; then
-              echo "Package requires EXTERNAL - enabling..."
-              sed "/[^ ]FREETZ_EXTERNAL_ENABLED[ =]/d" -i .config
-              echo "FREETZ_EXTERNAL_ENABLED=y" >> .config
+            # Enable package only if not already enabled (avoid override warnings)
+            if [ "$TYPE" = "pkgs" ]; then
+              # Remove all existing entries (enabled, disabled, or commented) to avoid override warnings
+              sed -i "/^#\? \?FREETZ_PACKAGE_${PKG}[ =]/d" .config
+              # Check if package should be enabled based on original state
+              echo "FREETZ_PACKAGE_$PKG=y" >> .config
+              
+              # Also check for library variant
+              sed -i "/^#\? \?FREETZ_LIB_lib${pkg}[ =]/d" .config
+              echo "FREETZ_LIB_lib$pkg=y" >> .config
             fi
             
+            if [ "$TYPE" = "libs" ]; then
+              for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do
+                # Remove all existing entries (enabled, disabled, or commented)
+                sed -i "/^#\? \?FREETZ_LIB_$x[ =]/d" .config
+                echo "FREETZ_LIB_$x=y" >> .config
+              done
+            fi
+            echo "################################################################" && bash -c "echo pkg=$pkg" && bash -c "echo PKG=$PKG"
             make olddefconfig
-            
-            # Verify package is enabled
             BAD=y
             [ "$TYPE" = "pkgs" ] && grep -q "^FREETZ_PACKAGE_$PKG=y" .config && BAD=n
+            [ "$TYPE" = "libs" ] && for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do grep -q "^FREETZ_LIB_$x=y" .config && BAD=n ; done
             echo "bad=$BAD" >> $GITHUB_OUTPUT
-            
             if [ "$BAD" = "y" ]; then
-              echo "Could not enable package $pkg"
-              exit 1
+              echo "################################################################"
+              echo "⚠️  Package '$pkg' could not be enabled for this toolchain"
+              echo "This is normal if the package has unsatisfied dependencies."
+              echo "Checking configuration requirements..."
+              if [ "$TYPE" = "pkgs" ] && [ -f "make/$TYPE/$pkg/Config.in" ]; then
+                echo "Package dependencies:"
+                grep -E "^\s*(depends on|select)" "make/$TYPE/$pkg/Config.in" | head -10 || echo "  (none found)"
+              fi
+              echo "This package is disabled in 'make menuconfig' for this device - skipping build."
+              echo "################################################################"
+              echo "debug_needed=true" >> $GITHUB_OUTPUT
+              exit 0
             fi
             
-            # Build full firmware image
-            echo "Building full firmware image with $pkg..."
-            make
-            exit 0
-          fi
-          
-          # Standard package-only build
-          TYPE=""
-          for x in pkgs libs; do [ -d make/$x/$pkg ] && TYPE=$x; done
-          [ -z "$TYPE" ] && echo -n 'Waiting ' && for x in $(seq 60); do echo -n '.' && sleep 1; done && echo ' done.' && git pull
-          for x in pkgs libs; do [ -d make/$x/$pkg ] && TYPE=$x; done
-          [ -z "$TYPE" ] && echo "No directory." && exit
-          [ "$TYPE" = "pkgs" ] && sed "/[^ ]FREETZ_PACKAGE_${PKG}[ =]/d"                                                                              -i .config
-          [ "$TYPE" = "pkgs" ] && echo     "FREETZ_PACKAGE_$PKG=y"                                                                                    >> .config
-          [ "$TYPE" = "pkgs" ] && sed "/[^ ]FREETZ_LIB_lib${pkg}[ =]/d"                                                                               -i .config
-          [ "$TYPE" = "pkgs" ] && echo     "FREETZ_LIB_lib$pkg=y"                                                                                     >> .config
-          [ "$TYPE" = "libs" ] && for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do sed "/[^ ]FREETZ_LIB_$x[ =]/d"  -i .config; done
-          [ "$TYPE" = "libs" ] && for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do echo     "FREETZ_LIB_$x=y"      >> .config; done
-          echo "################################################################" && bash -c "echo pkg=$pkg" && bash -c "echo PKG=$PKG"
-          make olddefconfig
-          BAD=y
-          [ "$TYPE" = "pkgs" ] && grep -q "^FREETZ_PACKAGE_$PKG=y" .config && BAD=n
-          [ "$TYPE" = "libs" ] && for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do grep -q "^FREETZ_LIB_$x=y" .config && BAD=n ; done
-          echo "bad=$BAD" >> $GITHUB_OUTPUT
-          if [ "$BAD" = "y" ]; then
-            echo "################################################################"
-            echo "⚠️  Package '$pkg' could not be enabled for this toolchain"
-            echo "This is normal if the package has unsatisfied dependencies."
-            echo "Checking configuration requirements..."
-            if [ "$TYPE" = "pkgs" ] && [ -f "make/$TYPE/$pkg/Config.in" ]; then
-              echo "Package dependencies:"
-              grep -E "^\s*(depends on|select)" "make/$TYPE/$pkg/Config.in" | head -10 || echo "  (none found)"
+            # Build dependencies first (libraries)
+            if [ "$BAD" = "n" ]; then
+              echo "################################################################"
+              echo "⏳ Package '${pkg}-${target}'. Building library dependencies first..."
+              echo "################################################################"
+              make libs
+              
+              echo "################################################################"
+              echo "⏳ Building package '${pkg}-${target}'"
+              echo "################################################################"
+              make ${pkg}-${target}
             fi
-            echo "Package was disabled by 'make olddefconfig' - skipping build."
-            echo "################################################################"
-            exit 0
+          fi  # End of if firmware / else standard build
+
+      - name: debug-on-failure
+        if: steps.generate.outcome == 'failure' || steps.generate.outputs.debug_needed == 'true'
+        run: |
+          # Diagnostic information on build failure
+          echo "##########################################################"
+          if [ "${{ steps.generate.outputs.debug_needed }}" = "true" ]; then
+              echo "⚠️ Package disabled - showing diagnostic information"
+              echo "##########################################################"
+          else
+              echo "❌ Build failed - showing diagnostic information"
+              echo "##########################################################"
+
+              # Show last build errors from log files
+              echo ""
+              echo "=== 👉 Recent build errors from make logs (last 500 lines) ==="
+              find . -name "*.log" -type f -mmin -30 -exec echo "=== {} ===" \; -exec tail -500 {} \; 2>/dev/null | grep -B2 -A2 -i "error" | head -100 || echo "No recent error logs found"
+              echo ""
+              
+              # Test g++ compiler
+              GXX_PATH=$(find toolchain/build -name "*-g++" -type f 2>/dev/null | head -1)
+              if [ -n "$GXX_PATH" ]; then
+                echo ""
+                echo "=== 👉 G++ Compiler Information ==="
+                echo "Found g++ at: $GXX_PATH"
+                echo ""
+                echo "File info:"
+                file "$GXX_PATH" || true
+                echo ""
+                echo "Testing g++ version:"
+                "$GXX_PATH" --version 2>&1 || echo "ERROR: g++ --version failed"
+                echo ""
+                echo "Checking g++ dependencies:"
+                ldd "$GXX_PATH" 2>&1 || echo "ERROR: ldd failed"
+                echo ""
+                echo "Testing simple C++ compile:"
+                echo 'int main() { return 0; }' > /tmp/test.cpp
+                "$GXX_PATH" /tmp/test.cpp -o /tmp/test.out 2>&1 || echo "ERROR: Simple compile failed"
+                rm -f /tmp/test.cpp /tmp/test.out
+                echo ""
+                echo "Checking target libstdc++:"
+                find toolchain/build -name "libstdc++.so*" -path "*/*-linux-*/*" | head -5
+                echo ""
+                echo "Checking if g++-wrapper exists and what it points to:"
+                WRAPPER=$(find toolchain/build -name "*-g++-wrapper" | head -1)
+                if [ -n "$WRAPPER" ]; then
+                  ls -la "$WRAPPER"
+                  readlink -f "$WRAPPER" || true
+                fi
+                echo ""
+              else
+                echo "WARNING: g++ not found in toolchain"
+              fi
+          fi
+                    
+          # Show package-specific build information
+          pkg="${{ matrix.fritz.pkg }}"
+          if [ -n "$pkg" ]; then
+            echo ""
+            echo "=== 👉 Package build information for: $pkg ==="
+            PKG_DIR=$(find make -type d -name "$pkg" 2>/dev/null | head -1)
+            if [ -n "$PKG_DIR" ]; then
+              echo "Package directory: $PKG_DIR"
+              echo ""
+              echo "Config.in dependencies:"
+              grep -E "^\s*(depends on|select)" "$PKG_DIR/Config.in" 2>/dev/null | head -20 || echo "No dependencies found"
+              echo ""
+              echo "Package configuration in .config:"
+              grep -i "$pkg" .config 2>/dev/null | head -10 || echo "No config entries found"
+            fi
+            echo ""
           fi
           
-          # Build dependencies first (libraries)
-          if [ "$BAD" = "n" ]; then
-            echo "################################################################"
-            echo "Building library dependencies first..."
-            echo "################################################################"
-            make libs
-            
-            echo "################################################################"
-            echo "Building package: ${pkg}-${target}"
-            echo "################################################################"
-            make ${pkg}-${target}
+          # Show config.log for failed packages
+          echo "=== 👉 Config.log files (last 500 lines each) ==="
+          find source -name "config.log" -type f -mmin -30 -exec echo "=== {} ===" \; -exec tail -500 {} \; 2>/dev/null | head -500 || echo "No recent config.log found"
+          echo ""
+          
+          # Show toolchain information
+          echo "=== 👉 Toolchain information ==="
+          echo "ℹ️ GCC version:"
+          grep "^FREETZ_TARGET_GCC_" .config | grep "=y" | head -3
+          echo "ℹ️ uClibc version:"
+          grep "^FREETZ_TARGET_UCLIBC_" .config | grep "=y" | head -3
+          echo "ℹ️ Architecture:"
+          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -3
+          echo "ℹ️ Kernel version:"
+          grep "^FREETZ_AVM_PROP_KERNEL_" .config | grep "=y" | head -3
+          echo ""
+          
+          # Show disk space
+          echo "=== 👉 Disk space information ==="
+          df -h . | tail -1
+          echo ""
+          
+          echo "##########################################################"
+          if [ "${{ steps.generate.outputs.debug_needed }}" = "true" ]; then
+            exit 0
+          else
+            exit 1
           fi
 
       - name: result
+        id: result
         if: steps.generate.outputs.bad == 'n'
         run: |
+          # Show build results and create artifacts if requested
           pkg="$(echo ${{ steps.generate.outputs.pkg }} | sed 's/lib//')"
           target="${{ matrix.fritz.target }}"
           
-          # Check if this was a full build
-          if [ "$target" = "fullbuild" ]; then
-            echo "################################################################"
-            echo "Full firmware build completed"
+          echo "##########################################################"
+          echo "🚀 Build completed successfully!"
+          echo "##########################################################"
+
+          # Check if this was a firmware
+          if echo "$pkg" | grep -q "firmware"; then
+            rm -f images/latest.image
+            artifact_filename=$(echo "${{ matrix.fritz.pkg }} ${{ matrix.fritz.name }}" | sed 's/ /-/g; s/[()]//g; s/--*/-/g')
+            echo "artifact_filename=$artifact_filename" >> $GITHUB_OUTPUT
+            echo "✅ Firmware build description:"
+            echo "Firmware filename: $artifact_filename"
             if [ -d images ]; then
-              echo "Firmware images created:"
-              ls -lh images/*.image 2>/dev/null || echo "No .image files found"
+              echo "Firmware images:"
+              ls -lh images 2>/dev/null || echo "❌ No image files found."
             fi
             if [ -d packages ]; then
               echo ""
-              echo "Package $pkg files:"
-              find packages/target-*/${pkg}-*/root/ ! -type d 2>/dev/null || echo "No package files found"
+              echo "Included package directories:"
+              for i in packages/*; do
+                test -d "$i" && echo "$i:" || echo "❌ No packages found."
+                ls -w 120 -C $i 2>/dev/null
+              done
+            fi            
+          else
+            # Show files for standard package-only result
+            artifact_filename=$(echo "package ${{ matrix.fritz.pkg }} ${{ matrix.fritz.name }}" | sed 's/ /-/g; s/[()]//g; s/--*/-/g')
+            echo "artifact_filename=$artifact_filename" >> $GITHUB_OUTPUT
+            echo "Package filename: $artifact_filename"
+            echo "✅ Package '$pkg' build description:"
+            echo "ℹ️ Package files:"
+            find packages/target-*/${pkg}-*/root/ ! -type d -exec ls -al {} + 2>/dev/null || true
+            echo ""
+            if find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null | grep -q .; then
+              echo "ℹ️ Freetz library files:"
+              find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec ls -al {} + 2>/dev/null || true
             fi
-            exit 0
+            
+            # Check if any files were found
+            if ! find packages/target-*/${pkg}-*/root/ ! -type d 2>/dev/null | grep -q . && \
+               ! find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null | grep -q .; then
+              echo "❌ No binary output found."
+            fi
+
+            # Create artifact for standard package build (only if create_artifacts is true)
+            if [ "${{ github.event.inputs.create_artifacts }}" = "true" ]; then
+                echo "################################################################"
+                echo "⏳ Creating artifact for package..."
+                echo "################################################################"
+                
+                mkdir -p freetz-package-build
+                
+                # Copy package files
+                if [ -d packages/target-*/${pkg}-*/root ]; then
+                  cp -r packages/target-*/${pkg}-*/root freetz-package-build/ 2>/dev/null || true
+                fi
+                
+                # Copy Freetz library files
+                if [ -d packages/target-*/root/usr/lib/freetz ]; then
+                  mkdir -p freetz-package-build/freetz-libs
+                  find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec cp {} freetz-package-build/freetz-libs/ \; 2>/dev/null || true
+                fi
+                
+                # Create build summary
+                {
+                  echo "Package Build"
+                  echo "===================="
+                  echo "Build Date: $(date)"
+                  echo "Package: $pkg"
+                  echo "Target: $target"
+                  echo "Device: ${{ matrix.fritz.name }}"
+                  echo ""
+                  
+                  echo "Package Files:"
+                  find packages/target-*/${pkg}-*/root/ ! -type d -exec ls -al {} + 2>/dev/null | wc -l || echo "0"
+                  
+                  echo ""
+                  echo "Freetz Library Files:"
+                  find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec ls -al {} + 2>/dev/null | wc -l || echo "0"
+                  
+                  echo ""
+                  echo "Artifact Contents:"
+                  find freetz-package-build/ -type f | head -20
+                  
+                } > freetz-package-build/freetz-package-build.log                
+            fi  # End of create_artifacts check for standard package build
           fi
           
-          # Standard package-only result
-          echo "################################################################"
-          echo "Package files:"
-          find packages/target-*/${pkg}-*/root/ ! -type d -exec ls -al {} + 2>/dev/null || true
-          echo ""
-          echo "Freetz library files:"
-          find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec ls -al {} + 2>/dev/null || true
-          
-          # Check if any files were found
-          if ! find packages/target-*/${pkg}-*/root/ ! -type d 2>/dev/null | grep -q . && \
-             ! find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null | grep -q .; then
-            echo "No binary output found."
-          fi
+      - name: Upload build artifact
+        if: steps.generate.outputs.bad == 'n' && github.event.inputs.create_artifacts == 'true'
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ steps.result.outputs.artifact_filename }}
+          path: ${{ contains(steps.generate.outputs.pkg, 'firmware') && 'images/' || 'freetz-package-build/' }}
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 9
+          overwrite: true
+          include-hidden-files: false
+
 
 #     - name: vars
 #       id: vars
@@ -577,5 +991,3 @@ jobs:
 #           !dl/linux-*.tar.xz
 #           !dl/fw/*.zip
 #         key: ${{ env.CACHE_KEY }}
-
-

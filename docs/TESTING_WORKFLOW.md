@@ -1,69 +1,39 @@
 # Freetz-NG Testing Workflows Guide
 
-This document provides guidance for testing packages and firmware builds using two GitHub Actions workflows in Freetz-NG: .github/workflows/make_package.yml and .github/workflows/make_tester.yml.
+This document provides guidance for testing packages and firmware builds using the GitHub Actions workflow in Freetz-NG: .github/workflows/make_package.yml.
 
 ## Overview
 
-Freetz-NG uses different GitHub Actions workflows; for testing, consider the following ones:
+Freetz-NG uses GitHub Actions workflows for testing and for building firmwares; the related workflow is:
 
-1. **`make_tester.yml`** - Full firmware build testing (single configuration)
-2. **`make_package.yml`** - Package testing matrix (multiple toolchains)
+- **`make_package.yml`** - Comprehensive package and firmware testing matrix (multiple toolchains and configurations)
 
-Both workflows support manual triggering via `workflow_dispatch` and automatic triggering via commit messages.
+The workflow supports manual triggering via `workflow_dispatch`.
 
 ## Workflows Description
 
-### make_tester.yml
+### make_package.yml
 
-**Purpose**: Performs complete firmware builds for testing full system integration.
-
-**Triggers**:
-- Push to master branch affecting `.github/workflows/make_tester.yml`
-- Manual dispatch via GitHub UI or CLI
+**Purpose**: Comprehensive testing of packages and firmware builds across multiple toolchain configurations using a matrix build strategy. Supports both individual package testing and full firmware builds.
 
 **Parameters**:
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
+| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php) |
 | `url` | string | No | `""` | URL of config file (.tar, .tgz, .tbz, .config) or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
+| `download_hosttools` | boolean | No | `false` | Try to download precompiled host tools |
 | `cancel_previous` | boolean | No | `true` | Cancel previous runs of this workflow |
-| `override_device` | string | No | `""` | Override device type (e.g., `7530_W6_V1`, `7590_W5`) - empty uses config |
-| `override_firmware` | string | No | `""` | Override firmware version (e.g., `08_2X`, `07_5X`) - empty uses config |
-
-**Behavior**:
-- Downloads and applies configuration from URL or secrets
-- Builds complete firmware image
-- Generates diagnostic information on failure
-- Creates artifacts with built images
-- Supports device/firmware overrides for testing compatibility
-
-**Use Cases**:
-- Full system integration testing
-- Firmware release validation
-- Testing configuration changes across different devices/firmware versions
-
-### make_package.yml
-
-**Purpose**: Tests individual packages across multiple toolchain configurations using a matrix build strategy.
-
-**Triggers**:
-- Push to master branch affecting workflow files or package/libs directories
-- Manual dispatch via GitHub UI or CLI
-- Automatic trigger via commit messages containing build commands
-
-**Parameters**:
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, or `'package-fullbuild'` |
-| `url` | string | No | `""` | URL of config file or empty to use `secrets.ACTIONS_TESTER` |
-| `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
-| `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2) |
+| `use_queue` | boolean | No | `true` | Use workflow queue to prevent concurrent runs |
+| `custom_config` | string | No | `""` | Custom device/firmware/language (e.g., `'7530_W6_V1 08_2X EN'` or `'7590 08_0X'` or just `'7530'`, separators: space/tab/comma/semicolon/pipe/dash) |
+| `add_or_override` | choice | No | `"add"` | Add custom config to matrix or override with only custom configuration |
+| `create_artifacts` | boolean | No | `false` | Create and upload build artifacts |
 
 **Matrix Strategy**:
-- Tests packages across all available toolchains
+- Tests packages across all available toolchains (when `add_or_override="add"` or no overrides)
+- Tests only custom configuration (when `add_or_override="override"`)
 - Maximum 16 parallel jobs
 - Fail-fast disabled (continues testing other combinations on failure)
 - Each job tests one package-toolchain combination
@@ -72,23 +42,13 @@ Both workflows support manual triggering via `workflow_dispatch` and automatic t
 - `package` → `-precompiled` (default)
 - `package-precompiled` → Compile precompiled package
 - `package-recompile` → Force recompilation from source
-- `package-compile` → Standard compilation
-- `package-fullbuild` → Build complete firmware (for toolchain packages)
+- `firmware` → Build complete firmware image
+- `package-firmware` → Build firmware and the specified package
+- `package-recompile-firmware` → Build firmware and force recompilation of the specified package
+- `package-precompiled-firmware` → Build firmware and compile precompiled package
 
-**Behavior**:
-- Parses make targets from manual input or commit messages
-- Generates build matrix for all toolchain combinations
-- Downloads base configuration or uses fallback
-- Enables specified packages in configuration
-- Builds packages and dependencies
-- Reports results with file listings
-- Skips gracefully if package cannot be enabled for a toolchain
-
-**Use Cases**:
-- Package compatibility testing across toolchains
-- Regression testing for package updates
-- Dependency validation
-- Cross-platform build verification
+**Special Packages**:
+- `firmware` → Build complete firmware image instead of package
 
 ## Initial Setup
 
@@ -171,17 +131,35 @@ make menuconfig
 
 ### Step 4: Upload Configuration
 
+**Option A - Copy to Workflow Directory:**
 ```bash
 cp .config .github/workflows/myconfig
 git add .github/workflows/myconfig
 git commit -m "config: Update test configuration"
 ```
 
+**Option B - Upload via GitHub Releases (for URL-based workflows):**
+```bash
+# Create a temporary release with your config file (example using label "none" for tag)
+gh release delete none --yes 2>/dev/null || true
+git tag -d none 2>/dev/null || true
+git push origin :refs/tags/none 2>/dev/null || true
+
+# Create release and get download URL
+URL=$(gh release create none -t ".config" -n ".config" --prerelease .config | \
+      sed 's#/releases/tag/#/releases/download/#; s#$#/default.config#')
+
+echo "Config uploaded to: $URL"
+# Use this URL in workflow parameters: -f url="$URL"
+```
+
+This method creates a temporary release and provides a direct download URL that can be used with the `url` parameter in workflows.
+
 ### Step 5: Copy Configurations
 
 ```bash
 # Optionally clean existing workflows:
-# rm .github/workflows/*  # Remove all workflows (keep make_tester.yml if desired)
+# rm .github/workflows/*  # Remove all workflows
 
 # Alternatively to using URL configuration upload, copy current configuration to workflows directory
 cp .config .github/workflows/myconfig
@@ -223,36 +201,81 @@ gh run watch
 
 ## Manual Workflow Triggers
 
-### make_tester.yml Examples
-
-```bash
-# Firmware build using myconfig in the workflow directory
-gh workflow run make_tester.yml
-
-# Build with custom config URL
-gh workflow run make_tester.yml -f url="https://example.com/myconfig.config"
-
-# Verbose build with toolchain download
-gh workflow run make_tester.yml -f verbosity="2" -f download_toolchain="true"
-
-# Test specific device/firmware combination
-gh workflow run make_tester.yml -f override_device="7590_W5" -f override_firmware="08_2X" -f verbosity="1"
-```
-
 ### make_package.yml Examples
 
 ```bash
-# Test single package
+
+# Test single package with all configured devices; use myconfig if exists, otherwise generates a default .config file   
 gh workflow run make_package.yml -f make_target="php"
+```
+
+### Target Behavior Examples
+
+The workflow interprets different `make_target` inputs as follows:
+
+| Input | Action | Description |
+|-------|--------|-------------|
+| `php` | `make php-precompiled` | Build package with default precompiled target |
+| `php-precompiled` | `make php-precompiled` | Explicitly build package as precompiled |
+| `php-recompile` | `make php-recompile` | Force recompilation from source |
+| `php-firmware` | `make` (with php enabled) | Build complete firmware including php package |
+| `php-precompiled-firmware` | `make` (with php-precompiled) | Build firmware with php compiled as precompiled |
+| `php-recompile-firmware` | `make` (with php-recompile) | Build firmware with php recompiled from source |
+| `firmware` | `make` | Build complete firmware image only |
+| `php,patchelf` | Multiple builds | Test multiple packages sequentially |
+
+**Notes:**
+- Firmware targets (`*-firmware`) build the complete firmware image with the specified package(s) included
+- Package-only targets build individual packages without full firmware
+- Default behavior for packages without suffix is `-precompiled`
+- All builds run across the configured device/toolchain matrix
+
+```bash
+
+# Make firmware for a specific device
+gh workflow run make_package.yml -f make_target="firmware" -f url="$URL" -f verbosity="0" -f cancel_previous="false" -f custom_config="7590_W6 08_2X EN" -f add_or_override=override -f use_queue=false -f create_artifacts=true
+
+# Test single package with all configured devices
+gh workflow run make_package.yml -f make_target="patchelf" -f url="$URL" -f verbosity="0" -f cancel_previous="false" -f use_queue=false
 
 # Test multiple packages
 gh workflow run make_package.yml -f make_target="php,openssl,libxml2"
+
+# Test with custom config URL (from GitHub Releases)
+gh workflow run make_package.yml -f make_target="php" -f url="https://github.com/Ircama/freetz-ng/releases/download/none/default.config"
 
 # Force recompilation with verbose output
 gh workflow run make_package.yml -f make_target="patchelf-recompile,ncurses-recompile" -f verbosity="2"
 
 # Full firmware build for toolchain package
-gh workflow run make_package.yml -f make_target="gcc-toolchain-fullbuild"
+gh workflow run make_package.yml -f make_target="gcc-toolchain,firmware"
+
+# Test package on specific device/firmware (add to matrix)
+gh workflow run make_package.yml -f make_target="php" -f custom_config="6670 07_5X" -f add_or_override="add"
+
+# Test package ONLY on custom configuration (override matrix)
+gh workflow run make_package.yml -f make_target="php" -f custom_config="6670 07_5X EN" -f add_or_override="override"
+
+# Test package without workflow queue (allow concurrent runs)
+gh workflow run make_package.yml -f make_target="php" -f use_queue="false"
+
+# Test firmware build
+gh workflow run make_package.yml -f make_target="firmware"
+
+# Test with downloaded toolchain and hosttools
+gh workflow run make_package.yml -f make_target="php" -f download_toolchain="true" -f download_hosttools="true"
+
+# Create and upload build artifacts
+gh workflow run make_package.yml -f make_target="php" -f create_artifacts="true"
+
+# Build firmware and package
+gh workflow run make_package.yml -f make_target="php-firmware"
+
+# Build firmware and package with recompile
+gh workflow run make_package.yml -f make_target="php-recompile-firmware"
+
+# Build firmware and package precompiled
+gh workflow run make_package.yml -f make_target="php-precompiled-firmware"
 ```
 
 ## Automatic Triggers
@@ -267,7 +290,10 @@ git commit -m "test: make php-recompile"
 git commit -m "test: make php-recompile,patchelf-recompile"
 
 # Full firmware build
-git commit -m "test: make gcc-toolchain-fullbuild"
+git commit -m "test: make firmware"
+
+# Build firmware and package
+git commit -m "test: make php-firmware"
 
 # Full build (not supported - will be skipped)
 git commit -m "test: make"
@@ -275,15 +301,17 @@ git commit -m "test: make"
 
 **Note**: Commits starting with "CI:", "workflow:", "build:" are automatically skipped.
 
-## Supported Patterns
+**Supported Patterns**
 
 ### Target Formats
 
 - `package` → `-precompiled` (default)
 - `package-precompiled` → Compile precompiled package
 - `package-recompile` → Force recompilation from source
-- `package-compile` → Standard compilation
-- `package-fullbuild` → Complete firmware build (toolchain packages)
+- `firmware` → Build complete firmware image
+- `package-firmware` → Build firmware and the specified package
+- `package-recompile-firmware` → Build firmware and force recompilation of the specified package
+- `package-precompiled-firmware` → Build firmware and compile precompiled package
 
 ### Multiple Inputs
 
@@ -339,10 +367,17 @@ gh run watch
 
 ```bash
 # Test toolchain package across all configurations
-gh workflow run make_package.yml -f make_target="gcc-toolchain-fullbuild"
+gh workflow run make_package.yml -f make_target="gcc-toolchain,firmware"
 
-# Test with custom configuration
-gh workflow run make_tester.yml -f url="https://example.com/toolchain-test.config" -f verbosity="2"
+# Test with custom configuration (using uploaded config)
+URL="https://github.com/Ircama/freetz-ng/releases/download/none/default.config"
+gh workflow run make_package.yml -f make_target="gcc-toolchain,firmware" -f url="$URL" -f verbosity="2"
+
+# Test with custom configuration (direct URL)
+gh workflow run make_package.yml -f make_target="gcc-toolchain,firmware" -f url="https://example.com/toolchain-test.config" -f verbosity="2"
+
+# Test with downloaded toolchain and hosttools
+gh workflow run make_package.yml -f make_target="gcc-toolchain,firmware" -f download_toolchain="true" -f download_hosttools="true" -f verbosity="2"
 ```
 
 ## Useful Commands
@@ -394,7 +429,7 @@ make distclean
 gh workflow run make_package.yml -f make_target="package-name"
 
 # Full firmware build
-gh workflow run make_tester.yml -f verbosity="2"
+gh workflow run make_package.yml -f make_target="firmware" -f verbosity="2"
 ```
 
 ### Automatic Triggers
