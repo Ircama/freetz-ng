@@ -20,6 +20,13 @@ $(PKG)_POSIX_STAGING_BINARY:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/$($(PKG)_PO
 $(PKG)_POSIX_TARGET_BINARY:=$($(PKG)_TARGET_DIR)/$($(PKG)_POSIX_LIBNAME)
 
 $(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libpcre2_WITH_JIT
+$(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_29
+$(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_32
+$(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_GCC_4_7_MAX
+
+# JIT is not supported on uClibc versions before 0.9.33 due to missing posix_madvise()
+# and on GCC versions before 4.8 due to SLJIT compilation issues
+$(PKG)_JIT_SUPPORTED := $(if $(or $(FREETZ_TARGET_UCLIBC_0_9_28),$(FREETZ_TARGET_UCLIBC_0_9_29),$(FREETZ_TARGET_UCLIBC_0_9_32),$(FREETZ_TARGET_GCC_4_7_MAX)),,y)
 
 $(PKG)_CONFIGURE_OPTIONS += --enable-shared
 $(PKG)_CONFIGURE_OPTIONS += --enable-static
@@ -27,7 +34,9 @@ $(PKG)_CONFIGURE_OPTIONS += --enable-pcre2-8
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2-16
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2-32
 $(PKG)_CONFIGURE_OPTIONS += --enable-unicode
-$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_LIB_libpcre2_WITH_JIT),--enable-jit,--disable-jit)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(and $(FREETZ_LIB_libpcre2_WITH_JIT),$($(PKG)_JIT_SUPPORTED)),--enable-jit,--disable-jit)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(or $(FREETZ_TARGET_UCLIBC_0_9_28),$(FREETZ_TARGET_UCLIBC_0_9_29),$(FREETZ_TARGET_UCLIBC_0_9_32)),--disable-pcre2test,--enable-pcre2test)
+$(PKG)_CONFIGURE_OPTIONS += $(if $(or $(FREETZ_TARGET_UCLIBC_0_9_28),$(FREETZ_TARGET_UCLIBC_0_9_29),$(FREETZ_TARGET_UCLIBC_0_9_32)),--disable-pcre2grep,--enable-pcre2grep)
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2test-libreadline
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2test-libedit
 $(PKG)_CONFIGURE_OPTIONS += --disable-pcre2grep-libz
