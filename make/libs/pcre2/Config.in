@@ -11,6 +11,7 @@ if FREETZ_LIB_libpcre2
 		depends on !FREETZ_TARGET_UCLIBC_0_9_28
 		depends on !FREETZ_TARGET_UCLIBC_0_9_29
 		depends on !FREETZ_TARGET_UCLIBC_0_9_32
+		depends on !FREETZ_TARGET_GCC_4_7_MAX
 		default n
 		help
 			Enable Just-In-Time (JIT) compilation support for faster regex execution.
@@ -20,7 +21,8 @@ if FREETZ_LIB_libpcre2
 			
 			Size impact: Adds approximately 100-150 KB to libpcre2-8.so
 			
-			Note: Not available on uClibc versions before 0.9.33 due to missing posix_madvise().
+			Note: Not available on uClibc versions before 0.9.33 due to missing posix_madvise(),
+			and on GCC versions before 4.8 due to SLJIT compilation issues.
 
 endif # FREETZ_LIB_libpcre2
 

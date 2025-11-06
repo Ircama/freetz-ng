@@ -22,9 +22,11 @@ $(PKG)_POSIX_TARGET_BINARY:=$($(PKG)_TARGET_DIR)/$($(PKG)_POSIX_LIBNAME)
 $(PKG)_REBUILD_SUBOPTS += FREETZ_LIB_libpcre2_WITH_JIT
 $(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_29
 $(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_32
+$(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_GCC_4_7_MAX
 
-# JIT and test tools are not supported on uClibc versions before 0.9.33 due to missing posix_madvise()
-$(PKG)_JIT_SUPPORTED := $(if $(or $(FREETZ_TARGET_UCLIBC_0_9_28),$(FREETZ_TARGET_UCLIBC_0_9_29),$(FREETZ_TARGET_UCLIBC_0_9_32)),,y)
+# JIT is not supported on uClibc versions before 0.9.33 due to missing posix_madvise()
+# and on GCC versions before 4.8 due to SLJIT compilation issues
+$(PKG)_JIT_SUPPORTED := $(if $(or $(FREETZ_TARGET_UCLIBC_0_9_28),$(FREETZ_TARGET_UCLIBC_0_9_29),$(FREETZ_TARGET_UCLIBC_0_9_32),$(FREETZ_TARGET_GCC_4_7_MAX)),,y)
 
 $(PKG)_CONFIGURE_OPTIONS += --enable-shared
 $(PKG)_CONFIGURE_OPTIONS += --enable-static
