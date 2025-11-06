@@ -422,7 +422,7 @@ jobs:
           *)   wget -q "$URL" -O - 2>/dev/null > .config            && echo "✓ Done." || echo "❌ URL download failed." ;; \
           esac
           echo -n
-          echo "##########################################################" && echo -n "Number of lines in '.config' file: " && wc -l .config
+          echo "##########################################################" && echo -n "Number of lines in file: " && wc -l .config
           
       - name: config
         run: |
@@ -602,7 +602,7 @@ jobs:
           FIRMWARE_MATRIX="$(echo "$MATRIX_NAME" | sed 's/.* - \([^ ]*\) .*/\1/')"
           # LANG_MATRIX="$(echo "$MATRIX_NAME" | sed 's/.*(\([^)]*\)).*/\1/')"
           if [ "$DEVICE_CONFIG" != "$DEVICE_MATRIX" ] || [ "$FIRMWARE_CONFIG" != "$FIRMWARE_MATRIX" ]; then
-              [ "$HAS_CONFIG_FILE" ] && echo "ℹ️ Note: original .config had $DEVICE_CONFIG $FIRMWARE_CONFIG; target will be $DEVICE_MATRIX $FIRMWARE_MATRIX"
+              [ "$HAS_CONFIG_FILE" ] && echo "ℹ️ Note: original .config specified device $DEVICE_CONFIG $FIRMWARE_CONFIG; target will be $DEVICE_MATRIX $FIRMWARE_MATRIX"
           fi
 
           make olddefconfig
@@ -621,10 +621,14 @@ jobs:
           echo "  - DevName:  $(grep '^FREETZ_AVM_PROP_NAME=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - Major:    $(grep '^FREETZ_AVM_PROP_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - HWRev:    $(grep '^FREETZ_AVM_PROP_HWREV=' .config | sed 's/.*=//' | tr -d '"')"
-                              
           echo ""
-          echo "👉 User packages enabled:"
-          grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|IPTABLES_IS_SELECTABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15 | sed 's/^/  - /'
+          PACKAGES_LIST="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|IPTABLES_IS_SELECTABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15)"
+          if [ -n "$PACKAGES_LIST" ]; then
+            echo "👉 User packages enabled:"
+            echo "$PACKAGES_LIST" | sed 's/^/  - /'
+          else
+            echo "👉 No user package enabled."
+          fi
           echo "##########################################################"
 
       - name: addon
@@ -632,7 +636,7 @@ jobs:
         run: |
           # Download additional files if specified in secrets.ACTIONS_CUSTOM (e.g., patches, scripts, etc.)
           echo "################################################################"
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo "✓ Additional files successfully Downloaded." || echo Null
+          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo "✓ Additional files successfully Downloaded." || echo "👉 No additional files found."
 
 #     - name: signature
 #       if: matrix.fritz != 'skip'
@@ -712,13 +716,17 @@ jobs:
             # Build dependencies first (libraries)
             if [ "$BAD" = "n" ]; then
               echo "################################################################"
-              echo "⏳ Package '${pkg}-${target}'. Building library dependencies first..."
+              echo "⏳ Building library dependencies for package '${pkg}-${target}'..."
               echo "################################################################"
               make libs
               
-              echo "################################################################"
-              echo "⏳ Building package '${pkg}-${target}'"
-              echo "################################################################"
+              if [ "$TYPE" = "pkgs" ]; then
+                echo "################################################################"
+                echo "⏳ Building package '${pkg}-${target}'..."
+                echo "################################################################"
+              else
+                echo "Checking if there is a package target ${pkg}-${target}..."
+              fi
               make ${pkg}-${target}
             fi
           fi  # End of if firmware / else standard build
@@ -859,10 +867,11 @@ jobs:
             # Show files for standard package-only result
             artifact_filename=$(echo "package ${{ matrix.fritz.pkg }} ${{ matrix.fritz.name }}" | sed 's/ /-/g; s/[()]//g; s/--*/-/g')
             echo "artifact_filename=$artifact_filename" >> $GITHUB_OUTPUT
-            echo "Package filename: $artifact_filename"
             echo "✅ Package '$pkg' build description:"
-            echo "ℹ️ Package files:"
-            find packages/target-*/${pkg}-*/root/ ! -type d -exec ls -al {} + 2>/dev/null || true
+            if find packages/target-*/${pkg}-*/root/ ! -type d 2>/dev/null | grep -q .; then
+              echo "ℹ️ Package files:"
+              find packages/target-*/${pkg}-*/root/ ! -type d -exec ls -al {} + 2>/dev/null || true
+            fi
             echo ""
             if find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null | grep -q .; then
               echo "ℹ️ Freetz library files:"
@@ -880,7 +889,8 @@ jobs:
                 echo "################################################################"
                 echo "⏳ Creating artifact for package..."
                 echo "################################################################"
-                
+                echo "Package filename: $artifact_filename"
+
                 mkdir -p freetz-package-build
                 
                 # Copy package files
