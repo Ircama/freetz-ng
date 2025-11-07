@@ -19,11 +19,8 @@ if FREETZ_LIB_libpcre2
 			JIT compiles regular expressions to native machine code for better performance,
 			which is beneficial for applications like PHP that use regex extensively.
 			
-			Size impact: Adds approximately 100-150 KB to libpcre2-8.so
+			Size impact: Adds approximately 500-750 KB to libpcre2-8.so
 			
-			Note: Not available on uClibc versions before 0.9.33 due to missing posix_madvise(),
-			and on GCC versions before 4.8 due to SLJIT compilation issues.
-
 endif # FREETZ_LIB_libpcre2
 
 config FREETZ_LIB_libpcre2_posix
@@ -33,4 +30,3 @@ config FREETZ_LIB_libpcre2_posix
 	help
 		A POSIX wrapper interface to the Perl Compatible Regular Expression
 		library
-

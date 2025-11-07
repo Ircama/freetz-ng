@@ -24,8 +24,9 @@ $(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_29
 $(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_UCLIBC_0_9_32
 $(PKG)_REBUILD_SUBOPTS += FREETZ_TARGET_GCC_4_7_MAX
 
-# JIT is not supported on uClibc versions before 0.9.33 due to missing posix_madvise()
-# and on GCC versions before 4.8 due to SLJIT compilation issues
+# JIT is temporarily disabled on uClibc versions before 0.9.33 and GCC versions before 4.8
+# due to PCRE2 upstream bugs (posix_madvise() usage and cpuid assembly constraints).
+# This is a workaround until upstream fixes are available in future PCRE2 releases.
 $(PKG)_JIT_SUPPORTED := $(if $(or $(FREETZ_TARGET_UCLIBC_0_9_28),$(FREETZ_TARGET_UCLIBC_0_9_29),$(FREETZ_TARGET_UCLIBC_0_9_32),$(FREETZ_TARGET_GCC_4_7_MAX)),,y)
 
 $(PKG)_CONFIGURE_OPTIONS += --enable-shared
