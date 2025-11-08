@@ -41,7 +41,7 @@ The workflow supports manual triggering via `workflow_dispatch`.
 **Build Output Categorization**:
 - **System packages**: Core Freetz components (mod, modcgi, haserl, inetd, dropbear, etc.)
 - **User packages**: User-selected packages
-- **Base libraries**: uClibc/GCC runtime (libgcc_s, ld-uClibc, libcrypt, libdl, libm, libpthread, librt, libuClibc, etc.)
+- **Base libraries**: uClibc/GCC runtime and AVM compatibility (libgcc_s, ld-uClibc, libcrypt, libdl, libm, libpthread, librt, libuClibc, libctlmgr, libavmhmac, libcapi, libmultid, etc.)
 - **User libraries**: Additional libraries selected by user or required by packages
 
 **Target Suffixes**:

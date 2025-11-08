@@ -639,7 +639,7 @@ jobs:
           
           SYSTEM_PACKAGES="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI' | sed 's/FREETZ_PACKAGE_//;s/=y//')"
           if [ -n "$SYSTEM_PACKAGES" ]; then
-            echo "👉 System packages:"
+            echo "👉 Base packages:"
             echo "$SYSTEM_PACKAGES" | sed 's/^/  - /'
             echo ""
           fi
@@ -653,14 +653,14 @@ jobs:
           fi
           echo ""
           
-          BASE_LIBS="$(grep '^FREETZ_LIB_.*=y' .config | grep 'libgcc_s\|ld_uClibc\|libcrypt\|libdl\|libm\|libpthread\|librt\|libuClibc\|libutil\|libthread_db\|libubacktrace' | sed 's/FREETZ_LIB_//;s/=y//')"
+          BASE_LIBS="$(grep '^FREETZ_LIB_.*=y' .config | grep -E 'libgcc_s|ld_uClibc|libcrypt|libdl|libm|libpthread|librt|libuClibc|libutil|libthread_db|libubacktrace|libctlmgr|libavmhmac|libavmacl2|libcapi|libmultid' | sed 's/FREETZ_LIB_//;s/=y//')"
           if [ -n "$BASE_LIBS" ]; then
-            echo "👉 Base libraries (uClibc/GCC):"
+            echo "👉 Base libraries (uClibc/GCC/AVM):"
             echo "$BASE_LIBS" | sed 's/^/  - /'
             echo ""
           fi
           
-          LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | grep -v 'libgcc_s\|ld_uClibc\|libcrypt\|libdl\|libm\|libpthread\|librt\|libuClibc\|libutil\|libthread_db\|libubacktrace' | sed 's/FREETZ_LIB_//;s/=y//')"
+          LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | grep -vE 'libgcc_s|ld_uClibc|libcrypt|libdl|libm|libpthread|librt|libuClibc|libutil|libthread_db|libubacktrace|libctlmgr|libavmhmac|libavmacl2|libcapi|libmultid' | sed 's/FREETZ_LIB_//;s/=y//')"
           if [ -n "$LIBS_LIST" ]; then
             echo "👉 User libraries:"
             echo "$LIBS_LIST" | sed 's/^/  - /'
