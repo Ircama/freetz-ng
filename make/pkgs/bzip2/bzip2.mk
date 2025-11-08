@@ -42,9 +42,9 @@ endif
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 	$(INSTALL_BINARY_STRIP)
-	# Create convenience symlinks
-	ln -sf bzip2-ng $(dir $(BZIP2_TARGET_BINARY))bunzip2-ng
-	ln -sf bzip2-ng $(dir $(BZIP2_TARGET_BINARY))bzcat-ng
+	# Create convenience symlinks (BusyBox renames its own applets)
+	ln -sf bzip2-ng $(dir $(BZIP2_TARGET_BINARY))bunzip2
+	ln -sf bzip2-ng $(dir $(BZIP2_TARGET_BINARY))bzcat
 
 $(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
@@ -54,8 +54,8 @@ $(pkg)-clean:
 
 $(pkg)-uninstall:
 	$(RM) $(BZIP2_TARGET_BINARY)
-	$(RM) $(dir $(BZIP2_TARGET_BINARY))bunzip2-ng
-	$(RM) $(dir $(BZIP2_TARGET_BINARY))bzcat-ng
+	$(RM) $(dir $(BZIP2_TARGET_BINARY))bunzip2
+	$(RM) $(dir $(BZIP2_TARGET_BINARY))bzcat
 
 $(PKG_FINISH)
 
