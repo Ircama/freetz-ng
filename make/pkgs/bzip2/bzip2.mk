@@ -12,7 +12,7 @@ $(PKG)_DEPENDS_ON += libbz2
 $(PKG)_CONDITIONAL_PATCHES+=$(if $(FREETZ_PACKAGE_BZIP2_STATIC),static,shared)
 
 $(PKG)_BINARY:=$($(PKG)_DIR)/$(if $(FREETZ_PACKAGE_BZIP2_STATIC),bzip2,bzip2-shared)
-$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/bin/bzip2
+$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/bin/bzip2-ng
 
 $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_BZIP2_STATIC
 
@@ -42,6 +42,9 @@ endif
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 	$(INSTALL_BINARY_STRIP)
+	# Create convenience symlinks
+	ln -sf bzip2-ng $(dir $(BZIP2_TARGET_BINARY))bunzip2-ng
+	ln -sf bzip2-ng $(dir $(BZIP2_TARGET_BINARY))bzcat-ng
 
 $(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
@@ -51,6 +54,8 @@ $(pkg)-clean:
 
 $(pkg)-uninstall:
 	$(RM) $(BZIP2_TARGET_BINARY)
+	$(RM) $(dir $(BZIP2_TARGET_BINARY))bunzip2-ng
+	$(RM) $(dir $(BZIP2_TARGET_BINARY))bzcat-ng
 
 $(PKG_FINISH)
 

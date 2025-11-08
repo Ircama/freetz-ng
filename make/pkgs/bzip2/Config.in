@@ -1,9 +1,12 @@
 config FREETZ_PACKAGE_BZIP2
-	bool "bzip2"
+	bool "bzip2-ng"
 	select FREETZ_LIB_libbz2 if !FREETZ_PACKAGE_BZIP2_STATIC
 	default n
 	help
 		bzip2 is a freely available, patent free, high-quality data compressor.
+		
+		This package provides the full-featured bzip2 utility (bzip2 1.0.8)
+		installed as "bzip2-ng" to avoid conflicts with BusyBox bzip2.
 
 if FREETZ_PACKAGE_BZIP2
 
@@ -11,7 +14,7 @@ if FREETZ_PACKAGE_BZIP2
 		bool "Link statically"
 		default n
 		help
-			Link bzip2 binary statically
+			Link bzip2-ng binary statically
 
 endif # FREETZ_PACKAGE_BZIP2
 
