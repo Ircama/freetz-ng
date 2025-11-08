@@ -1,0 +1,15 @@
+--- pcre2-10.47/deps/sljit/sljit_src/sljitNativeX86_common.c	2025-10-20 13:35:04.000000000 +0200
++++ pcre2-10.47/deps/sljit/sljit_src/sljitNativeX86_common.c	2025-11-08 02:00:00.000000000 +0100
+@@ -541,6 +541,12 @@
+ static void get_cpu_features(void)
+ {
+	sljit_u32 feature_list = CPU_FEATURE_DETECTED;
++
++/* Disable cpuid-based CPU detection on GCC < 5 to avoid assembly errors */
++#if defined(__GNUC__) && (__GNUC__ < 5)
++	return;
++#endif
++
+	sljit_u32 info[4] = {0};
+	sljit_u32 max_id;
+ 
