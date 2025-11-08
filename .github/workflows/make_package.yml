@@ -914,20 +914,29 @@ jobs:
             fi
             echo ""
             
-            # Search for library files with both package name and lib prefix variant
-            lib_search_pattern="*${pkg}*"
+            # Search for library files: package itself + all selected user libraries
+            # Get list of user libraries from .config
+            LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | grep -vE 'libgcc_s|ld_uClibc|libcrypt|libdl|libm|libpthread|librt|libuClibc|libutil|libthread_db|libubacktrace|libctlmgr|libavmhmac|libavmacl2|libcapi|libmultid' | sed 's/FREETZ_LIB_//;s/=y//' || true)"
+            
+            # Build search patterns: package name + lib prefix variant + all user libs
+            lib_patterns="-name '*${pkg}*'"
             # Also search for lib-prefixed variant (e.g., bzip2 -> libbz2)
             if [ "${pkg#lib}" = "$pkg" ]; then
-              # Package doesn't start with 'lib', try lib-prefixed variant
-              lib_alt_pattern="*lib${pkg}*"
+              lib_patterns="$lib_patterns -o -name '*lib${pkg}*'"
             else
-              # Package already starts with 'lib', also try without 'lib' prefix
-              lib_alt_pattern="*${pkg#lib}*"
+              lib_patterns="$lib_patterns -o -name '*${pkg#lib}*'"
             fi
             
-            if find packages/target-*/root/usr/lib/freetz/ \( -name "$lib_search_pattern" -o -name "$lib_alt_pattern" \) -type f 2>/dev/null | grep -q .; then
+            # Add all user libraries to search patterns
+            if [ -n "$LIBS_LIST" ]; then
+              for lib in $LIBS_LIST; do
+                lib_patterns="$lib_patterns -o -name '*${lib}*'"
+              done
+            fi
+            
+            if eval "find packages/target-*/root/usr/lib/freetz/ \( $lib_patterns \) -type f 2>/dev/null" | grep -q .; then
               echo "ℹ️ Freetz library files:"
-              find packages/target-*/root/usr/lib/freetz/ \( -name "$lib_search_pattern" -o -name "$lib_alt_pattern" \) -type f -exec ls -al {} + 2>/dev/null || true
+              eval "find packages/target-*/root/usr/lib/freetz/ \( $lib_patterns \) -type f -exec ls -al {} + 2>/dev/null" || true
             else
               echo "No library files produced."
             fi
