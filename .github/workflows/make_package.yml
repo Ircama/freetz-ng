@@ -691,7 +691,7 @@ jobs:
           # Build package or firmware based on matrix entry
           pkg="${{ matrix.fritz.pkg }}"
           target="${{ matrix.fritz.target }}"
-          pkg="$(echo "$pkg" | tr '[:upper:]' '[:lower:]')"
+          pkg="$(echo "$pkg" | tr '[:upper:]' '[:lower:]' | sed 's/^=//')"
           PKG="$(echo "$pkg" | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"
           
           # Check for special package handling
@@ -875,7 +875,7 @@ jobs:
         if: steps.generate.outputs.bad == 'n'
         run: |
           # Show build results and create artifacts if requested
-          pkg="$(echo ${{ steps.generate.outputs.pkg }} | sed 's/lib//')"
+          pkg="$(echo ${{ steps.generate.outputs.pkg }} | sed 's/^=//; s/lib//')"
           target="${{ matrix.fritz.target }}"
           
           echo "##########################################################"
