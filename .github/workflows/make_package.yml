@@ -913,9 +913,21 @@ jobs:
               echo "No package files produced."
             fi
             echo ""
-            if find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null | grep -q .; then
+            
+            # Search for library files with both package name and lib prefix variant
+            lib_search_pattern="*${pkg}*"
+            # Also search for lib-prefixed variant (e.g., bzip2 -> libbz2)
+            if [ "${pkg#lib}" = "$pkg" ]; then
+              # Package doesn't start with 'lib', try lib-prefixed variant
+              lib_alt_pattern="*lib${pkg}*"
+            else
+              # Package already starts with 'lib', also try without 'lib' prefix
+              lib_alt_pattern="*${pkg#lib}*"
+            fi
+            
+            if find packages/target-*/root/usr/lib/freetz/ \( -name "$lib_search_pattern" -o -name "$lib_alt_pattern" \) -type f 2>/dev/null | grep -q .; then
               echo "ℹ️ Freetz library files:"
-              find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec ls -al {} + 2>/dev/null || true
+              find packages/target-*/root/usr/lib/freetz/ \( -name "$lib_search_pattern" -o -name "$lib_alt_pattern" \) -type f -exec ls -al {} + 2>/dev/null || true
             else
               echo "No library files produced."
             fi
@@ -943,7 +955,7 @@ jobs:
                 # Copy Freetz library files
                 if [ -d packages/target-*/root/usr/lib/freetz ]; then
                   mkdir -p freetz-package-build/freetz-libs
-                  find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec cp {} freetz-package-build/freetz-libs/ \; 2>/dev/null || true
+                  find packages/target-*/root/usr/lib/freetz/ \( -name "$lib_search_pattern" -o -name "$lib_alt_pattern" \) -type f -exec cp {} freetz-package-build/freetz-libs/ \; 2>/dev/null || true
                 fi
                 
                 # Create build summary
