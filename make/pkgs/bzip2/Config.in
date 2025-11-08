@@ -1,5 +1,5 @@
 config FREETZ_PACKAGE_BZIP2
-	bool "bzip2-ng"
+	bool "bzip2 (executable renamed to bzip2-ng)"
 	select FREETZ_LIB_libbz2 if !FREETZ_PACKAGE_BZIP2_STATIC
 	default n
 	help
