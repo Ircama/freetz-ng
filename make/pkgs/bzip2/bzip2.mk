@@ -9,6 +9,8 @@ $(PKG)_SITE:=https://sourceware.org/pub/bzip2
 
 $(PKG)_DEPENDS_ON += libbz2
 
+$(PKG)_CONDITIONAL_PATCHES+=$(if $(FREETZ_PACKAGE_BZIP2_STATIC),static,shared)
+
 $(PKG)_BINARY:=$($(PKG)_DIR)/$(if $(FREETZ_PACKAGE_BZIP2_STATIC),bzip2,bzip2-shared)
 $(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/bin/bzip2
 
