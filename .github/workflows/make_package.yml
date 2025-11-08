@@ -636,20 +636,36 @@ jobs:
           echo "  - Major:    $(grep '^FREETZ_AVM_PROP_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - HWRev:    $(grep '^FREETZ_AVM_PROP_HWREV=' .config | sed 's/.*=//' | tr -d '"')"
           echo ""
+          
+          SYSTEM_PACKAGES="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI' | sed 's/FREETZ_PACKAGE_//;s/=y//')"
+          if [ -n "$SYSTEM_PACKAGES" ]; then
+            echo "👉 System packages:"
+            echo "$SYSTEM_PACKAGES" | sed 's/^/  - /'
+            echo ""
+          fi
+          
           PACKAGES_LIST="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|_IS_SELECTABLE\|_AVAILABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//')"
           if [ -n "$PACKAGES_LIST" ]; then
-            echo "👉 User packages enabled:"
+            echo "👉 User packages:"
             echo "$PACKAGES_LIST" | sed 's/^/  - /'
           else
             echo "👉 No user package enabled."
           fi
           echo ""
-          LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | sed 's/FREETZ_LIB_//;s/=y//')"
+          
+          BASE_LIBS="$(grep '^FREETZ_LIB_.*=y' .config | grep 'libgcc_s\|ld_uClibc\|libcrypt\|libdl\|libm\|libpthread\|librt\|libuClibc\|libutil\|libthread_db\|libubacktrace' | sed 's/FREETZ_LIB_//;s/=y//')"
+          if [ -n "$BASE_LIBS" ]; then
+            echo "👉 Base libraries (uClibc/GCC):"
+            echo "$BASE_LIBS" | sed 's/^/  - /'
+            echo ""
+          fi
+          
+          LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | grep -v 'libgcc_s\|ld_uClibc\|libcrypt\|libdl\|libm\|libpthread\|librt\|libuClibc\|libutil\|libthread_db\|libubacktrace' | sed 's/FREETZ_LIB_//;s/=y//')"
           if [ -n "$LIBS_LIST" ]; then
-            echo "👉 Libraries enabled:"
+            echo "👉 User libraries:"
             echo "$LIBS_LIST" | sed 's/^/  - /'
           else
-            echo "👉 No library enabled."
+            echo "👉 No user library enabled."
           fi
           echo "##########################################################"
 
