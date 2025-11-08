@@ -301,18 +301,25 @@ jobs:
             # Extract package name and target suffix for override entry
             override_pkg_name="$override_pkg"
             override_pkg_target="precompiled"
+            override_skip_libs="false"
             
-            case "$override_pkg" in
+            # Check for special prefixes
+            if [ "${override_pkg#*=}" != "$override_pkg" ]; then
+              override_pkg_name="${override_pkg#=}"
+              override_skip_libs="true"
+            fi
+            
+            case "$override_pkg_name" in
               *firmware)
-                override_pkg_name="$override_pkg"
+                override_pkg_name="$override_pkg_name"
                 override_pkg_target=""
                 ;;
               *-precompile|*-precompiled)
-                override_pkg_name="${override_pkg%-precompile*}"
+                override_pkg_name="${override_pkg_name%-precompile*}"
                 override_pkg_target="precompiled"
                 ;;
               *-recompile|*-recompiled)
-                override_pkg_name="${override_pkg%-recompile*}"
+                override_pkg_name="${override_pkg_name%-recompile*}"
                 override_pkg_target="recompile"
                 ;;
             esac
@@ -331,7 +338,7 @@ jobs:
             else
               echo "  Custom override: $override_pkg_name on $custom_name"
             fi
-            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",skip_libs:\"$override_skip_libs\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
           fi
           
           # Read matrix from file and output
