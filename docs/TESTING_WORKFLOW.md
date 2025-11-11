@@ -20,7 +20,7 @@ The workflow supports manual triggering via `workflow_dispatch`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php) |
+| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php) |
 | `url` | string | No | `""` | URL of config file (.tar, .tgz, .tbz, .config) or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
@@ -38,6 +38,12 @@ The workflow supports manual triggering via `workflow_dispatch`.
 - Fail-fast disabled (continues testing other combinations on failure)
 - Each job tests one package-toolchain combination
 
+**Build Output Categorization**:
+- **System packages**: Core Freetz components (mod, modcgi, haserl, inetd, dropbear, etc.)
+- **User packages**: User-selected packages
+- **Base libraries**: uClibc/GCC runtime and AVM compatibility (libgcc_s, ld-uClibc, libcrypt, libdl, libm, libpthread, librt, libuClibc, libctlmgr, libavmhmac, libcapi, libmultid, etc.)
+- **User libraries**: Additional libraries selected by user or required by packages
+
 **Target Suffixes**:
 - `package` → `-precompiled` (default)
 - `package-precompiled` → Compile precompiled package
@@ -49,6 +55,8 @@ The workflow supports manual triggering via `workflow_dispatch`.
 
 **Special Packages**:
 - `firmware` → Build complete firmware image instead of package
+- `libs` → Build only libraries
+- `=package` → Build package skipping library dependencies
 
 ## Initial Setup
 
@@ -207,6 +215,12 @@ gh run watch
 
 # Test single package with all configured devices; use myconfig if exists, otherwise generates a default .config file   
 gh workflow run make_package.yml -f make_target="php"
+
+# Build only libraries
+gh workflow run make_package.yml -f make_target="libs"
+
+# Build package skipping library dependencies
+gh workflow run make_package.yml -f make_target="=php-precompiled"
 ```
 
 ### Target Behavior Examples
@@ -222,6 +236,9 @@ The workflow interprets different `make_target` inputs as follows:
 | `php-precompiled-firmware` | `make` (with php-precompiled) | Build firmware with php compiled as precompiled |
 | `php-recompile-firmware` | `make` (with php-recompile) | Build firmware with php recompiled from source |
 | `firmware` | `make` | Build complete firmware image only |
+| `libs` | `make libs` | Build only libraries |
+| `=php` | `make php-precompiled` (skip libs) | Build package skipping library dependencies |
+| `=php-precompiled` | `make php-precompiled` (skip libs) | Build package as precompiled skipping library dependencies |
 | `php,patchelf` | Multiple builds | Test multiple packages sequentially |
 
 **Notes:**
@@ -262,6 +279,12 @@ gh workflow run make_package.yml -f make_target="php" -f use_queue="false"
 # Test firmware build
 gh workflow run make_package.yml -f make_target="firmware"
 
+# Test libraries build
+gh workflow run make_package.yml -f make_target="libs"
+
+# Test package skipping library dependencies
+gh workflow run make_package.yml -f make_target="=php-precompiled"
+
 # Test with downloaded toolchain and hosttools
 gh workflow run make_package.yml -f make_target="php" -f download_toolchain="true" -f download_hosttools="true"
 
@@ -295,6 +318,12 @@ git commit -m "test: make firmware"
 # Build firmware and package
 git commit -m "test: make php-firmware"
 
+# Build only libraries
+git commit -m "test: make libs"
+
+# Build package skipping library dependencies
+git commit -m "test: make =php-precompiled"
+
 # Full build (not supported - will be skipped)
 git commit -m "test: make"
 ```
@@ -312,6 +341,8 @@ git commit -m "test: make"
 - `package-firmware` → Build firmware and the specified package
 - `package-recompile-firmware` → Build firmware and force recompilation of the specified package
 - `package-precompiled-firmware` → Build firmware and compile precompiled package
+- `libs` → Build only libraries
+- `=package` → Build package skipping library dependencies
 
 ### Multiple Inputs
 
@@ -430,9 +461,19 @@ gh workflow run make_package.yml -f make_target="package-name"
 
 # Full firmware build
 gh workflow run make_package.yml -f make_target="firmware" -f verbosity="2"
+
+# Libraries build
+gh workflow run make_package.yml -f make_target="libs"
+
+# Package build skipping library dependencies
+gh workflow run make_package.yml -f make_target="=package-name"
 ```
 
 ### Automatic Triggers
 ```bash
 git commit -m "test: make php-recompile"
+
+git commit -m "test: make libs"
+
+git commit -m "test: make =php-precompiled"
 ```

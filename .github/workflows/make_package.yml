@@ -182,7 +182,8 @@ jobs:
             # Multiple packages separated by commas
             # Keep the suffix if present (e.g., -precompiled, -recompile)
             pkg_list="$(echo "$make_cmd" | sed 's/^make-\?//')"
-            echo "Multiple packages requested: $pkg_list"
+            pkg_list_clean="$(echo "$pkg_list" | sed 's/,/\n/g' | sed 's/^=//' | tr '\n' ',' | sed 's/,$//')"
+            echo "Multiple packages requested: $pkg_list_clean"
           elif [ -z "$make_cmd" ]; then
             echo "⚠️ No valid make target found"
             echo 'matrix=["skip"]' >> $GITHUB_OUTPUT
@@ -190,7 +191,8 @@ jobs:
           else
             # Single package - keep suffix if present
             pkg_list="$(echo "$make_cmd" | sed 's/^make-\?//')"
-            echo "Single package to build: $pkg_list"
+            pkg_name="$(echo "$pkg_list" | sed 's/^=//')"
+            echo "Single package to build: $pkg_name"
           fi
           
           # Generate matrix for all toolchains and packages
@@ -236,27 +238,39 @@ jobs:
               # Extract package name and target suffix using simple string operations
               pkg_name="$pkg"
               pkg_target="precompiled"
+              skip_libs="false"
+              build_description=""
+              
+              # Check for special prefixes
+              if [ "${pkg#*=}" != "$pkg" ]; then
+                pkg_name="${pkg#=}"
+                skip_libs="true"
+                build_description=" (skip library dependencies)"
+              elif [ "$pkg" = "libs" ]; then
+                build_description=" (libraries only)"
+              fi
               
               # Check for target suffix and remove it
-              case "$pkg" in
+              case "$pkg_name" in
                 *firmware)
-                  pkg_name="$pkg"
+                  pkg_name="$pkg_name"
                   pkg_target=""
+                  build_description=" (complete firmware image)"
                   ;;
                 *-precompile|*-precompiled)
-                  pkg_name="${pkg%-precompile*}"
+                  pkg_name="${pkg_name%-precompile*}"
                   pkg_target="precompiled"
                   ;;
                 *-recompile|*-recompiled)
-                  pkg_name="${pkg%-recompile*}"
+                  pkg_name="${pkg_name%-recompile*}"
                   pkg_target="recompile"
                   ;;
               esac
               
               if [ "$pkg_target" ];then
-                echo "  Adding package: $pkg_name with target: -$pkg_target"
+                echo "  Adding package '$pkg_name' with target $pkg_target$build_description"
               else
-                echo "  Build: $pkg_name."
+                echo "  Build: $pkg_name$build_description"
               fi
               
               # Process each toolchain line
@@ -265,7 +279,7 @@ jobs:
                 # Use basic sed without -r (extended regex)
                 name="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1 - \2/g')"
                 tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
-                echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
+                echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",skip_libs:\"$skip_libs\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
               done
             done
           fi
@@ -287,18 +301,25 @@ jobs:
             # Extract package name and target suffix for override entry
             override_pkg_name="$override_pkg"
             override_pkg_target="precompiled"
+            override_skip_libs="false"
             
-            case "$override_pkg" in
+            # Check for special prefixes
+            if [ "${override_pkg#*=}" != "$override_pkg" ]; then
+              override_pkg_name="${override_pkg#=}"
+              override_skip_libs="true"
+            fi
+            
+            case "$override_pkg_name" in
               *firmware)
-                override_pkg_name="$override_pkg"
+                override_pkg_name="$override_pkg_name"
                 override_pkg_target=""
                 ;;
               *-precompile|*-precompiled)
-                override_pkg_name="${override_pkg%-precompile*}"
+                override_pkg_name="${override_pkg_name%-precompile*}"
                 override_pkg_target="precompiled"
                 ;;
               *-recompile|*-recompiled)
-                override_pkg_name="${override_pkg%-recompile*}"
+                override_pkg_name="${override_pkg_name%-recompile*}"
                 override_pkg_target="recompile"
                 ;;
             esac
@@ -317,7 +338,7 @@ jobs:
             else
               echo "  Custom override: $override_pkg_name on $custom_name"
             fi
-            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",skip_libs:\"$override_skip_libs\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
           fi
           
           # Read matrix from file and output
@@ -622,12 +643,36 @@ jobs:
           echo "  - Major:    $(grep '^FREETZ_AVM_PROP_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - HWRev:    $(grep '^FREETZ_AVM_PROP_HWREV=' .config | sed 's/.*=//' | tr -d '"')"
           echo ""
-          PACKAGES_LIST="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|IPTABLES_IS_SELECTABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//' | head -15)"
+          
+          SYSTEM_PACKAGES="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI' | sed 's/FREETZ_PACKAGE_//;s/=y//')"
+          if [ -n "$SYSTEM_PACKAGES" ]; then
+            echo "👉 Base packages:"
+            echo "$SYSTEM_PACKAGES" | sed 's/^/  - /'
+            echo ""
+          fi
+          
+          PACKAGES_LIST="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep -v 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI\|_IS_SELECTABLE\|_AVAILABLE' | sed 's/FREETZ_PACKAGE_//;s/=y//')"
           if [ -n "$PACKAGES_LIST" ]; then
-            echo "👉 User packages enabled:"
+            echo "👉 User packages:"
             echo "$PACKAGES_LIST" | sed 's/^/  - /'
           else
             echo "👉 No user package enabled."
+          fi
+          echo ""
+          
+          BASE_LIBS="$(grep '^FREETZ_LIB_.*=y' .config | grep -E 'libgcc_s|ld_uClibc|libcrypt|libdl|libm|libpthread|librt|libuClibc|libutil|libthread_db|libubacktrace|libctlmgr|libavmhmac|libavmacl2|libcapi|libmultid' | sed 's/FREETZ_LIB_//;s/=y//')"
+          if [ -n "$BASE_LIBS" ]; then
+            echo "👉 Base libraries (uClibc/GCC/AVM):"
+            echo "$BASE_LIBS" | sed 's/^/  - /'
+            echo ""
+          fi
+          
+          LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | grep -vE 'libgcc_s|ld_uClibc|libcrypt|libdl|libm|libpthread|librt|libuClibc|libutil|libthread_db|libubacktrace|libctlmgr|libavmhmac|libavmacl2|libcapi|libmultid' | sed 's/FREETZ_LIB_//;s/=y//')"
+          if [ -n "$LIBS_LIST" ]; then
+            echo "👉 User libraries:"
+            echo "$LIBS_LIST" | sed 's/^/  - /'
+          else
+            echo "👉 No user library enabled."
           fi
           echo "##########################################################"
 
@@ -653,16 +698,24 @@ jobs:
           # Build package or firmware based on matrix entry
           pkg="${{ matrix.fritz.pkg }}"
           target="${{ matrix.fritz.target }}"
-          pkg="$(echo "$pkg" | tr '[:upper:]' '[:lower:]')"
+          pkg="$(echo "$pkg" | tr '[:upper:]' '[:lower:]' | sed 's/^=//')"
           PKG="$(echo "$pkg" | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"
+          
+          # Check for special package handling
+          skip_libs="${{ matrix.fritz.skip_libs }}"
+          only_libs=""
+          if [ "$pkg" = "libs" ]; then
+            only_libs="true"
+          fi
+          
           echo "pkg=$pkg" >> $GITHUB_OUTPUT
           
           # Check if this is a firmware target
           if echo "$pkg" | grep -q "firmware"; then
             # Build firmware image
             make olddefconfig
-            echo "⏳ Building firmware image..."
-            make
+            echo "⏳ Building firmware image"
+            bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
             
           # Standard package-only build
@@ -692,7 +745,7 @@ jobs:
                 echo "FREETZ_LIB_$x=y" >> .config
               done
             fi
-            echo "################################################################" && bash -c "echo pkg=$pkg" && bash -c "echo PKG=$PKG"
+            echo "################################################################"
             make olddefconfig
             BAD=y
             [ "$TYPE" = "pkgs" ] && grep -q "^FREETZ_PACKAGE_$PKG=y" .config && BAD=n
@@ -715,19 +768,28 @@ jobs:
             
             # Build dependencies first (libraries)
             if [ "$BAD" = "n" ]; then
-              echo "################################################################"
-              echo "⏳ Building library dependencies for package '${pkg}-${target}'..."
-              echo "################################################################"
-              make libs
-              
-              if [ "$TYPE" = "pkgs" ]; then
+              if [ "$only_libs" = "true" ]; then
                 echo "################################################################"
-                echo "⏳ Building package '${pkg}-${target}'..."
+                echo "⏳ Building libraries..."
                 echo "################################################################"
-              else
-                echo "Checking if there is a package target ${pkg}-${target}..."
+                bash -c "export TERM=xterm-256color; make libs 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+              elif [ "$skip_libs" != "true" ]; then
+                echo "################################################################"
+                echo "⏳ Building library dependencies for package '${pkg}-${target}'..."
+                echo "################################################################"
+                bash -c "export TERM=xterm-256color; make libs 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
               fi
-              make ${pkg}-${target}
+              
+              if [ "$only_libs" != "true" ]; then
+                if [ "$TYPE" = "pkgs" ]; then
+                  echo "################################################################"
+                  echo "⏳ Building package '${pkg}-${target}'..."
+                  echo "################################################################"
+                else
+                  echo "Checking if there is a target named '${pkg}-${target}'..."
+                fi
+                bash -c "export TERM=xterm-256color; make ${pkg}-${target} 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+              fi
             fi
           fi  # End of if firmware / else standard build
 
@@ -748,41 +810,6 @@ jobs:
               echo "=== 👉 Recent build errors from make logs (last 500 lines) ==="
               find . -name "*.log" -type f -mmin -30 -exec echo "=== {} ===" \; -exec tail -500 {} \; 2>/dev/null | grep -B2 -A2 -i "error" | head -100 || echo "No recent error logs found"
               echo ""
-              
-              # Test g++ compiler
-              GXX_PATH=$(find toolchain/build -name "*-g++" -type f 2>/dev/null | head -1)
-              if [ -n "$GXX_PATH" ]; then
-                echo ""
-                echo "=== 👉 G++ Compiler Information ==="
-                echo "Found g++ at: $GXX_PATH"
-                echo ""
-                echo "File info:"
-                file "$GXX_PATH" || true
-                echo ""
-                echo "Testing g++ version:"
-                "$GXX_PATH" --version 2>&1 || echo "ERROR: g++ --version failed"
-                echo ""
-                echo "Checking g++ dependencies:"
-                ldd "$GXX_PATH" 2>&1 || echo "ERROR: ldd failed"
-                echo ""
-                echo "Testing simple C++ compile:"
-                echo 'int main() { return 0; }' > /tmp/test.cpp
-                "$GXX_PATH" /tmp/test.cpp -o /tmp/test.out 2>&1 || echo "ERROR: Simple compile failed"
-                rm -f /tmp/test.cpp /tmp/test.out
-                echo ""
-                echo "Checking target libstdc++:"
-                find toolchain/build -name "libstdc++.so*" -path "*/*-linux-*/*" | head -5
-                echo ""
-                echo "Checking if g++-wrapper exists and what it points to:"
-                WRAPPER=$(find toolchain/build -name "*-g++-wrapper" | head -1)
-                if [ -n "$WRAPPER" ]; then
-                  ls -la "$WRAPPER"
-                  readlink -f "$WRAPPER" || true
-                fi
-                echo ""
-              else
-                echo "WARNING: g++ not found in toolchain"
-              fi
           fi
                     
           # Show package-specific build information
@@ -804,8 +831,8 @@ jobs:
           fi
           
           # Show config.log for failed packages
-          echo "=== 👉 Config.log files (last 500 lines each) ==="
-          find source -name "config.log" -type f -mmin -30 -exec echo "=== {} ===" \; -exec tail -500 {} \; 2>/dev/null | head -500 || echo "No recent config.log found"
+          echo "=== 👉 Config.log files (last 300 lines each) ==="
+          find source -name "config.log" -type f -mmin -30 -exec echo "=== {} ===" \; -exec tail -300 {} \; 2>/dev/null | head -300 || echo "No recent config.log found"
           echo ""
           
           # Show toolchain information
@@ -820,9 +847,27 @@ jobs:
           grep "^FREETZ_AVM_PROP_KERNEL_" .config | grep "=y" | head -3
           echo ""
           
-          # Show disk space
-          echo "=== 👉 Disk space information ==="
-          df -h . | tail -1
+          # Show package dependencies status
+          echo "=== 👉 Package Dependencies Status ==="
+          pkg="${{ matrix.fritz.pkg }}"
+          PKG="$(echo "$pkg" | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"
+          if grep -q "FREETZ_PACKAGE_${PKG}_IS_SELECTABLE=n" .config 2>/dev/null; then
+            echo "❌ Package '$pkg' is not selectable (dependencies not satisfied)"
+          elif grep -q "FREETZ_PACKAGE_${PKG}_AVAILABLE=n" .config 2>/dev/null; then
+            echo "❌ Package '$pkg' is not available for this device/firmware"
+          else
+            echo "✅ Package '$pkg' should be selectable and available"
+          fi
+          echo ""
+          
+          # Analyze last 500 lines of make output
+          echo "\033[37m________________________________________________________________________\033[0m"
+          echo "=== 👉 \033[1;43;34mLast 500 lines from make output\033[0m ==="
+          if [ -f make_output.log ]; then
+            tail -500 make_output.log
+          else
+            echo "⚠️ No make output file found."
+          fi
           echo ""
           
           echo "##########################################################"
@@ -837,7 +882,7 @@ jobs:
         if: steps.generate.outputs.bad == 'n'
         run: |
           # Show build results and create artifacts if requested
-          pkg="$(echo ${{ steps.generate.outputs.pkg }} | sed 's/lib//')"
+          pkg="$(echo ${{ steps.generate.outputs.pkg }} | sed 's/^=//; s/lib//')"
           target="${{ matrix.fritz.target }}"
           
           echo "##########################################################"
@@ -871,11 +916,36 @@ jobs:
             if find packages/target-*/${pkg}-*/root/ ! -type d 2>/dev/null | grep -q .; then
               echo "ℹ️ Package files:"
               find packages/target-*/${pkg}-*/root/ ! -type d -exec ls -al {} + 2>/dev/null || true
+            else
+              echo "No package files produced."
             fi
             echo ""
-            if find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null | grep -q .; then
+            
+            # Search for library files: package itself + all selected user libraries
+            # Get list of user libraries from .config
+            LIBS_LIST="$(grep '^FREETZ_LIB_.*=y' .config | grep -vE 'libgcc_s|ld_uClibc|libcrypt|libdl|libm|libpthread|librt|libuClibc|libutil|libthread_db|libubacktrace|libctlmgr|libavmhmac|libavmacl2|libcapi|libmultid' | sed 's/FREETZ_LIB_//;s/=y//' || true)"
+            
+            # Build search patterns: package name + lib prefix variant + all user libs
+            lib_patterns="-name '*${pkg}*'"
+            # Also search for lib-prefixed variant (e.g., bzip2 -> libbz2)
+            if [ "${pkg#lib}" = "$pkg" ]; then
+              lib_patterns="$lib_patterns -o -name '*lib${pkg}*'"
+            else
+              lib_patterns="$lib_patterns -o -name '*${pkg#lib}*'"
+            fi
+            
+            # Add all user libraries to search patterns
+            if [ -n "$LIBS_LIST" ]; then
+              for lib in $LIBS_LIST; do
+                lib_patterns="$lib_patterns -o -name '*${lib}*'"
+              done
+            fi
+            
+            if eval "find packages/target-*/root/usr/lib/freetz/ \( $lib_patterns \) -type f 2>/dev/null" | grep -q .; then
               echo "ℹ️ Freetz library files:"
-              find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec ls -al {} + 2>/dev/null || true
+              eval "find packages/target-*/root/usr/lib/freetz/ \( $lib_patterns \) -type f -exec ls -al {} + 2>/dev/null" || true
+            else
+              echo "No library files produced."
             fi
             
             # Check if any files were found
@@ -901,7 +971,7 @@ jobs:
                 # Copy Freetz library files
                 if [ -d packages/target-*/root/usr/lib/freetz ]; then
                   mkdir -p freetz-package-build/freetz-libs
-                  find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f -exec cp {} freetz-package-build/freetz-libs/ \; 2>/dev/null || true
+                  find packages/target-*/root/usr/lib/freetz/ \( -name "$lib_search_pattern" -o -name "$lib_alt_pattern" \) -type f -exec cp {} freetz-package-build/freetz-libs/ \; 2>/dev/null || true
                 fi
                 
                 # Create build summary
