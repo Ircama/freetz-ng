@@ -102,9 +102,9 @@ jobs:
           [ "${{ github.event.inputs.use_queue }}" = "false" ] && HAS_PARAMS="yes"
           
           if [ -z "$HAS_PARAMS" ]; then
-            echo "gh workflow run ${{ github.workflow }}.yml"
+            echo "gh workflow run ${{ github.workflow }}.yml -b ${{ github.ref_name }}"
           else
-            echo "gh workflow run ${{ github.workflow }}.yml \\"
+            echo "gh workflow run ${{ github.workflow }}.yml -b ${{ github.ref_name }} \\"
             [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
             [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
             [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
@@ -689,6 +689,102 @@ jobs:
 #         mkdir -p ~/.freetz-signature/
 #         for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
 #         echo "################################################################" && ls -l ~/.freetz-signature/
+
+      - name: prepare-firmware
+        if: matrix.fritz != 'skip'
+        run: |
+          # Check firmware availability and create fake firmware if needed
+          echo "################################################################"
+          echo "Checking firmware availability..."
+          
+          # Source .config to get firmware details
+          source .config 2>/dev/null || true
+          
+          FIRMWARE_FILE="${FREETZ_DL_SOURCE}"
+          FIRMWARE_SITE="${FREETZ_DL_SITE}"
+          
+          if [ -z "$FIRMWARE_FILE" ] || [ -z "$FIRMWARE_SITE" ]; then
+            echo "⚠️ No firmware download configured - skipping firmware check"
+            exit 0
+          fi
+          
+          # Transform URL using Freetz's replacement logic
+          FIRMWARE_SITE="${FIRMWARE_SITE//@AVM\//https://download.avm.de/fritzbox/}"
+          
+          # Handle {alternative1,alternative2} syntax - take first alternative
+          if [[ "$FIRMWARE_SITE" == *"{"* ]]; then
+            FIRMWARE_SITE=$(echo "$FIRMWARE_SITE" | sed 's/{//g' | sed 's/,.*}//')
+          fi
+          
+          # Handle comma-separated sites - take first one
+          if [[ "$FIRMWARE_SITE" == *","* ]]; then
+            FIRMWARE_SITE="${FIRMWARE_SITE%%,*}"
+          fi
+          
+          # Handle slash-separated sources - take first one
+          if [[ "$FIRMWARE_FILE" == *"/"* ]]; then
+            FIRMWARE_FILE="${FIRMWARE_FILE%%/*}"
+          fi
+          
+          # Remove trailing slash from site
+          FIRMWARE_SITE="${FIRMWARE_SITE%/}"
+          
+          # Construct URLs
+          PRIMARY_URL="${FIRMWARE_SITE}/${FIRMWARE_FILE}"
+          ARCHIVE_URL=$(echo "$PRIMARY_URL" | sed 's|/fritzbox/|/archive/fritz.box/|')
+          
+          mkdir -p dl/fw
+          FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
+          
+          # Check if firmware already exists
+          if [ -f "$FIRMWARE_PATH" ] && [ -s "$FIRMWARE_PATH" ]; then
+            echo "✅ Firmware already exists: $FIRMWARE_PATH"
+            exit 0
+          fi
+          
+          echo "Trying to download firmware..."
+          echo "  Primary URL: $PRIMARY_URL"
+          
+          # Try primary URL
+          if wget --spider -q --timeout=10 "$PRIMARY_URL" 2>/dev/null; then
+            echo "✅ Firmware available at primary URL"
+            exit 0
+          fi
+          
+          echo "  Archive URL: $ARCHIVE_URL"
+          
+          # Try AVM archive
+          if wget --spider -q --timeout=10 "$ARCHIVE_URL" 2>/dev/null; then
+            echo "✅ Firmware available at AVM archive"
+            # Update .config to use archive URL
+            sed -i "s|FREETZ_DL_SITE=\".*\"|FREETZ_DL_SITE=\"${ARCHIVE_URL%/*}\"|" .config
+            exit 0
+          fi
+          
+          echo "⚠️ Firmware not found on AVM servers"
+          echo "Creating minimal fake firmware for package-only build..."
+          
+          # Create minimal valid tar structure that mimics a real firmware
+          FAKE_DIR="/tmp/fake-fw-$$"
+          mkdir -p "$FAKE_DIR/var/tmp"
+          mkdir -p "$FAKE_DIR/var/install"
+          
+          # Create minimal required files
+          echo "# Fake firmware for package testing" > "$FAKE_DIR/var/tmp/.fake_firmware"
+          echo "FAKE_BUILD=1" > "$FAKE_DIR/var/install"
+          
+          # Create tar archive with proper structure
+          tar -C "$FAKE_DIR" -cf "$FIRMWARE_PATH" ./var
+          rm -rf "$FAKE_DIR"
+          
+          if [ -f "$FIRMWARE_PATH" ]; then
+            echo "✅ Fake firmware created: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH") bytes)"
+            echo "⚠️ Note: This is a minimal fake firmware for package-only builds"
+            echo "⚠️ Full firmware image generation will likely fail with this fake firmware"
+          else
+            echo "❌ Failed to create fake firmware"
+            exit 1
+          fi
 
       - name: generate
         id: generate
