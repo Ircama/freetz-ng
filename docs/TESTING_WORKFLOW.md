@@ -20,7 +20,7 @@ The workflow supports manual triggering via `workflow_dispatch`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php) |
+| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'fake-firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php) |
 | `url` | string | No | `""` | URL of config file (.tar, .tgz, .tbz, .config) or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
@@ -49,12 +49,14 @@ The workflow supports manual triggering via `workflow_dispatch`.
 - `package-precompiled` → Compile precompiled package
 - `package-recompile` → Force recompilation from source
 - `firmware` → Build complete firmware image
+- `fake-firmware` → Generate fake firmware for testing device configuration without real firmware download
 - `package-firmware` → Build firmware and the specified package
 - `package-recompile-firmware` → Build firmware and force recompilation of the specified package
 - `package-precompiled-firmware` → Build firmware and compile precompiled package
 
 **Special Packages**:
 - `firmware` → Build complete firmware image instead of package
+- `fake-firmware` → Generate fake firmware structure for testing device configuration (no real firmware download required)
 - `libs` → Build only libraries
 - `=package` → Build package skipping library dependencies
 
@@ -221,6 +223,9 @@ gh workflow run make_package.yml -f make_target="libs"
 
 # Build package skipping library dependencies
 gh workflow run make_package.yml -f make_target="=php-precompiled"
+
+# Generate fake firmware for testing device configuration
+gh workflow run make_package.yml -f make_target="fake-firmware"
 ```
 
 ### Target Behavior Examples
@@ -236,6 +241,7 @@ The workflow interprets different `make_target` inputs as follows:
 | `php-precompiled-firmware` | `make` (with php-precompiled) | Build firmware with php compiled as precompiled |
 | `php-recompile-firmware` | `make` (with php-recompile) | Build firmware with php recompiled from source |
 | `firmware` | `make` | Build complete firmware image only |
+| `fake-firmware` | Generate fake firmware | Test device configuration without downloading real firmware |
 | `libs` | `make libs` | Build only libraries |
 | `=php` | `make php-precompiled` (skip libs) | Build package skipping library dependencies |
 | `=php-precompiled` | `make php-precompiled` (skip libs) | Build package as precompiled skipping library dependencies |
@@ -243,6 +249,11 @@ The workflow interprets different `make_target` inputs as follows:
 
 **Notes:**
 - Firmware targets (`*-firmware`) build the complete firmware image with the specified package(s) included
+- `fake-firmware` generates a realistic fake firmware structure for testing device configuration without requiring real firmware download. This is useful for:
+  - Testing device configurations when firmware is unavailable or obsolete
+  - Validating build system configuration without full firmware build
+  - Testing toolchain compatibility across multiple devices quickly
+  - CI/CD testing without large firmware downloads
 - Package-only targets build individual packages without full firmware
 - Default behavior for packages without suffix is `-precompiled`
 - All builds run across the configured device/toolchain matrix
@@ -278,6 +289,12 @@ gh workflow run make_package.yml -f make_target="php" -f use_queue="false"
 
 # Test firmware build
 gh workflow run make_package.yml -f make_target="firmware"
+
+# Test device configuration with fake firmware
+gh workflow run make_package.yml -f make_target="fake-firmware" -f custom_config="7530 08_2X EN"
+
+# Test multiple devices with fake firmware
+gh workflow run make_package.yml -f make_target="fake-firmware" -f custom_config="7530,7590,6670" -f add_or_override="override"
 
 # Test libraries build
 gh workflow run make_package.yml -f make_target="libs"
@@ -321,6 +338,9 @@ git commit -m "test: make php-firmware"
 # Build only libraries
 git commit -m "test: make libs"
 
+# Test device configuration with fake firmware
+git commit -m "test: make fake-firmware"
+
 # Build package skipping library dependencies
 git commit -m "test: make =php-precompiled"
 
@@ -338,6 +358,7 @@ git commit -m "test: make"
 - `package-precompiled` → Compile precompiled package
 - `package-recompile` → Force recompilation from source
 - `firmware` → Build complete firmware image
+- `fake-firmware` → Generate fake firmware for testing device configuration
 - `package-firmware` → Build firmware and the specified package
 - `package-recompile-firmware` → Build firmware and force recompilation of the specified package
 - `package-precompiled-firmware` → Build firmware and compile precompiled package
@@ -462,6 +483,9 @@ gh workflow run make_package.yml -f make_target="package-name"
 # Full firmware build
 gh workflow run make_package.yml -f make_target="firmware" -f verbosity="2"
 
+# Fake firmware for device configuration testing
+gh workflow run make_package.yml -f make_target="fake-firmware"
+
 # Libraries build
 gh workflow run make_package.yml -f make_target="libs"
 
@@ -472,6 +496,8 @@ gh workflow run make_package.yml -f make_target="=package-name"
 ### Automatic Triggers
 ```bash
 git commit -m "test: make php-recompile"
+
+git commit -m "test: make fake-firmware"
 
 git commit -m "test: make libs"
 
