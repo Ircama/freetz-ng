@@ -102,9 +102,9 @@ jobs:
           [ "${{ github.event.inputs.use_queue }}" = "false" ] && HAS_PARAMS="yes"
           
           if [ -z "$HAS_PARAMS" ]; then
-            echo "gh workflow run ${{ github.workflow }}.yml -b ${{ github.ref_name }}"
+            echo "gh workflow run ${{ github.workflow }}.yml -r ${{ github.ref_name }}"
           else
-            echo "gh workflow run ${{ github.workflow }}.yml -b ${{ github.ref_name }} \\"
+            echo "gh workflow run ${{ github.workflow }}.yml -r ${{ github.ref_name }} \\"
             [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
             [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
             [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
@@ -702,6 +702,8 @@ jobs:
           
           FIRMWARE_FILE="${FREETZ_DL_SOURCE}"
           FIRMWARE_SITE="${FREETZ_DL_SITE}"
+
+          echo "Firmware file: $FIRMWARE_FILE"
           
           if [ -z "$FIRMWARE_FILE" ] || [ -z "$FIRMWARE_SITE" ]; then
             echo "⚠️ No firmware download configured - skipping firmware check"
