@@ -704,6 +704,7 @@ jobs:
           FIRMWARE_SITE="${FREETZ_DL_SITE}"
 
           echo "Firmware file: $FIRMWARE_FILE"
+          echo "Firmware site: $FIRMWARE_SITE"
           
           if [ -z "$FIRMWARE_FILE" ] || [ -z "$FIRMWARE_SITE" ]; then
             echo "⚠️ No firmware download configured - skipping firmware check"
