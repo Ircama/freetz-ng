@@ -754,6 +754,112 @@ jobs:
             echo "⏳ Building firmware image"
 
             # Create simplified fwmod replacement inline
+            cat > fwmod <<'EOFFWMOD'
+#!/bin/sh
+# Simplified fwmod2 - creates .image from compiled packages
+set -e
+
+# Parse command-line options
+DOT_CONFIG=".config"
+DIR=""
+while getopts umpsanfzc:i:d:v:w:x: opt; do
+  case "$opt" in
+    i) DOT_CONFIG="$OPTARG" ;;
+    d) DIR="$OPTARG" ;;
+    *) ;;
+  esac
+done
+shift $((OPTIND-1))
+
+# Get firmware path
+FIRMWARE_PATH="$1"
+if [ -z "$FIRMWARE_PATH" ]; then
+  echo "ERROR: No firmware path specified"
+  exit 1
+fi
+
+# Extract firmware name
+FIRMWARE_NAME=$(basename "$FIRMWARE_PATH" | sed "s/\.[^.]*\$//")
+
+# Load configuration
+if [ ! -f "$DOT_CONFIG" ]; then
+  echo "ERROR: Config file not found: $DOT_CONFIG"
+  exit 1
+fi
+
+# Extract version info
+VERSION=$(git describe --always --dirty 2>/dev/null || echo "unknown")
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+# Setup paths
+BASE_DIR=$(pwd)
+PACKAGES_DIR="packages"
+IMAGES_DIR="images"
+OUTPUT_IMAGE_REL="${IMAGES_DIR}/${FIRMWARE_NAME}_freetz-ng-${VERSION}_${TIMESTAMP}.image"
+OUTPUT_IMAGE="${BASE_DIR}/${OUTPUT_IMAGE_REL}"
+
+# Create output directory
+mkdir -p "$IMAGES_DIR"
+
+echo "Creating image file from $FIRMWARE_PATH"
+echo "Output: $OUTPUT_IMAGE_REL"
+echo ""
+
+# Show package statistics
+if [ -d "$PACKAGES_DIR" ]; then
+  echo "Package statistics:"
+  cd "$PACKAGES_DIR"
+  du --max-depth=1 -hc --time * 2>/dev/null | grep -v "^0" || true
+  cd ..
+  echo ""
+fi
+
+# Create temporary build directory
+TEMP_BUILD_DIR=$(mktemp -d)
+trap "rm -rf $TEMP_BUILD_DIR" EXIT
+
+echo "Collecting package files..."
+
+# Collect all package files
+PKG_COUNT=0
+if [ -d "$PACKAGES_DIR" ]; then
+  for pkg_dir in "$PACKAGES_DIR"/*; do
+    if [ -d "$pkg_dir/root" ]; then
+      echo "Adding package: $(basename "$pkg_dir")"
+      cp -a "$pkg_dir/root/"* "$TEMP_BUILD_DIR/" 2>/dev/null || true
+      PKG_COUNT=$((PKG_COUNT + 1))
+    fi
+  done
+fi
+
+if [ "$PKG_COUNT" -eq 0 ]; then
+  echo "WARNING: No packages found in $PACKAGES_DIR"
+fi
+
+echo ""
+echo "Creating .image archive..."
+
+# Create tar archive
+cd "$TEMP_BUILD_DIR"
+tar -cf "$OUTPUT_IMAGE" --owner=0 --group=0 --numeric-owner --format=oldgnu . 2>/dev/null || {
+  echo "ERROR: Failed to create image archive"
+  exit 1
+}
+cd "$BASE_DIR"
+
+# Create latest.image symlink
+rm -f "${IMAGES_DIR}/latest.image"
+ln -s "$(basename "$OUTPUT_IMAGE_REL")" "${IMAGES_DIR}/latest.image"
+
+# Show result
+IMAGE_SIZE=$(stat -c%s "$OUTPUT_IMAGE" 2>/dev/null || echo 0)
+IMAGE_SIZE_KB=$((IMAGE_SIZE / 1024))
+echo ""
+echo "Image file size of $OUTPUT_IMAGE_REL: $IMAGE_SIZE_KB KB ($IMAGE_SIZE bytes)"
+printf "\033[1mFINISHED\033[0m\n"
+EOFFWMOD
+            
+            chmod +x fwmod
             echo "✅ Created simplified fwmod replacement"
 
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
