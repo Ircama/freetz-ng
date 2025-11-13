@@ -769,9 +769,9 @@ jobs:
             echo 'OUTPUT_IMAGE="${BASE_DIR}/${OUTPUT_IMAGE_REL}"' >> fwmod
             echo 'mkdir -p "$IMAGES_DIR"' >> fwmod
             echo 'echo ""' >> fwmod
-            echo 'printf "\033[1mFAKE IMAGE BUILD\033[0m\n"' >> fwmod
-            echo 'echo "Creating fake image file from fake firmware $FIRMWARE_PATH"' >> fwmod
-            echo 'echo "Output: $OUTPUT_IMAGE_REL"' >> fwmod
+            echo 'printf "\033[1mBUILD COMPLETED. ARCHIVE CREATION:\033[0m\n"' >> fwmod
+            echo 'echo "Creating tar image file from fake firmware $FIRMWARE_PATH"' >> fwmod
+            echo 'echo "TAR file name: $OUTPUT_IMAGE_REL"' >> fwmod
             echo 'echo ""' >> fwmod
             echo 'if [ -d "$PACKAGES_DIR" ]; then' >> fwmod
             echo 'echo "Package statistics:"' >> fwmod
@@ -797,7 +797,7 @@ jobs:
             echo 'echo "WARNING: No packages found in $PACKAGES_DIR"' >> fwmod
             echo 'fi' >> fwmod
             echo 'echo ""' >> fwmod
-            echo 'echo "Creating .image archive..."' >> fwmod
+            echo 'echo "Creating .image archive (tar format)..."' >> fwmod
             echo 'cd "$TEMP_BUILD_DIR"' >> fwmod
             echo 'tar -cf "$OUTPUT_IMAGE" --owner=0 --group=0 --numeric-owner --format=oldgnu . 2>/dev/null || {' >> fwmod
             echo 'echo "ERROR: Failed to create image archive"' >> fwmod
