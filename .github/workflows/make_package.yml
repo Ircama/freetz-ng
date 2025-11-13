@@ -733,32 +733,14 @@ jobs:
             
             # Extract device product name for firmware filename
             FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)"
-            FIRMWARE_SITE="$(grep '^FREETZ_DL_SITE=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)"
-            echo "Firmware file: $FIRMWARE_FILE"
-            echo "Firmware site: $FIRMWARE_SITE"
 
-            #PRODUCT_NAME="$(grep '^FREETZ_AVM_PROP_NAME=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' | sed 's/ /_/g' || echo "DEVICE")"
-            #FIRMWARE_FILE="fake_${PRODUCT_NAME}_firmware.tar"
-            
-            echo "Creating minimal fake firmware: $FIRMWARE_FILE"
-            
-            # Create dl/fw directory
+            # Create fake firmware
             mkdir -p dl/fw
             FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
+            echo "Fake firmware placeholder" > $FIRMWARE_PATH            
+            echo "✅ Created fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"            
             
-            # Create minimal empty firmware (fwmod will be skipped anyway with SKIP_ALL)
-            echo "Fake firmware placeholder" > /tmp/fake_readme.txt
-            tar -cf "$FIRMWARE_PATH" -C /tmp fake_readme.txt 2>/dev/null
-            rm -f /tmp/fake_readme.txt
-            
-            echo "✅ Created minimal fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"
-            
-            
-            # Build everything (toolchain, tools, packages) but skip firmware processing with fake firmware
-            echo "################################################################"
-            echo "⏳ Building complete toolchain and all configured packages..."
-            echo "   (fwmod will skip all firmware processing steps due to SKIP_ALL=y)"
-            echo "################################################################"
+            echo "⏳ Building firmware image"
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
           
