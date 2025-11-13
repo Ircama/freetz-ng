@@ -1,12 +1,13 @@
---- a/Modules/socketmodule.h
-+++ b/Modules/socketmodule.h
-@@ -7,7 +7,9 @@
- #ifdef HAVE_SYS_TYPES_H
- #include <sys/types.h>
- #endif
-+#ifndef __GLIBC__
- #include <linux/in.h>
-+#endif
+--- Modules/socketmodule.h
++++ Modules/socketmodule.h
+@@ -1,6 +1,10 @@
+ /* Socket module header file */
  
- #ifdef HAVE_SYS_SOCKET_H
- #include <sys/socket.h>
+ /* Includes needed for the sockaddr_* symbols below */
++
++/* Prevent duplicate definitions from linux/in.h when using uClibc */
++#define _LINUX_IN_H
++
+ #ifndef MS_WINDOWS
+ #ifdef __VMS
+ #   include <socket.h>
