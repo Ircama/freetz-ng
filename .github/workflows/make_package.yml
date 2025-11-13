@@ -732,6 +732,11 @@ jobs:
             make olddefconfig
             
             # Extract device product name for firmware filename
+            FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)"
+            FIRMWARE_SITE="$(grep '^FREETZ_DL_SITE=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)"
+            echo "Firmware file: $FIRMWARE_FILE"
+            echo "Firmware site: $FIRMWARE_SITE"
+
             PRODUCT_NAME="$(grep '^FREETZ_AVM_PROP_NAME=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' | sed 's/ /_/g' || echo "DEVICE")"
             FIRMWARE_FILE="fake_${PRODUCT_NAME}_firmware.tar"
             
