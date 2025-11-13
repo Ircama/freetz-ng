@@ -181,7 +181,7 @@ jobs:
           elif [ "$make_cmd" = "-firmware" ]; then
             # Native firmware build - skip matrix generation
             echo "Native firmware build requested (uses existing .config without modifications)"
-            echo 'matrix=[{pkg:"-firmware",target:"",skip_libs:"false",name:"native-config",tcs:""}]' >> $GITHUB_OUTPUT
+            echo 'matrix=[{pkg:"firmware",target:"",skip_libs:"false",name:"native-configuration",tcs:""}]' >> $GITHUB_OUTPUT
             exit 0
           elif echo "$make_cmd" | grep -q ','; then
             # Multiple packages separated by commas
@@ -456,7 +456,7 @@ jobs:
           echo "##########################################################" && echo -n "Number of lines in file: " && wc -l .config
           
       - name: config
-        if: matrix.fritz.pkg != '-firmware'
+        if: matrix.fritz.name != 'native-configuration'
         run: |
           # Prepare .config based on downloaded file (or myconfig fallback)
           TCS="${{ matrix.fritz.tcs }}"
@@ -722,12 +722,24 @@ jobs:
           echo "pkg=$pkg" >> $GITHUB_OUTPUT
           
           # Check if this is a native firmware build (uses existing .config as-is)
-          if [ "$pkg" = "-firmware" ]; then
+          if [ "${{ matrix.fritz.name }}" = "native-configuration" ]; then
             echo "################################################################"
             echo "🔧 Building firmware with native .config (no modifications)"
             echo "################################################################"
             echo "Using configuration as-is from downloaded .config or myconfig"
             echo ""
+
+            sed -i '/FREETZ_VERBOSITY_FWMOD_/d'                                          .config
+            sed -i '/FREETZ_VERBOSITY_LEVEL_/d'                                          .config
+            sed -i '/FREETZ_VERBOSITY_LEVEL=/d'                                          .config
+            echo 'FREETZ_VERBOSITY_FWMOD_2=y'                                         >> .config
+            VERBOSITY="${{ github.event.inputs.verbosity }}"
+            [ -z "$VERBOSITY" ] && VERBOSITY="0"
+            echo "FREETZ_VERBOSITY_LEVEL_${VERBOSITY}=y"                              >> .config
+            echo "FREETZ_VERBOSITY_LEVEL=${VERBOSITY}"                                >> .config
+            
+            echo "Validating configuration..."
+            make olddefconfig 2>&1 | grep -v "warning: override:" || true
             
             echo "⏳ Building firmware image with native configuration"
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
