@@ -718,7 +718,7 @@ jobs:
           # Check if this is a fake-firmware target (create minimal fake firmware)
           if [ "$pkg" = "fake-firmware" ]; then
             echo "################################################################"
-            echo "🔧 Creating fake firmware (signature validation disabled)"
+            echo "🔧 Creating fake firmware"
             echo "################################################################"
             
             # Enable FREETZ_DL_OVERRIDE before olddefconfig to populate FREETZ_AVM_HW
@@ -737,21 +737,6 @@ jobs:
             FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
             echo "Fake firmware placeholder" > $FIRMWARE_PATH            
             echo "✅ Created fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"            
-            
-            echo "⏳ Building firmware image"
-            bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
-            echo "bad=n" >> $GITHUB_OUTPUT
-          
-          # Check if this is a standard firmware target
-          elif echo "$pkg" | grep -q "firmware"; then
-            # Build firmware image (expects real firmware available)
-            
-            # Enable firmware download override
-            sed -i '/FREETZ_DL_OVERRIDE/d' .config
-            echo 'FREETZ_DL_OVERRIDE=y' >> .config
-
-            make olddefconfig
-            echo "⏳ Building firmware image"
 
             # Create simplified fwmod replacement inline
             echo 'set -e' > fwmod
@@ -828,6 +813,21 @@ jobs:
             
             chmod +x fwmod
             echo "✅ Created simplified fwmod replacement"
+            
+            echo "⏳ Building firmware image"
+            bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+            echo "bad=n" >> $GITHUB_OUTPUT
+          
+          # Check if this is a standard firmware target
+          elif echo "$pkg" | grep -q "firmware"; then
+            # Build firmware image (expects real firmware available)
+            
+            # Enable firmware download override
+            sed -i '/FREETZ_DL_OVERRIDE/d' .config
+            echo 'FREETZ_DL_OVERRIDE=y' >> .config
+
+            make olddefconfig
+            echo "⏳ Building firmware image"
 
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
