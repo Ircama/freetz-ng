@@ -864,10 +864,9 @@ jobs:
             chmod +x fwmod
             echo "✅ Created simplified fwmod replacement"
 
-
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
-            
+          
           # Standard package-only build
           else
             TYPE=""
