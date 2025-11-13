@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       make_target:
-        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
+        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware' (creates fake fw for testing), or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
         required: false
         type: string
         default: ""
@@ -252,6 +252,11 @@ jobs:
               
               # Check for target suffix and remove it
               case "$pkg_name" in
+                fake-firmware)
+                  pkg_name="fake-firmware"
+                  pkg_target=""
+                  build_description=" (fake firmware for testing)"
+                  ;;
                 *firmware)
                   pkg_name="$pkg_name"
                   pkg_target=""
@@ -690,101 +695,7 @@ jobs:
 #         for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
 #         echo "################################################################" && ls -l ~/.freetz-signature/
 
-      - name: prepare-firmware
-        if: matrix.fritz != 'skip'
-        run: |
-          # Check firmware availability and create fake firmware if needed
-          echo "################################################################"
-          echo "Checking firmware availability..."
-          
-          # Source .config to get firmware details
-          source .config 2>/dev/null || true
-          
-          FIRMWARE_FILE="${FREETZ_DL_SOURCE}"
-          FIRMWARE_SITE="${FREETZ_DL_SITE}"
-          
-          if [ -z "$FIRMWARE_FILE" ] || [ -z "$FIRMWARE_SITE" ]; then
-            echo "⚠️ No firmware download configured - skipping firmware check"
-            exit 0
-          fi
-          
-          # Transform URL using Freetz's replacement logic
-          FIRMWARE_SITE="${FIRMWARE_SITE//@AVM\//https://download.avm.de/fritzbox/}"
-          
-          # Handle {alternative1,alternative2} syntax - take first alternative
-          if [[ "$FIRMWARE_SITE" == *"{"* ]]; then
-            FIRMWARE_SITE=$(echo "$FIRMWARE_SITE" | sed 's/{//g' | sed 's/,.*}//')
-          fi
-          
-          # Handle comma-separated sites - take first one
-          if [[ "$FIRMWARE_SITE" == *","* ]]; then
-            FIRMWARE_SITE="${FIRMWARE_SITE%%,*}"
-          fi
-          
-          # Handle slash-separated sources - take first one
-          if [[ "$FIRMWARE_FILE" == *"/"* ]]; then
-            FIRMWARE_FILE="${FIRMWARE_FILE%%/*}"
-          fi
-          
-          # Remove trailing slash from site
-          FIRMWARE_SITE="${FIRMWARE_SITE%/}"
-          
-          # Construct URLs
-          PRIMARY_URL="${FIRMWARE_SITE}/${FIRMWARE_FILE}"
-          ARCHIVE_URL=$(echo "$PRIMARY_URL" | sed 's|/fritzbox/|/archive/fritz.box/|')
-          
-          mkdir -p dl/fw
-          FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
-          
-          # Check if firmware already exists
-          if [ -f "$FIRMWARE_PATH" ] && [ -s "$FIRMWARE_PATH" ]; then
-            echo "✅ Firmware already exists: $FIRMWARE_PATH"
-            exit 0
-          fi
-          
-          echo "Trying to download firmware..."
-          echo "  Primary URL: $PRIMARY_URL"
-          
-          # Try primary URL
-          if wget --spider -q --timeout=10 "$PRIMARY_URL" 2>/dev/null; then
-            echo "✅ Firmware available at primary URL"
-            exit 0
-          fi
-          
-          echo "  Archive URL: $ARCHIVE_URL"
-          
-          # Try AVM archive
-          if wget --spider -q --timeout=10 "$ARCHIVE_URL" 2>/dev/null; then
-            echo "✅ Firmware available at AVM archive"
-            # Update .config to use archive URL
-            sed -i "s|FREETZ_DL_SITE=\".*\"|FREETZ_DL_SITE=\"${ARCHIVE_URL%/*}\"|" .config
-            exit 0
-          fi
-          
-          echo "⚠️ Firmware not found on AVM servers"
-          echo "Creating minimal fake firmware for package-only build..."
-          
-          # Create minimal valid tar structure that mimics a real firmware
-          FAKE_DIR="/tmp/fake-fw-$$"
-          mkdir -p "$FAKE_DIR/var/tmp"
-          mkdir -p "$FAKE_DIR/var/install"
-          
-          # Create minimal required files
-          echo "# Fake firmware for package testing" > "$FAKE_DIR/var/tmp/.fake_firmware"
-          echo "FAKE_BUILD=1" > "$FAKE_DIR/var/install"
-          
-          # Create tar archive with proper structure
-          tar -C "$FAKE_DIR" -cf "$FIRMWARE_PATH" ./var
-          rm -rf "$FAKE_DIR"
-          
-          if [ -f "$FIRMWARE_PATH" ]; then
-            echo "✅ Fake firmware created: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH") bytes)"
-            echo "⚠️ Note: This is a minimal fake firmware for package-only builds"
-            echo "⚠️ Full firmware image generation will likely fail with this fake firmware"
-          else
-            echo "❌ Failed to create fake firmware"
-            exit 1
-          fi
+
 
       - name: generate
         id: generate
@@ -806,9 +717,54 @@ jobs:
           
           echo "pkg=$pkg" >> $GITHUB_OUTPUT
           
-          # Check if this is a firmware target
-          if echo "$pkg" | grep -q "firmware"; then
-            # Build firmware image
+          # Check if this is a fake-firmware target (create minimal fake firmware)
+          if [ "$pkg" = "fake-firmware" ]; then
+            echo "################################################################"
+            echo "🔧 Creating fake firmware (signature validation disabled)"
+            echo "################################################################"
+            
+            # Enable FREETZ_DL_OVERRIDE before olddefconfig to populate FREETZ_AVM_HW
+            sed -i '/FREETZ_DL_OVERRIDE=/d' .config
+            echo 'FREETZ_DL_OVERRIDE=y' >> .config
+            
+            # Run olddefconfig to populate hardware variables
+            echo "Running make olddefconfig to populate hardware variables..."
+            make olddefconfig
+            
+            # Extract device product name for firmware filename
+            PRODUCT_NAME="$(grep '^FREETZ_AVM_PROP_NAME=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' | sed 's/ /_/g' || echo "DEVICE")"
+            FIRMWARE_FILE="fake_${PRODUCT_NAME}_firmware.tar"
+            
+            echo "Creating minimal fake firmware: $FIRMWARE_FILE"
+            
+            # Create dl/fw directory
+            mkdir -p dl/fw
+            FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
+            
+            # Create minimal empty firmware (fwmod will be skipped anyway with SKIP_ALL)
+            echo "Fake firmware placeholder" > /tmp/fake_readme.txt
+            tar -cf "$FIRMWARE_PATH" -C /tmp fake_readme.txt 2>/dev/null
+            rm -f /tmp/fake_readme.txt
+            
+            echo "✅ Created minimal fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"
+            
+            
+            # Build everything (toolchain, tools, packages) but skip firmware processing with fake firmware
+            echo "################################################################"
+            echo "⏳ Building complete toolchain and all configured packages..."
+            echo "   (fwmod will skip all firmware processing steps due to SKIP_ALL=y)"
+            echo "################################################################"
+            bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+            echo "bad=n" >> $GITHUB_OUTPUT
+          
+          # Check if this is a standard firmware target
+          elif echo "$pkg" | grep -q "firmware"; then
+            # Build firmware image (expects real firmware available)
+            
+            # Enable firmware download override
+            sed -i '/FREETZ_DL_OVERRIDE/d' .config
+            echo 'FREETZ_DL_OVERRIDE=y' >> .config
+
             make olddefconfig
             echo "⏳ Building firmware image"
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
