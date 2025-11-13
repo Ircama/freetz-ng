@@ -737,8 +737,8 @@ jobs:
             echo "Firmware file: $FIRMWARE_FILE"
             echo "Firmware site: $FIRMWARE_SITE"
 
-            PRODUCT_NAME="$(grep '^FREETZ_AVM_PROP_NAME=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' | sed 's/ /_/g' || echo "DEVICE")"
-            FIRMWARE_FILE="fake_${PRODUCT_NAME}_firmware.tar"
+            #PRODUCT_NAME="$(grep '^FREETZ_AVM_PROP_NAME=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' | sed 's/ /_/g' || echo "DEVICE")"
+            #FIRMWARE_FILE="fake_${PRODUCT_NAME}_firmware.tar"
             
             echo "Creating minimal fake firmware: $FIRMWARE_FILE"
             
