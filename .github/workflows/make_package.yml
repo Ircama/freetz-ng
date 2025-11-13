@@ -183,7 +183,7 @@ jobs:
             echo "Native firmware build requested (uses existing .config without modifications)"
             echo 'matrix=[{pkg:"-firmware",target:"",skip_libs:"false",name:"native-config",tcs:""}]' >> $GITHUB_OUTPUT
             exit 0
-          elif echo "$make_cmd" | grep -q ','; then then
+          elif echo "$make_cmd" | grep -q ','; then
             # Multiple packages separated by commas
             # Keep the suffix if present (e.g., -precompiled, -recompile)
             pkg_list="$(echo "$make_cmd" | sed 's/^make-\?//')"
