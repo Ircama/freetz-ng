@@ -937,12 +937,10 @@ jobs:
                 else
                   echo "Checking if there is a target named '${pkg}-${target}'..."
                 fi
-                bash -c "export TERM=xterm-256color; make ${pkg}-${target} 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+              bash -c "export TERM=xterm-256color; make ${pkg}-${target} 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
               fi
             fi
-          fi  # End of if firmware / else standard build
-
-      - name: debug-on-failure
+          fi  # End of if fake-firmware / elif firmware / else standard build      - name: debug-on-failure
         if: steps.generate.outcome == 'failure' || steps.generate.outputs.debug_needed == 'true'
         run: |
           # Diagnostic information on build failure
