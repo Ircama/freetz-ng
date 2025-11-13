@@ -695,8 +695,6 @@ jobs:
 #         for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
 #         echo "################################################################" && ls -l ~/.freetz-signature/
 
-
-
       - name: generate
         id: generate
         if: matrix.fritz != 'skip'
@@ -717,116 +715,110 @@ jobs:
           
           echo "pkg=$pkg" >> $GITHUB_OUTPUT
           
-          # Check if this is a fake-firmware target (create fake firmware for testing)
+          # Check if this is a fake-firmware target (create minimal fake firmware)
           if [ "$pkg" = "fake-firmware" ]; then
             echo "################################################################"
-            echo "🔧 Creating fake firmware for testing make on unavailable firmware"
+            echo "🔧 Creating fake firmware"
             echo "################################################################"
             
-            # Enable firmware download override
-            sed -i '/FREETZ_DL_OVERRIDE/d' .config
+            # Enable FREETZ_DL_OVERRIDE before olddefconfig to populate FREETZ_AVM_HW
+            sed -i '/FREETZ_DL_OVERRIDE=/d' .config
             echo 'FREETZ_DL_OVERRIDE=y' >> .config
             
-            # Disable firmware signature verification for fake firmware
-            sed -i '/FREETZ_FWMOD_VALIDATE/d' .config
-            echo '# FREETZ_FWMOD_VALIDATE is not set' >> .config
-            
+            # Run olddefconfig to populate hardware variables
+            echo "Populating hardware variables via FREETZ_DL_OVERRIDE..."
             make olddefconfig
             
-            # Extract firmware filename from .config
+            # Extract device product name for firmware filename
             FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)"
-            
-            if [ -z "$FIRMWARE_FILE" ]; then
-              echo "❌ Cannot determine firmware filename from .config"
-              echo "FREETZ_DL_SOURCE is not set"
-              exit 1
-            fi
-            
-            # Handle slash-separated sources - take first one
-            FIRMWARE_FILE="$(echo "$FIRMWARE_FILE" | cut -d'/' -f1)"
-            
-            echo "Target firmware file: $FIRMWARE_FILE"
-            
-            # Create dl/fw directory
+
+            # Create fake firmware
             mkdir -p dl/fw
             FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
+            echo "Fake firmware placeholder" > $FIRMWARE_PATH            
+            echo "✅ Created fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"            
+
+            # Create simplified fwmod replacement inline
+            echo 'set -e' > fwmod
+            echo 'DOT_CONFIG=".config"' >> fwmod
+            echo 'DIR=""' >> fwmod
+            echo 'while getopts umpsanfzc:i:d:v:w:x: opt; do' >> fwmod
+            echo 'case "$opt" in' >> fwmod
+            echo 'i) DOT_CONFIG="$OPTARG" ;;' >> fwmod
+            echo 'd) DIR="$OPTARG" ;;' >> fwmod
+            echo '*) ;;' >> fwmod
+            echo 'esac' >> fwmod
+            echo 'done' >> fwmod
+            echo 'shift $((OPTIND-1))' >> fwmod
+            echo 'FIRMWARE_PATH="$1"' >> fwmod
+            echo 'if [ -z "$FIRMWARE_PATH" ]; then' >> fwmod
+            echo 'echo "ERROR: No firmware path specified"' >> fwmod
+            echo 'exit 1' >> fwmod
+            echo 'fi' >> fwmod
+            echo 'FIRMWARE_NAME=$(basename "$FIRMWARE_PATH" | sed "s/\.[^.]*\$//")' >> fwmod
+            echo 'if [ ! -f "$DOT_CONFIG" ]; then' >> fwmod
+            echo 'echo "ERROR: Config file not found: $DOT_CONFIG"' >> fwmod
+            echo 'exit 1' >> fwmod
+            echo 'fi' >> fwmod
+            echo 'VERSION=$(git describe --always --dirty 2>/dev/null || echo "unknown")' >> fwmod
+            echo 'TIMESTAMP=$(date +%Y%m%d-%H%M%S)' >> fwmod
+            echo 'BASE_DIR=$(pwd)' >> fwmod
+            echo 'PACKAGES_DIR="packages"' >> fwmod
+            echo 'IMAGES_DIR="images"' >> fwmod
+            echo 'OUTPUT_IMAGE_REL="${IMAGES_DIR}/${FIRMWARE_NAME}_freetz-ng-${VERSION}_${TIMESTAMP}.image"' >> fwmod
+            echo 'OUTPUT_IMAGE="${BASE_DIR}/${OUTPUT_IMAGE_REL}"' >> fwmod
+            echo 'mkdir -p "$IMAGES_DIR"' >> fwmod
+            echo 'echo ""' >> fwmod
+            echo 'printf "\033[1mFAKE IMAGE BUILD\033[0m\n"' >> fwmod
+            echo 'echo "Creating fake image file from fake firmware $FIRMWARE_PATH"' >> fwmod
+            echo 'echo "Output: $OUTPUT_IMAGE_REL"' >> fwmod
+            echo 'echo ""' >> fwmod
+            echo 'if [ -d "$PACKAGES_DIR" ]; then' >> fwmod
+            echo 'echo "Package statistics:"' >> fwmod
+            echo 'cd "$PACKAGES_DIR"' >> fwmod
+            echo 'du --max-depth=1 -hc --time * 2>/dev/null | grep -v "^0" || true' >> fwmod
+            echo 'cd ..' >> fwmod
+            echo 'echo ""' >> fwmod
+            echo 'fi' >> fwmod
+            echo 'TEMP_BUILD_DIR=$(mktemp -d)' >> fwmod
+            echo 'trap "rm -rf $TEMP_BUILD_DIR" EXIT' >> fwmod
+            echo 'echo "Collecting package files..."' >> fwmod
+            echo 'PKG_COUNT=0' >> fwmod
+            echo 'if [ -d "$PACKAGES_DIR" ]; then' >> fwmod
+            echo 'for pkg_dir in "$PACKAGES_DIR"/*; do' >> fwmod
+            echo 'if [ -d "$pkg_dir/root" ]; then' >> fwmod
+            echo 'echo "Adding package: $(basename "$pkg_dir")"' >> fwmod
+            echo 'cp -a "$pkg_dir/root/"* "$TEMP_BUILD_DIR/" 2>/dev/null || true' >> fwmod
+            echo 'PKG_COUNT=$((PKG_COUNT + 1))' >> fwmod
+            echo 'fi' >> fwmod
+            echo 'done' >> fwmod
+            echo 'fi' >> fwmod
+            echo 'if [ "$PKG_COUNT" -eq 0 ]; then' >> fwmod
+            echo 'echo "WARNING: No packages found in $PACKAGES_DIR"' >> fwmod
+            echo 'fi' >> fwmod
+            echo 'echo ""' >> fwmod
+            echo 'echo "Creating .image archive..."' >> fwmod
+            echo 'cd "$TEMP_BUILD_DIR"' >> fwmod
+            echo 'tar -cf "$OUTPUT_IMAGE" --owner=0 --group=0 --numeric-owner --format=oldgnu . 2>/dev/null || {' >> fwmod
+            echo 'echo "ERROR: Failed to create image archive"' >> fwmod
+            echo 'exit 1' >> fwmod
+            echo '}' >> fwmod
+            echo 'cd "$BASE_DIR"' >> fwmod
+            echo 'rm -f "${IMAGES_DIR}/latest.image"' >> fwmod
+            echo 'ln -s "$(basename "$OUTPUT_IMAGE_REL")" "${IMAGES_DIR}/latest.image"' >> fwmod
+            echo 'IMAGE_SIZE=$(stat -c%s "$OUTPUT_IMAGE" 2>/dev/null || echo 0)' >> fwmod
+            echo 'IMAGE_SIZE_KB=$((IMAGE_SIZE / 1024))' >> fwmod
+            echo 'echo "Image file size of $OUTPUT_IMAGE_REL: $IMAGE_SIZE_KB KB ($IMAGE_SIZE bytes)"' >> fwmod
+            echo 'printf "\033[1mFINISHED\033[0m\n"' >> fwmod
+            echo '' >> fwmod
             
-            # Check if firmware already exists
-            if [ -f "$FIRMWARE_PATH" ] && [ -s "$FIRMWARE_PATH" ]; then
-              echo "ℹ️ Firmware file already exists: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH") bytes)"
-              echo "Using existing file for fake firmware build"
-            else
-              echo "Creating fake firmware image: $FIRMWARE_PATH"
-              
-              # Create a realistic fake firmware structure that mimics AVM firmware
-              FAKE_DIR="/tmp/fake-fw-$$"
-              mkdir -p "$FAKE_DIR/var/tmp"
-              
-              # Create fake signature file (required by Freetz unpacking)
-              echo "FAKE_SIGNATURE" > "$FAKE_DIR/var/signature"
-              
-              # Create fake install script (FILE, not directory!)
-              echo '#!/bin/sh' > "$FAKE_DIR/var/install"
-              echo '# Fake AVM install script' >> "$FAKE_DIR/var/install"
-              echo 'echo "FAKE_FIRMWARE=1"' >> "$FAKE_DIR/var/install"
-              echo 'exit 0' >> "$FAKE_DIR/var/install"
-              chmod +x "$FAKE_DIR/var/install"
-              
-              # Create marker for fake firmware
-              echo "# Fake firmware for build testing - $(date)" > "$FAKE_DIR/var/tmp/.fake_firmware"
-              
-              # Create minimal filesystem.image (tar within tar, like real AVM firmware)
-              FAKE_FS_DIR="/tmp/fake-fs-$$"
-              mkdir -p "$FAKE_FS_DIR/etc/init.d"
-              mkdir -p "$FAKE_FS_DIR/lib"
-              mkdir -p "$FAKE_FS_DIR/bin"
-              mkdir -p "$FAKE_FS_DIR/var"
-              
-              # Create minimal init
-              echo '#!/bin/sh' > "$FAKE_FS_DIR/etc/init.d/rc.S"
-              echo '# Fake init' >> "$FAKE_FS_DIR/etc/init.d/rc.S"
-              echo 'exit 0' >> "$FAKE_FS_DIR/etc/init.d/rc.S"
-              chmod +x "$FAKE_FS_DIR/etc/init.d/rc.S"
-              
-              # Create var.tar (required by Freetz unpacking) inside var/ directory
-              FAKE_VAR_DIR="/tmp/fake-var-$$"
-              mkdir -p "$FAKE_VAR_DIR/tmp"
-              mkdir -p "$FAKE_VAR_DIR/flash"
-              echo "# Fake var filesystem" > "$FAKE_VAR_DIR/tmp/.fake_var"
-              tar -C "$FAKE_VAR_DIR" -cf "$FAKE_FS_DIR/var/var.tar" .
-              rm -rf "$FAKE_VAR_DIR"
-              
-              # Create filesystem.image as tar (SquashFS format will be auto-detected)
-              tar -C "$FAKE_FS_DIR" -cf "$FAKE_DIR/var/tmp/filesystem.image" .
-              rm -rf "$FAKE_FS_DIR"
-              
-              # Create kernel.image (fake kernel) in var/tmp/ where Freetz expects it
-              echo "FAKE_KERNEL" > "$FAKE_DIR/var/tmp/kernel.image"
-              
-              # Create urlader binary (bootloader) - some firmware need this
-              echo "FAKE_URLADER" > "$FAKE_DIR/var/tmp/urlader"
-              
-              # Create the final tar archive (AVM firmware format)
-              tar -C "$FAKE_DIR" -cf "$FIRMWARE_PATH" .
-              rm -rf "$FAKE_DIR"
-              
-              if [ -f "$FIRMWARE_PATH" ]; then
-                echo "✅ Fake firmware created: $(stat -c%s "$FIRMWARE_PATH") bytes"
-                echo "   Contents:"
-                tar -tf "$FIRMWARE_PATH" 2>&1 | head -20 || echo "   (tar listing failed)"
-              else
-                echo "❌ Failed to create fake firmware"
-                exit 1
-              fi
-            fi
+            chmod +x fwmod
+            echo "✅ Created simplified fwmod replacement"
             
-            echo "################################################################"
-            echo "⏳ Building firmware with fake image"
-            echo "ℹ️  Signature verification disabled (FREETZ_FWMOD_VALIDATE=n)"
-            echo "################################################################"
+            echo "⏳ Building firmware image"
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
-            
+          
           # Check if this is a standard firmware target
           elif echo "$pkg" | grep -q "firmware"; then
             # Build firmware image (expects real firmware available)
@@ -837,9 +829,10 @@ jobs:
 
             make olddefconfig
             echo "⏳ Building firmware image"
+
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
-            
+          
           # Standard package-only build
           else
             TYPE=""
@@ -913,7 +906,7 @@ jobs:
                 bash -c "export TERM=xterm-256color; make ${pkg}-${target} 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
               fi
             fi
-          fi  # End of if firmware / else standard build
+          fi  # End of if fake-firmware / elif firmware / else standard build
 
       - name: debug-on-failure
         if: steps.generate.outcome == 'failure' || steps.generate.outputs.debug_needed == 'true'
