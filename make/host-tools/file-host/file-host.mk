@@ -1,10 +1,10 @@
-$(call TOOLS_INIT, 5.45)
+$(call TOOLS_INIT, 5.46)
 $(PKG)_SOURCE:=$(pkg_short)-$($(PKG)_VERSION).tar.gz
-$(PKG)_HASH:=fc97f51029bb0e2c9f4e3bffefdaf678f0e039ee872b9de5c002a6d09c784d82
+$(PKG)_HASH:=c9cc77c7c560c543135edc555af609d5619dbef011997e988ce40a3d75d86088
 $(PKG)_SITE:=http://ftp.astron.com/pub/file,ftp://ftp.astron.com/pub/file
 ### WEBSITE:=https://www.darwinsys.com/file/
 ### MANPAGE:=https://linux.die.net/man/1/file
-### CHANGES:=https://github.com/file/file/releases
+### CHANGES:=http://ftp.astron.com/pub/file
 ### CVSREPO:=https://github.com/file/file
 ### SUPPORT:=fda77
 
@@ -26,9 +26,7 @@ $(PKG)_CONFIGURE_OPTIONS += --disable-lzlib
 $(PKG)_CONFIGURE_OPTIONS += --disable-libseccomp
 
 
-ifneq ($($(PKG)_SOURCE),$(FILE_HOST_SOURCE))
 $(TOOLS_SOURCE_DOWNLOAD)
-endif
 $(TOOLS_UNPACKED)
 $(TOOLS_CONFIGURED_CONFIGURE)
 

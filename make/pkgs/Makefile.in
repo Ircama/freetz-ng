@@ -333,7 +333,7 @@ endef
 
 define INSTALL_BINARY_STRIP
 $(INSTALL_FILE) \
-[ "$(FREETZ_SEPARATE_AVM_UCLIBC)" == "y" ] && $(PATCHELF) --set-interpreter $(FREETZ_LIBRARY_DIR)/ld-uClibc.so.1 $@ || true; \
+[ "$(FREETZ_SEPARATE_AVM_UCLIBC)" != "y" ] || $(PATCHELF_TARGET) --set-interpreter $(FREETZ_LIBRARY_DIR)/ld-uClibc.so.1 $@; \
 $(TARGET_STRIP) $@;
 endef
 define INSTALL_LIBRARY__INT
@@ -367,8 +367,9 @@ endef
 # $1 - library to be installed
 # $2 - directory library to be installed in
 # $3 (optional) - DESTDIR library to be installed in, defaults to $(PKG)_DEST_DIR if omitted
+# $4 (optional) - DESTLIB library install name, defaults to $(notdir $(1)) if omitted
 define INSTALL_LIBRARY_STRIP_RULE
-$(if $(strip $(3)),$(strip $(3)),$($(PKG)_DEST_DIR))$(strip $(2))/$(notdir $(strip $(1))): $(strip $(1))
+$(if $(strip $(3)),$(strip $(3)),$($(PKG)_DEST_DIR))$(strip $(2))/$(if $(strip $(4)),$(notdir $(strip $(4))),$(notdir $(strip $(1)))): $(strip $(1))
 	$(value INSTALL_LIBRARY_STRIP)
 endef
 
@@ -576,7 +577,7 @@ $(pkg)-distclean: $(pkg)-dirclean $(pkg)-clean $(pkg)-uninstall
 
 $(pkg)-autofix: $(pkg)-dirclean
 	$(MAKE) AUTO_FIX_PATCHES=y $(pkg)-unpacked
-$(pkg)-recompile: $(pkg)-dirclean $(pkg)-precompiled
+$(pkg)-recompile: $(pkg)-distclean $(pkg)-precompiled
 .PHONY: $(pkg)-autofix $(pkg)-recompile
 
 PKG_TYPE:=

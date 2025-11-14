@@ -1,11 +1,14 @@
-name: make_bump
+name: make_precompiled
 
 on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'make/pkgs/**'
+      - 'make/libs/**'
   push:
     branches: [ master ]
     paths:
-      - '.github/workflows/make_bump.yml'
-      - 'docs/CHANGELOG.md'
       - 'make/pkgs/**'
       - 'make/libs/**'
   workflow_dispatch:
@@ -16,12 +19,14 @@ on:
         default: "dropbear"
 
 #concurrency:
-# group: ${{ github.workflow }}
-# cancel-in-progress: false
+# group: ${{ (github.event_name == 'pull_request') && github.workflow && '-' && github.event.pull_request.number || github.run_id }}
+# cancel-in-progress: ${{ (github.event_name == 'pull_request') && true || false }}
 
 jobs:
 
   matrizifizieren:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/generate
@@ -44,8 +49,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref_name }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           path: ${{ github.workspace }}
           fetch-depth: 0
           clean: false
@@ -55,21 +60,30 @@ jobs:
         id: parse
         run: |
           pkg="$(echo "${{ github.event.inputs.bump }}" | sed 's/ //g')"
-          [ -z "$pkg" ] && pkg="$(git log --format=%B -n1 ${{ github.sha }} | sed -nr 's/^(add|bump|fix|test) ([^ ,:]*).*/\2/pI')"
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          [ -z "$BASE_SHA" ] && BASE_SHA="$(git rev-parse HEAD~1)"
+          [ -z "$HEAD_SHA" ] && HEAD_SHA="$(git rev-parse HEAD)"
+          git cat-file -e "$BASE_SHA"^{commit} 2>/dev/null || BASE_SHA="$(git rev-parse HEAD~1)"
+          git cat-file -e "$HEAD_SHA"^{commit} 2>/dev/null || HEAD_SHA="$(git rev-parse HEAD)"
+          [ -z "$pkg" ] && pkg="$(git log --format=%B "$BASE_SHA..$HEAD_SHA" | sed -nr 's/^(add|bump|fix|test) ([^ ,:]*).*/\2/pI' | head -n1)"
+          [ -z "$pkg" ] && pkg="$(git diff --name-only "$BASE_SHA..$HEAD_SHA" | sed -nr 's#^make/(pkgs|libs)/([^/]+)/.*#\2#p' | head -n1)"
           [ -z "$pkg" ] && echo "No add, bump, fix or test." && echo 'matrix=["skip"]' >> $GITHUB_OUTPUT && exit
           sed -rn 's/.* && dltc "(.*)".*/\1/p' tools/dl-toolchains_make | \
           while read -r line; do \
-          name="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*).*/\1 - \2/g')"; \
-          tcs="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*)(.*)/_\1 _FIRMWARE_\2\3/g')"; \
-          echo -n "$matrix{pkg:\"$pkg\",name:\"$name\",tcs:\"$tcs\"},"; done | \
-          sed 's/^/matrix=\[/;s/$/\]/' >> $GITHUB_OUTPUT
+            name="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*).*/\1 - \2/g')"; \
+            tcs="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*)(.*)/_\1 _FIRMWARE_\2\3/g')"; \
+            echo -n "$matrix{pkg:\"$pkg\",name:\"$name\",tcs:\"$tcs\"},"; \
+          done | sed 's/^/matrix=\[/;s/$/\]/' >> $GITHUB_OUTPUT
 
       - name: vars
         run: |
-          echo "################################################################"
+          echo "##########################################################"
           echo "matrix=${{ steps.parse.outputs.matrix }}" | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/firmware
@@ -77,7 +91,7 @@ jobs:
       options: --user 1001:1001
     needs: matrizifizieren
     strategy:
-      max-parallel: 16
+      max-parallel: 17
       fail-fast: false
       matrix:
         fritz: ${{ fromJson(needs.matrizifizieren.outputs.matrix) }}
@@ -85,8 +99,6 @@ jobs:
     runs-on: ubuntu-latest
 #   if: github.repository == 'freetz-ng/freetz-ng'
 
-    env:
-      CACHE_KEY: "make_freetz"
     steps:
 
 #     - name: update
@@ -105,25 +117,25 @@ jobs:
 #     - name: locale
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
-      - name: sleep
-        run: |
-          SLEEP="$((1 + $(od -A n -t d -N 2 /dev/urandom | tr -d ' ') % 9))"
-          echo "Sleeping $SLEEP seconds ..."
-          sleep $SLEEP
+#     - name: sleep
+#       run: |
+#         SLEEP="$((1 + $(od -A n -t d -N 2 /dev/urandom | tr -d ' ') % 9))"
+#         echo "Sleeping $SLEEP seconds ..."
+#         sleep $SLEEP
 
-      - name: myips
-        run: |
-          echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
-#         echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
-#         echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
+#     - name: myips
+#       run: |
+#         echo -n "IP: " ; wget -q https://ipaddress.ai    -O - || echo none
+##        echo -n "V4: " ; wget -q https://ipaddress.ai -4 -O - || echo none
+##        echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
 
       - name: clone
         uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref_name }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           path: ${{ github.workspace }}
           fetch-depth: 0
           clean: false
@@ -135,8 +147,10 @@ jobs:
         with:
           path: |
             dl/*
-            !dl/fw/*
-          key: ${{ env.CACHE_KEY }}
+            !dl/linux-*.tar.xz
+            !dl/*-freetz-*-shared-glibc.tar.lzma
+          key: make_cache
+          restore-keys: make_cache
 
       - name: config
         run: |
@@ -154,29 +168,16 @@ jobs:
           echo 'FREETZ_VERBOSITY_LEVEL=0'                                                             >> .config
           echo 'FREETZ_SERIES_ALL=y'                                                                  >> .config
           echo 'FREETZ_USER_LEVEL_DEVELOPER=y'                                                        >> .config
+          echo 'FREETZ_DL_IMAGE_AT_LAST=y'                                                            >> .config
           echo '# FREETZ_MODULES_TEST is not set'                                                     >> .config
-          echo 'FREETZ_DL_SITE_USER="https://raw.githubusercontent.com/Freetz-NG/dl-mirror/master"'   >> .config
+          echo 'FREETZ_DL_SITE_USER="https://github.com/Freetz-NG/dl-mirror/releases/download/dl"'    >> .config
           echo 'FREETZ_REAL_DEVELOPER_ONLY__DLIMG="${{ secrets.ACTIONS_IMAGE }}"'                     >> .config
-          echo 'FREETZ_REAL_DEVELOPER_ONLY__DLURL="${{ secrets.ACTIONS_DLTCS }}"'                     >> .config
           echo 'FREETZ_DOWNLOAD_TOOLCHAIN=y'                                                          >> .config
           echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                          >> .config
           for x in $TCS; do echo "$x=y" | sed 's/^_/FREETZ_TYPE_/'; done                              >> .config
           grep -q '^FREETZ_TYPE_' .config || echo 'FREETZ_TYPE_7530_W6_V1=y'                          >> .config
           grep -q '^FREETZ_TYPE_FIRMWARE_' .config || echo 'FREETZ_TYPE_FIRMWARE_08_0X=y'             >> .config
-          echo "################################################################" && du .config && wc -l .config
-
-      - name: addon
-        if: matrix.fritz != 'skip'
-        run: |
-          echo "################################################################"
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}add" -O - 2>/dev/null | tar xj 2>/dev/null && echo Done || echo Null
-
-#     - name: signature
-#       if: matrix.fritz != 'skip'
-#       run: |
-#         mkdir -p ~/.freetz-signature/
-#         for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
-#         echo "################################################################" && ls -l ~/.freetz-signature/
+          echo "##########################################################" && echo -n "Lines=" && wc -l .config
 
       - name: generate
         id: generate
@@ -197,7 +198,7 @@ jobs:
           [ "$TYPE" = "pkgs" ] && echo     "FREETZ_LIB_lib$pkg=y"                                                                                     >> .config
           [ "$TYPE" = "libs" ] && for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do sed "/[^ ]FREETZ_LIB_$x[ =]/d"  -i .config; done
           [ "$TYPE" = "libs" ] && for x in $(sed -n 's/^[\tmenu]*config FREETZ_LIB_//p' make/libs/$pkg/Config.in); do echo     "FREETZ_LIB_$x=y"      >> .config; done
-          echo "################################################################" && bash -c "echo pkg=$pkg" && bash -c "echo PKG=$PKG"
+          echo "##########################################################" && bash -c "echo pkg=$pkg" && bash -c "echo PKG=$PKG"
           make olddefconfig
           BAD=y
           [ "$TYPE" = "pkgs" ] && grep -q "^FREETZ_PACKAGE_$PKG=y" .config && BAD=n
@@ -212,68 +213,8 @@ jobs:
           pkg="$(echo ${{ steps.generate.outputs.pkg }} | sed 's/lib//')"
           p="$(find packages/target-*/${pkg}-*/root/                      ! -type d 2>/dev/null || true)"
           l="$(find packages/target-*/root/usr/lib/freetz/ -name "*${pkg}*" -type f 2>/dev/null || true)"
-          echo "################################################################"
+          echo "##########################################################"
           [ -z "$p$l" ] && echo "No binary output found." && exit
           [ -n "$p$l" ] && ls -al $p $l
-
-#     - name: vars
-#       id: vars
-#       run: |
-#         LINK="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-#         LAST="$(ls images/*.image | sed 's,.*/,,;s,\.image$,,')"
-#         NAME="$(ls images/*.image | sed 's,.*/,,;s,_[0-9].*,,')"
-#         [ -n "$LINK" ] && echo "link=$LINK" >> $GITHUB_OUTPUT
-#         [ -n "$LAST" ] && echo "last=$LAST" >> $GITHUB_OUTPUT
-#         [ -n "$NAME" ] && echo "name=$NAME" >> $GITHUB_OUTPUT
-#         echo "################################################################"
-#         echo "LINK=$LINK"
-#         echo "LAST=$LAST"
-#         echo "NAME=$NAME"
-#         test -n "$NAME"
-
-#     - name: cleanup
-#       env:
-#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         ACTIONS_NAME: ${{ steps.vars.outputs.name }}
-#       run: |
-#         git config --global --add safe.directory $GITHUB_WORKSPACE
-#         git config --local credential.helper '!x() { echo "password=$GITHUB_TOKEN"; };x'
-#         git tag -d $ACTIONS_NAME && git push --delete origin $ACTIONS_NAME || true
-#     - name: release
-#       uses: ncipollo/release-action@v1
-#       with:
-#         tag: ${{ steps.vars.outputs.name }}
-#         name: ${{ steps.vars.outputs.name }}
-#         body: |
-#           ${{ steps.vars.outputs.last }}
-#           ${{ steps.vars.outputs.link }}
-#         prerelease: false
-#         allowUpdates: true
-#         removeArtifacts: false
-#         artifacts: "images/*"
-#         token: ${{ secrets.GITHUB_TOKEN }}
-#         replacesArtifacts: false
-#         artifactErrorsFailBuild: true
-#         draft: true
-
-#     - name: cache_clear
-#       if: github.repository == 'freetz-ng/freetz-ng'
-#       env:
-#         ACTIONS_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
-#         CACHE_KEY: ${{ env.CACHE_KEY }}
-#       run: |
-#         ASSETS="$(curl -s  -H "Accept: application/vnd.github+json"  -H "Authorization: Bearer $ACTIONS_TOKEN"  -H "X-GitHub-Api-Version: 2022-11-28"  "https://api.github.com/repos/${{ github.repository }}/actions/caches")"
-#         ASSID="$(echo "$ASSETS" | grep -B7 "\"key\": *\"${CACHE_KEY}\"" | sed -rn 's/ *"id": *([^,]*),*/\1/p')"
-#         curl -sL -X DELETE -H "Accept: application/vnd.github+json"  -H "Authorization: Bearer $ACTIONS_TOKEN"  -H "X-GitHub-Api-Version: 2022-11-28"  "https://api.github.com/repos/${{ github.repository }}/actions/caches/$ASSID" && echo "Deleted ASSID=${ASSID:-null} ..." || true
-#     - name: cache_save
-#       uses: actions/cache/save@v4
-#       if: always()
-#       with:
-#         path: |
-#           dl/*
-#           !dl/tools-*.tar.xz
-#           !dl/linux-*.tar.xz
-#           !dl/fw/*.zip
-#         key: ${{ env.CACHE_KEY }}
 
 

@@ -6,10 +6,6 @@ config FREETZ_DL_TOOLCHAIN_OVERRIDE
 	help
 		Enable this to override automatically generated toolchain entries.
 
-config FREETZ_DL_TOOLCHAIN_SITE
-	string "Download toolchain site"                                              if FREETZ_DL_TOOLCHAIN_OVERRIDE
-	default ""
-
 config FREETZ_DL_KERNEL_TOOLCHAIN_VERSION
 	string "Kernel toolchain version"                                             if FREETZ_DL_TOOLCHAIN_OVERRIDE
 	default "r26741"
@@ -80,8 +76,4 @@ config FREETZ_DL_TARGET_TOOLCHAIN_HASH
 	default "d1a4952fd611d06e3b22c1e30b289a31af060e3449eb392ea2620344e7d4bc30"    if FREETZ_TARGET_ARCH_X86                           && FREETZ_TARGET_GCC_13_4 && FREETZ_TARGET_UCLIBC_1_0_55 && FREETZ_KERNEL_VERSION_5_15
 	#
 	default "X"
-
-config FREETZ_DL_TOOLCHAIN_SUFFIX
-	string "Precompiled toolchain suffix"                                         if FREETZ_DL_TOOLCHAIN_OVERRIDE
-	default "shared-glibc"
 

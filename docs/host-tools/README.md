@@ -16,7 +16,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### C
 
-  * **[ca-bundle 2025-09-09](ca-bundle-host.md)<a id='ca-bundle-host'></a>**<br>
+  * **[ca-bundle 2025-11-04](ca-bundle-host.md)<a id='ca-bundle-host'></a>**<br>
 
   * **[cmake 4.1.2](cmake-host.md)<a id='cmake-host'></a>**<br>
 
@@ -38,7 +38,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[fastjar 0.98](fastjar-host.md)<a id='fastjar-host'></a>**<br>
 
-  * **[file 5.45](file-host.md)<a id='file-host'></a>**<br>
+  * **[file 5.46](file-host.md)<a id='file-host'></a>**<br>
 
   * **[find-squashfs 1.0](find-squashfs-host.md)<a id='find-squashfs-host'></a>**<br>
 
@@ -48,7 +48,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[gmp 6.3.0](gmp-host.md)<a id='gmp-host'></a>**<br>
 
-  * **[gperf 3.2](gperf-host.md)<a id='gperf-host'></a>**<br>
+  * **[gperf 3.3](gperf-host.md)<a id='gperf-host'></a>**<br>
 
 ### K
 
@@ -96,7 +96,9 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### P
 
-  * **[patchelf 0.14.5/0.15.0](patchelf-host.md)<a id='patchelf-host'></a>**<br>
+  * **[patchelf 0.14.5/0.18.0-b49de1b33](patchelf-host.md)<a id='patchelf-host'></a>**<br>
+
+  * **[patchelf-target 0.14.5/0.15.0](patchelf-target-host.md)<a id='patchelf-target-host'></a>**<br>
 
   * **[pkgconf 2.5.1](pkgconf-host.md)<a id='pkgconf-host'></a>**<br>
 
@@ -110,17 +112,17 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[python2-setuptools 44.1.1](python2-setuptools-host.md)<a id='python2-setuptools-host'></a>**<br>
 
-  * **[python3-attrs 25.3.0](python3-attrs-host.md)<a id='python3-attrs-host'></a>**<br>
+  * **[python3-attrs 25.4.0](python3-attrs-host.md)<a id='python3-attrs-host'></a>**<br>
 
-  * **[python3 3.13.8](python3-host.md)<a id='python3-host'></a>**<br>
+  * **[python3 3.14.0](python3-host.md)<a id='python3-host'></a>**<br>
 
-  * **[python3-jsonschema 4.24.0](python3-jsonschema-host.md)<a id='python3-jsonschema-host'></a>**<br>
+  * **[python3-jsonschema 4.25.1](python3-jsonschema-host.md)<a id='python3-jsonschema-host'></a>**<br>
 
   * **[python3-packaging 25.0](python3-packaging-host.md)<a id='python3-packaging-host'></a>**<br>
 
-  * **[python3-pip 25.1.1](python3-pip-host.md)<a id='python3-pip-host'></a>**<br>
+  * **[python3-pip 25.3](python3-pip-host.md)<a id='python3-pip-host'></a>**<br>
 
-  * **[python3-referencing 0.36.2](python3-referencing-host.md)<a id='python3-referencing-host'></a>**<br>
+  * **[python3-referencing 0.37.0](python3-referencing-host.md)<a id='python3-referencing-host'></a>**<br>
 
   * **[python3-setuptools 80.9.0](python3-setuptools-host.md)<a id='python3-setuptools-host'></a>**<br>
 
@@ -146,11 +148,11 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[tichksum 1.0](tichksum-host.md)<a id='tichksum-host'></a>**<br>
 
-  * **[tools 2025-10-21](tools-host.md)<a id='tools-host'></a>**<br>
+  * **[tools 2025-11-05](tools-host.md)<a id='tools-host'></a>**<br>
 
 ### U
 
-  * **[uboot 2025.04](uboot-host.md)<a id='uboot-host'></a>**<br>
+  * **[uboot 2025.10](uboot-host.md)<a id='uboot-host'></a>**<br>
 
   * **[uimg 871930d](uimg-host.md)<a id='uimg-host'></a>**<br>
 

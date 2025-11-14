@@ -437,7 +437,7 @@ config FREETZ_DL_SOURCE
 	default "FRITZ.Box_4040-07.14.image"                                                          if FREETZ_TYPE_4040                              && FREETZ_TYPE_FIRMWARE_07_1X
 	default "FRITZ.Box_4040-07.29.image"                                                          if FREETZ_TYPE_4040                              && FREETZ_TYPE_FIRMWARE_07_2X
 	default "FRITZ.Box_4040-07.59.image"                                                          if FREETZ_TYPE_4040                              && FREETZ_TYPE_FIRMWARE_07_5X
-	default "FRITZ.Box_4040-08.02.image"                                                          if FREETZ_TYPE_4040                              && FREETZ_TYPE_FIRMWARE_08_0X
+	default "FRITZ.Box_4040-08.03.image"                                                          if FREETZ_TYPE_4040                              && FREETZ_TYPE_FIRMWARE_08_0X
 	#
 	default "FRITZ.Box_4050-07.58.image"                                                          if FREETZ_TYPE_4050                              && FREETZ_TYPE_FIRMWARE_07_5X
 	default "FRITZ.Box_4050-08.02.image"                                                          if FREETZ_TYPE_4050                              && FREETZ_TYPE_FIRMWARE_08_0X
@@ -939,12 +939,7 @@ config FREETZ_DL_SOURCE2_HASH
 	default "e31d455299d2c7bda0b262d28fd02bb5f4b96f2d127b5ddb5a749d422fe330a9"                    if FREETZ_TYPE_7150_7170
 	default "49807f1aa040a88402d5db48f7d745940eebea3006e7ba1dd7e22bdc488c346b"                    if FREETZ_TYPE_W501V
 
-menu "Custom download URL of avm firmware files"
-	visible if FREETZ_REAL_DEVELOPER_ONLY
-
-	config FREETZ_REAL_DEVELOPER_ONLY__DLIMG
-		string "Custom download URL of avm firmware files"
-		default ""
-
-endmenu
+config FREETZ_REAL_DEVELOPER_ONLY__DLIMG
+	string "Custom download URL of avm firmware files" if FREETZ_REAL_DEVELOPER_ONLY
+	default ""
 

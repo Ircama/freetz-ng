@@ -103,6 +103,16 @@ define GET_MAJOR_VERSION
 $(call GET_STRING_COMPONENTS,$(strip $(1)),.,$(if $(strip $(2)),$(strip $(2)),2))
 endef
 
+#
+# $1 - some string representing a version of some package
+#
+# returns:
+#   minor version of the package, i.e. y for x.y.z
+#
+define GET_MINOR_VERSION
+$(word 2,$(subst ., ,$(call GET_MAJOR_VERSION,$(strip $(1)),2)))
+endef
+
 
 # SUBST_MAP
 # Substitute according to map src:dst

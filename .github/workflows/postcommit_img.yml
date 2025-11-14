@@ -42,6 +42,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/dl-packs
@@ -94,7 +96,6 @@ jobs:
             echo -n "$fos "; \
           done | \
           sed 's/^/args="/;s/$/"/' >> $GITHUB_OUTPUT
-
       - name: vars
         run: |
           echo "################################################################"
@@ -102,7 +103,7 @@ jobs:
 
       - name: tools
         run: |
-          echo 'FREETZ_USER_LEVEL_EXPERT=y\nFREETZ_HOSTTOOLS_DOWNLOAD=y\nFREETZ_DL_SITE_USER="https://raw.githubusercontent.com/Freetz-NG/dl-mirror/master"' > .config
+          echo 'FREETZ_USER_LEVEL_EXPERT=y\nFREETZ_HOSTTOOLS_DOWNLOAD=y\nFREETZ_DL_SITE_USER="https://github.com/Freetz-NG/dl-mirror/releases/download/dl"' > .config
           make tools
 
       - name: generate
@@ -113,7 +114,7 @@ jobs:
           export LANG=en_US.utf8
           mkdir -p ~/.freetz-props/
           mkdir -p ~/.freetz-dl/fw/
-          wget -q "${{ secrets.ACTIONS_CUSTOM }}img" -O - 2>/dev/null > props.sh
+          wget -q "${{ secrets.ACTIONS_PROPGEN }}" -O - 2>/dev/null > props.sh
           [ -s props.sh ] || cp config/.img/generate.sh props.sh
           FREETZ_ENABLEG=true bash props.sh ${{ steps.parse.outputs.args }}
           rm -f props.sh ".wget-hsts" || true

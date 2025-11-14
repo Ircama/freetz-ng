@@ -1,4 +1,4 @@
-# python3-referencing 0.36.2
+# python3-referencing 0.37.0
   - Homepage: [https://pypi.org/project/referencing/](https://pypi.org/project/referencing/)
   - Manpage: [https://referencing.readthedocs.io](https://referencing.readthedocs.io)
   - Changelog: [https://github.com/python-jsonschema/referencing/releases](https://github.com/python-jsonschema/referencing/releases)
