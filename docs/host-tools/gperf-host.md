@@ -1,4 +1,4 @@
-# gperf 3.2
+# gperf 3.3
   - Homepage: [https://www.gnu.org/software/gperf/](https://www.gnu.org/software/gperf/)
   - Manpage: [https://linux.die.net/man/1/gperf](https://linux.die.net/man/1/gperf)
   - Changelog: [http://savannah.gnu.org/projects/gperf/](http://savannah.gnu.org/projects/gperf/)

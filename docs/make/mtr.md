@@ -1,4 +1,4 @@
-# MTR 0.80/0.95 (binary only)
+# MTR 0.80/0.96 (binary only)
   - Homepage: [https://www.bitwizard.nl/mtr/](https://www.bitwizard.nl/mtr/)
   - Manpage: [https://linux.die.net/man/8/mtr](https://linux.die.net/man/8/mtr)
   - Changelog: [https://github.com/traviscross/mtr/blob/master/NEWS](https://github.com/traviscross/mtr/blob/master/NEWS)

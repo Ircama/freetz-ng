@@ -1,4 +1,4 @@
-# sslh 2.2.4
+# sslh 2.2.4/2.3.0
   - Homepage: [https://www.rutschle.net/tech/sslh/README.html](https://www.rutschle.net/tech/sslh/README.html)
   - Manpage: [https://www.rutschle.net/tech/sslh/doc/config](https://www.rutschle.net/tech/sslh/doc/config)
   - Changelog: [https://github.com/yrutschle/sslh/tags](https://github.com/yrutschle/sslh/tags)

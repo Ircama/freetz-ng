@@ -1,7 +1,7 @@
 $(call TOOLS_INIT, 20131005)
 $(PKG)_SOURCE:=prelink_0.0.$($(PKG)_VERSION).orig.tar.bz2
 $(PKG)_HASH:=1a5bf03381e83fbfbbe98ecca7b58ce2e726f662b560c3ff05aebcdaae397130
-$(PKG)_SITE:=https://people.redhat.com/jakub/prelink,https://ftp.debian.org/debian/pool/main/p/prelink
+$(PKG)_SITE:=https://people.redhat.com/jakub/prelink,@DEBIAN/prelink
 ### WEBSITE:=https://people.redhat.com/jakub/prelink/
 ### MANPAGE:=https://people.redhat.com/jakub/prelink/prelink.pdf
 ### CHANGES:=https://packages.debian.org/buster/execstack

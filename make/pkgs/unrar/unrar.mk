@@ -1,12 +1,13 @@
-$(call PKG_INIT_BIN, $(if $(FREETZ_PACKAGE_UNRAR_VERSION_ABANDON),6.1.7,7.1.10))
+$(call PKG_INIT_BIN, $(if $(FREETZ_PACKAGE_UNRAR_VERSION_ABANDON),6.1.7,7.2.1))
 $(PKG)_SOURCE:=unrarsrc-$($(PKG)_VERSION).tar.gz
 $(PKG)_HASH_ABANDON:=de75b6136958173fdfc530d38a0145b72342cf0d3842bf7bb120d336602d88ed
-$(PKG)_HASH_CURRENT:=72a9ccca146174f41876e8b21ab27e973f039c6d10b13aabcb320e7055b9bb98
+$(PKG)_HASH_CURRENT:=3fe3b4d710da45521625353dc2e023dad48c010f02a93302756e1061a8f3ae8e
 $(PKG)_HASH:=$($(PKG)_HASH_$(if $(FREETZ_PACKAGE_UNRAR_VERSION_ABANDON),ABANDON,CURRENT))
 $(PKG)_SITE:=https://www.rarlab.com/rar
 ### WEBSITE:=https://www.rarlab.com/rar_add.htm
 ### MANPAGE:=https://linux.die.net/man/1/unrar
 ### CHANGES:=https://www.rarlab.com/rarnew.htm
+### CVSREPO:=https://www.rarlab.com/rar_add.htm
 ### SUPPORT:=fda77
 
 $(PKG)_BINARY:=$($(PKG)_DIR)/unrar
