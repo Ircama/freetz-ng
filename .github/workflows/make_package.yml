@@ -729,6 +729,21 @@ jobs:
             echo "Using configuration as-is from downloaded .config or myconfig"
             echo ""
 
+            # Execute custom pre-build commands if provided via custom_config
+            CUSTOM_PREBUILD="${{ github.event.inputs.custom_config }}"
+            if [ -n "$CUSTOM_PREBUILD" ]; then
+              echo "################################################################"
+              echo "⚙️  Executing custom pre-build commands..."
+              echo "################################################################"
+              echo "Commands: $CUSTOM_PREBUILD"
+              echo ""
+              bash -c "$CUSTOM_PREBUILD"
+              echo ""
+              echo "✅ Custom pre-build commands completed"
+              echo "################################################################"
+              echo ""
+            fi
+
             sed -i '/FREETZ_VERBOSITY_FWMOD_/d'                                          .config
             sed -i '/FREETZ_VERBOSITY_LEVEL_/d'                                          .config
             sed -i '/FREETZ_VERBOSITY_LEVEL=/d'                                          .config
