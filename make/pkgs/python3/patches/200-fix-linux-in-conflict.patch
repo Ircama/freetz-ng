@@ -1,6 +1,6 @@
 --- Modules/socketmodule.h
 +++ Modules/socketmodule.h
-@@ -1,6 +1,16 @@
+@@ -1,6 +1,18 @@
  /* Socket module header file */
  
  /* Includes needed for the sockaddr_* symbols below */
@@ -9,9 +9,12 @@
 + * uClibc's netinet/in.h and linux/in.h both define the same structures
 + * causing redefinition errors on kernel <= 4.9.325 (e.g., Fritz!OS 7.2x).
 + */
-+#if defined(__UCLIBC__) && defined(LINUX_VERSION_CODE) && LINUX_VERSION_CODE <= KERNEL_VERSION(4,9,325)
-+#  define _LINUX_IN_H
-+#  define _LINUX_IN6_H
++#ifdef __UCLIBC__
++#  include <linux/version.h>
++#  if defined(LINUX_VERSION_CODE) && LINUX_VERSION_CODE <= KERNEL_VERSION(4,9,325)
++#    define _LINUX_IN_H
++#    define _LINUX_IN6_H
++#  endif
 +#endif
 +
  #ifndef MS_WINDOWS
