@@ -6,6 +6,7 @@ config FREETZ_DOWNLOAD_TOOLCHAIN
 	depends on FREETZ_SHOW_DEVELOPER || FREETZ_REAL_DEVELOPER_ONLY__DLTCS
 	depends on !FREETZ_ANCIENT_SYSTEM
 	default y if FREETZ_REAL_DEVELOPER_ONLY__DLTCS
+	select FREETZ_TOOLCHAIN_CCACHE
 	default n
 
 config FREETZ_BUILD_TOOLCHAIN
@@ -14,7 +15,7 @@ config FREETZ_BUILD_TOOLCHAIN
 	default y
 
 config FREETZ_TOOLCHAIN_CCACHE
-	bool "Build ccache for kernel and target"
+	bool "Use ccache for kernel and target"
 	depends on !FREETZ_ANCIENT_SYSTEM
 	default y
 	help

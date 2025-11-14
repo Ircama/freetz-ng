@@ -19,6 +19,7 @@ Es gibt folgende Möglichkeiten die benötigten Pakete (prerequisites) zu instal
 ### Problematische Distributionen
   - Gentoo
   - NixOS
+  - WSL/WSL2
 
 ### Alle anderen Distributionen
 ... sind ungetestet und können funktionieren oder auch nicht. Dies hängt stark von den Fähigkeiten des Bedieners ab.
@@ -30,7 +31,7 @@ Wenn man vergessen hat welche Linux Version installiert ist kann dies so prüfen
 ```
 $ hostnamectl status
   Operating System: Fedora 33 (Thirty Three)
-	    Kernel: Linux 5.10.15-200.fc33.x86_64
+    Kernel: Linux 5.10.15-200.fc33.x86_64
 ```
 
   - Ubuntu/Debian Version:
@@ -52,8 +53,7 @@ aarch64
 sudo dnf -y update && sudo systemctl daemon-reload
 ```
 
-  - Fedora 42 64-Bit:
-    NOT recommended currently !!!
+  - Fedora 42/43 64-Bit:
 ```
 sudo dnf -y install %%Fedora42%%
 ```

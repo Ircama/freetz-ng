@@ -1,11 +1,14 @@
-name: make_bump
+name: make_precompiled
 
 on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'make/pkgs/**'
+      - 'make/libs/**'
   push:
     branches: [ master ]
     paths:
-      - '.github/workflows/make_bump.yml'
-      - 'docs/CHANGELOG.md'
       - 'make/pkgs/**'
       - 'make/libs/**'
   workflow_dispatch:
@@ -16,12 +19,14 @@ on:
         default: "dropbear"
 
 #concurrency:
-# group: ${{ github.workflow }}
-# cancel-in-progress: false
+# group: ${{ (github.event_name == 'pull_request') && github.workflow && '-' && github.event.pull_request.number || github.run_id }}
+# cancel-in-progress: ${{ (github.event_name == 'pull_request') && true || false }}
 
 jobs:
 
   matrizifizieren:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/generate
@@ -44,8 +49,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref_name }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           path: ${{ github.workspace }}
           fetch-depth: 0
           clean: false
@@ -55,14 +60,21 @@ jobs:
         id: parse
         run: |
           pkg="$(echo "${{ github.event.inputs.bump }}" | sed 's/ //g')"
-          [ -z "$pkg" ] && pkg="$(git log --format=%B -n1 ${{ github.sha }} | sed -nr 's/^(add|bump|fix|test) ([^ ,:]*).*/\2/pI')"
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          [ -z "$BASE_SHA" ] && BASE_SHA="$(git rev-parse HEAD~1)"
+          [ -z "$HEAD_SHA" ] && HEAD_SHA="$(git rev-parse HEAD)"
+          git cat-file -e "$BASE_SHA"^{commit} 2>/dev/null || BASE_SHA="$(git rev-parse HEAD~1)"
+          git cat-file -e "$HEAD_SHA"^{commit} 2>/dev/null || HEAD_SHA="$(git rev-parse HEAD)"
+          [ -z "$pkg" ] && pkg="$(git log --format=%B "$BASE_SHA..$HEAD_SHA" | sed -nr 's/^(add|bump|fix|test) ([^ ,:]*).*/\2/pI' | head -n1)"
+          [ -z "$pkg" ] && pkg="$(git diff --name-only "$BASE_SHA..$HEAD_SHA" | sed -nr 's#^make/(pkgs|libs)/([^/]+)/.*#\2#p' | head -n1)"
           [ -z "$pkg" ] && echo "No add, bump, fix or test." && echo 'matrix=["skip"]' >> $GITHUB_OUTPUT && exit
           sed -rn 's/.* && dltc "(.*)".*/\1/p' tools/dl-toolchains_make | \
           while read -r line; do \
-          name="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*).*/\1 - \2/g')"; \
-          tcs="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*)(.*)/_\1 _FIRMWARE_\2\3/g')"; \
-          echo -n "$matrix{pkg:\"$pkg\",name:\"$name\",tcs:\"$tcs\"},"; done | \
-          sed 's/^/matrix=\[/;s/$/\]/' >> $GITHUB_OUTPUT
+            name="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*).*/\1 - \2/g')"; \
+            tcs="$(echo "$line" | sed -r 's/^FREETZ_TYPE_([^ ]*) *FREETZ_TYPE_FIRMWARE_([^ ]*)(.*)/_\1 _FIRMWARE_\2\3/g')"; \
+            echo -n "$matrix{pkg:\"$pkg\",name:\"$name\",tcs:\"$tcs\"},"; \
+          done | sed 's/^/matrix=\[/;s/$/\]/' >> $GITHUB_OUTPUT
 
       - name: vars
         run: |
@@ -70,6 +82,8 @@ jobs:
           echo "matrix=${{ steps.parse.outputs.matrix }}" | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/firmware
@@ -85,8 +99,6 @@ jobs:
     runs-on: ubuntu-latest
 #   if: github.repository == 'freetz-ng/freetz-ng'
 
-    env:
-      CACHE_KEY: "make_freetz"
     steps:
 
 #     - name: update
@@ -122,8 +134,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref_name }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           path: ${{ github.workspace }}
           fetch-depth: 0
           clean: false
@@ -135,8 +147,10 @@ jobs:
         with:
           path: |
             dl/*
-            !dl/fw/*
-          key: ${{ env.CACHE_KEY }}
+            !dl/linux-*.tar.xz
+            !dl/*-freetz-*-shared-glibc.tar.lzma
+          key: make_cache
+          restore-keys: make_cache
 
       - name: config
         run: |
@@ -154,6 +168,7 @@ jobs:
           echo 'FREETZ_VERBOSITY_LEVEL=0'                                                             >> .config
           echo 'FREETZ_SERIES_ALL=y'                                                                  >> .config
           echo 'FREETZ_USER_LEVEL_DEVELOPER=y'                                                        >> .config
+          echo 'FREETZ_DL_IMAGE_AT_LAST=y'                                                            >> .config
           echo '# FREETZ_MODULES_TEST is not set'                                                     >> .config
           echo 'FREETZ_DL_SITE_USER="https://raw.githubusercontent.com/Freetz-NG/dl-mirror/master"'   >> .config
           echo 'FREETZ_REAL_DEVELOPER_ONLY__DLIMG="${{ secrets.ACTIONS_IMAGE }}"'                     >> .config

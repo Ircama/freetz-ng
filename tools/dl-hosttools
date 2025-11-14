@@ -11,6 +11,7 @@ local i
 for i in "$@"; do echo "$i=y"; done
 cat << EOF
 FREETZ_USER_LEVEL_EXPERT=y
+FREETZ_DL_IMAGE_AT_LAST=y
 # FREETZ_HOSTTOOLS_DOWNLOAD is not set
 FREETZ_VERBOSITY_LEVEL_0=y
 FREETZ_DL_SITE_USER="https://github.com/Freetz-NG/dl-mirror/raw/master"

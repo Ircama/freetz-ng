@@ -51,7 +51,7 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 define $(PKG)_FIXHARDCODED
 	@for binfile in $(CMAKE_HOST_BINARIES); do \
 	for libfile in libcrypto libssl; do \
-	$(PATCHELF) --replace-needed $(1)$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(CMAKE_HOST_DESTDIR)/bin/$${binfile} ;\
+	$(PATCHELF_HOST) --replace-needed $(1)$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(CMAKE_HOST_DESTDIR)/bin/$${binfile} ;\
 	done ;\
 	done ;
 endef

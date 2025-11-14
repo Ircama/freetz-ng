@@ -13,12 +13,12 @@ on:
       - 'make/libs/*/Config.in'
       - 'make/libs/*/*.mk'
       - 'config/ui/patches.in'
+      - 'config/ui/firmware.in'
       - 'docs/*/*.md'
       - 'docs/wiki/*/*.md'
       - 'docs/screenshots/*.png'
       - 'docs/screenshots/*.jpg'
       - 'docs/screenshots/*.gif'
-      - 'docs/PREREQUISITES/*.md'
       - 'tools/.prerequisites/*'
   workflow_dispatch:
 
@@ -28,6 +28,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/generate

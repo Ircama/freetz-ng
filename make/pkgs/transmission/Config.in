@@ -53,14 +53,16 @@ if FREETZ_PACKAGE_TRANSMISSION
 			select FREETZ_LIB_libcrypto_WITH_RC4
 
 		config FREETZ_PACKAGE_TRANSMISSION_WITH_MBEDTLS
-			bool "mbed TLS"
+			bool "MbedTLS"
 			depends on FREETZ_LIB_libcurl_WITH_MBEDTLS
 			select FREETZ_LIB_libmbedcrypto      if !FREETZ_PACKAGE_TRANSMISSION_STATIC
 
 	endchoice
 
-	comment "WARNING: Version 3 does not work with OpenSSL newer than 1.1.1"
+	comment "WARNING: Transmission v3 does not work with OpenSSL newer than 1.1.1"
 		depends on FREETZ_PACKAGE_TRANSMISSION_VERSION_ABANDON && FREETZ_PACKAGE_TRANSMISSION_WITH_OPENSSL && !FREETZ_OPENSSL_VERSION_11_MAX
+	comment "WARNING: Transmission v4 does not work with MbedTLS older than 3.2.0"
+		depends on FREETZ_PACKAGE_TRANSMISSION_VERSION_CURRENT && FREETZ_PACKAGE_TRANSMISSION_WITH_MBEDTLS && !FREETZ_MBEDTLS_VERSION_306_MIN
 
 	config FREETZ_PACKAGE_TRANSMISSION_CLIENT
 		bool "Transmission client"
