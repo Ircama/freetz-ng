@@ -122,4 +122,5 @@ echo -e '\n### BPjM'         ; cat bpjm     | while read -s x; do echo "  - CRC 
 
 #tmp
 rm -f fos-xxx fos-rel fos-dwn fos-lab fos-inh  dect-rel dect-lab dect-inh  bpjm bpjm.out
+exit 0
 

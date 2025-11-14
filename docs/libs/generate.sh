@@ -52,4 +52,5 @@ for dir in $(find "$INPWD" -maxdepth 1 -mindepth 1 -type d | sort); do
 	echo "$help" | tee -a "$MDPWD/$lib.md" | sed 's/^/    /'
 
 done >> "$MDPWD/README.md"
+exit 0
 

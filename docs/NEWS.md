@@ -254,7 +254,7 @@
 
   * __[2023-01-14](#2023-01-14)__<a id='2023-01-14'></a><br>
     Mit `tools/prerequisites` können alle nötigen Packages für das laufende Linux angezeigt und installiert werden.<br>
-    Es werden die Packages verwendet die auch unter [PREREQUISITES](https://freetz-ng.github.io/freetz-ng/PREREQUISITES) zu sehen sind<br>
+    Es werden die Packages verwendet die auch unter [PREREQUISITES](https://freetz-ng.github.io/freetz-ng/prerequisites) zu sehen sind<br>
     Siehe [182abe40](https://github.com/Freetz-NG/freetz-ng/commit/182abe4084a7e4ca511596702740726f147f20e1)<br>
 
   * __[2023-01-06](#2023-01-06)__<a id='2023-01-06'></a><br>

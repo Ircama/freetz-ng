@@ -84,7 +84,7 @@ choice
 		help
 			Select your box type here.
 
-	comment "T-Com hardware"
+	comment "T-Com"
 		depends on FREETZ_SERIES_0 || FREETZ_SERIES_1
 
 	config FREETZ_TYPE_300IP

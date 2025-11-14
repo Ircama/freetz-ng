@@ -23,7 +23,7 @@ ifneq ($($(PKG)_BUILD_PREREQ),)
 		echo -e \
 			"ERROR: The following command(s) required for building '$(pkg)' are missing on your system:" \
 			`echo $$$$MISSING_PREREQ | sed -e 's| |, |g'`; \
-		echo "See https://freetz-ng.github.io/freetz-ng/PREREQUISITES for installation hints"; \
+		echo "See https://freetz-ng.github.io/freetz-ng/prerequisites for installation hints"; \
 		if [ -n "$(strip $($(PKG)_BUILD_PREREQ_HINT))" ]; then \
 			echo "$($(PKG)_BUILD_PREREQ_HINT)"; \
 		fi; \

@@ -99,7 +99,8 @@ CHECK_PREREQ_TOOL:=$(TOOLS_DIR)/prerequisites
 GENERATE_IN_TOOL:=$(TOOLS_DIR)/genin
 TAR:=$(TOOLS_DIR)/tar-gnu
 SED:=sed
-PATCHELF:=patchelf
+PATCHELF_HOST:=patchelf
+PATCHELF_TARGET:=patchelf-target
 PYTHON3=python3
 MESON=meson
 CMAKE=cmake
@@ -191,7 +192,7 @@ endif
 ifneq ($(findstring menuconfig,$(MAKECMDGOALS)),menuconfig)
 ifneq ($(NO_PREREQ_CHECK),y)
 ifneq (OK,$(shell $(CHECK_PREREQ_TOOL) check >&2 && echo OK))
-$(error Some prerequisites are missing! Install the missing packages with 'tools/prerequisites install' or check https://freetz-ng.github.io/freetz-ng/PREREQUISITES for hints. See '.prerequisites' for why)
+$(error Some prerequisites are missing! Install the missing packages with 'tools/prerequisites install' or check https://freetz-ng.github.io/freetz-ng/prerequisites for hints. See '.prerequisites' for why)
 endif
 endif
 endif
@@ -363,7 +364,11 @@ distclean: $(TOOLS_DISTCLEAN) common-distclean
 
 else
 
-step: image world tools firmware
+ifneq ($(strip $(FREETZ_DL_IMAGE_AT_LAST)),y)
+step: image  world tools firmware
+else
+step:        world tools firmware  image
+endif
 
 -include .config.cmd
 
@@ -490,7 +495,7 @@ $(filter $(TOOLS_BUILD_LOCAL),$(TOOLS)): % : %-precompiled
 
 $(patsubst %,%-autofix,$(TOOLS)): %-autofix : %-dirclean
 	$(MAKE) AUTO_FIX_PATCHES=y $*-unpacked
-$(patsubst %,%-recompile,$(TOOLS)): %-recompile : %-dirclean %-precompiled
+$(patsubst %,%-recompile,$(TOOLS)): %-recompile : %-distclean %-precompiled
 
 $(patsubst %,%-fixhardcoded,$(TOOLS)): %-fixhardcoded : 
 

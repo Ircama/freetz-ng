@@ -10,3 +10,9 @@ if [ "$EXTERNAL_FREETZ_PACKAGE_BINUTILS_TOOLS" == "y" ] ; then
 	[ "$FREETZ_PACKAGE_BINUTILS_TOOLS_STRINGS" == "y" ]    && EXTERNAL_FILES+=" /usr/bin/strings"
 	[ "$FREETZ_PACKAGE_BINUTILS_TOOLS_STRIP" == "y" ]      && EXTERNAL_FILES+=" /usr/bin/strip"
 fi
+[ "$EXTERNAL_FREETZ_LIB_libbfd"                       == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libbfd-2.45.so"
+[ "$EXTERNAL_FREETZ_LIB_libctf"                       == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libctf.so.0.0.0"
+[ "$EXTERNAL_FREETZ_LIB_libctf_nobfd"                 == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libctf-nobfd.so.0.0.0"
+[ "$EXTERNAL_FREETZ_LIB_libopcodes"                   == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libopcodes-2.45.so"
+[ "$EXTERNAL_FREETZ_LIB_libsframe"                    == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libsframe.so.2.0.0"
+

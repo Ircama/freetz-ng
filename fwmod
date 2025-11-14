@@ -192,6 +192,9 @@ MD5SUM="${TOOLS_DIR}/${MD5SUM_TOOL}"
 BUSYBOX="${TOOLS_DIR}/${BUSYBOX_TOOL}"
 BLKID="${TOOLS_DIR}/blkid"
 
+# Tools in $PATH
+PATCHELF_TARGET="patchelf-target"
+
 # Freetz directores relative to base dir
 PACKAGES_DIR_ROOT="${BASE_DIR}/packages"
 PATCHES_DIR="${BASE_DIR}/patches"

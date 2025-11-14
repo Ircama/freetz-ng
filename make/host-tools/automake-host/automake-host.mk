@@ -41,6 +41,7 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 
 $($(PKG)_LINKS_TARGET_DIR) : $($(PKG)_DESTDIR)/bin/% : $($(PKG)_DIR)/.installed
 	ln -sf "$(notdir $@)-$(call GET_MAJOR_VERSION,$(AUTOMAKE_HOST_VERSION))" "$@"
+	@touch $@
 
 $(pkg)-fixhardcoded:
 	-@$(SED) -i "s!$(TOOLS_HARDCODED_DIR)!$(AUTOMAKE_HOST_DESTDIR)!g" \

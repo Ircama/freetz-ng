@@ -20,35 +20,41 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   build:
+    env:
+      MKDOCS_REQUIREMENTS_FILE: .github/mkdocs/requirements.txt
+      MKDOCS_CONFIG_FILE: .github/mkdocs/mkdocs.yml
+      MKDOCS_INPUT_PATH: .github/mkdocs/site
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Install dependencies
-        run: pip install -r .github/mkdocs/requirements.txt
+        run: pip install -r "${{ env.MKDOCS_REQUIREMENTS_FILE }}"
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with MkDocs
-        run: mkdocs build
+        run: mkdocs build --config-file "${{ env.MKDOCS_CONFIG_FILE }}"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: 'site'
+          path: "${{ env.MKDOCS_INPUT_PATH }}"
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+

@@ -17,6 +17,8 @@ concurrency:
 jobs:
 
   matrizifizieren:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/generate
@@ -57,6 +59,8 @@ jobs:
           echo "matrix=${{ steps.parse.outputs.matrix }}" | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/dl-packs
@@ -108,13 +112,16 @@ jobs:
           clean: false
           persist-credentials: true
 
-      - name: cache
-        uses: actions/cache@v4
+      - name: cache_load
+        uses: actions/cache/restore@v4
+        if: always()
         with:
           path: |
             dl/*
+            !dl/linux-*.tar.xz
             !dl/*-freetz-*-shared-glibc.tar.lzma
-          key: ${{ github.workflow }}
+          key: make_cache
+          restore-keys: make_cache
 
       - name: version
         id: version

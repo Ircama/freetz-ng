@@ -72,6 +72,12 @@ endif
 		echo "#fixing ncurses detection bug" $(SILENT); \
 		$(SED) 's/^main()/int &/' -i $(KERNEL_SOURCE_DIR)/scripts/kconfig/lxdialog/check-lxdialog.sh; \
 	fi;
+	@echo "#fixing hardcoded depmod path" $(SILENT); \
+	find $(KERNEL_SOURCE_DIR)/ -name Makefile | while read -r file; do \
+		grep -q '/sbin/depmod' "$${file}" || continue; \
+		echo "# - $${file}" $(SILENT); \
+		$(SED) 's,/sbin/depmod,depmod,g' -i "$${file}"; \
+	done;
 	@echo "#applying patches" $(SILENT)
 	@echo "##kernel version specific patches dir: $(KERNEL_PATCHES_DIR)" $(SILENT)
 	@echo "##firmware version specific patches dir: $(KERNEL_PATCHES_DIR)/$(AVM_SOURCE_ID)" $(SILENT)
@@ -231,7 +237,7 @@ endif
 
 kernel-autofix: kernel-dirclean
 	$(MAKE) AUTO_FIX_PATCHES=y $(KERNEL_DIR)/.configured
-kernel-recompile: kernel-dirclean kernel-precompiled
+kernel-recompile: kernel-distclean kernel-precompiled
 .PHONY: kernel-autofix kernel-recompile
 
 $(KERNEL_SOURCE_DIR)$(KERNEL_IMAGE_BUILD_SUBDIR)/$(KERNEL_IMAGE): $(KERNEL_DIR)/.prepared $(KERNEL_BUILD_DEPENDENCIES) | $(KERNEL_DEPENDS_ON)
