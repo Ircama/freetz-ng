@@ -729,21 +729,6 @@ jobs:
             echo "Using configuration as-is from downloaded .config or myconfig"
             echo ""
 
-            # Execute custom pre-build commands if provided via custom_config
-            CUSTOM_PREBUILD="${{ github.event.inputs.custom_config }}"
-            if [ -n "$CUSTOM_PREBUILD" ]; then
-              echo "################################################################"
-              echo "⚙️  Executing custom pre-build commands..."
-              echo "################################################################"
-              echo "Commands: $CUSTOM_PREBUILD"
-              echo ""
-              bash -c "$CUSTOM_PREBUILD"
-              echo ""
-              echo "✅ Custom pre-build commands completed"
-              echo "################################################################"
-              echo ""
-            fi
-
             sed -i '/FREETZ_VERBOSITY_FWMOD_/d'                                          .config
             sed -i '/FREETZ_VERBOSITY_LEVEL_/d'                                          .config
             sed -i '/FREETZ_VERBOSITY_LEVEL=/d'                                          .config
@@ -755,6 +740,28 @@ jobs:
             
             echo "Validating configuration..."
             make olddefconfig 2>&1 | grep -v "warning: override:" || true
+
+            # Execute custom pre-build commands if provided via custom_config
+            CUSTOM_PREBUILD="${{ github.event.inputs.custom_config }}"
+            if [ -n "$CUSTOM_PREBUILD" ]; then
+              echo "################################################################"
+              echo "⚙️  Executing custom pre-build commands..."
+              echo "################################################################"
+              echo "Commands: $CUSTOM_PREBUILD"
+              echo ""
+              if bash -c "$CUSTOM_PREBUILD"; then
+                echo ""
+                echo "✅ Custom pre-build commands completed successfully"
+                echo "################################################################"
+                echo ""
+              else
+                EXIT_CODE=$?
+                echo ""
+                echo "❌ Custom pre-build commands failed with exit code: $EXIT_CODE"
+                echo "################################################################"
+                exit $EXIT_CODE
+              fi
+            fi
             
             echo "⏳ Building firmware image with native configuration"
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
