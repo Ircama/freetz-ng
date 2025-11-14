@@ -17,10 +17,13 @@ concurrency:
 jobs:
 
   matrizifizieren:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/generate
       image: ghcr.io/freetz-ng/generate
+      options: --user 1001:1001
     runs-on: ubuntu-latest
 
     outputs:
@@ -29,12 +32,16 @@ jobs:
     steps:
 
       - name: clone
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          umask 0022
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git clone https://github-actions:$GITHUB_TOKEN@${GITHUB_SERVER_URL##*/}/$GITHUB_REPOSITORY.git $GITHUB_WORKSPACE --branch $GITHUB_REF_NAME
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          set-safe-directory: true
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref_name }}
+          path: ${{ github.workspace }}
+          fetch-depth: 0
+          clean: false
+          persist-credentials: true
 
       - name: parse
         id: parse
@@ -52,13 +59,16 @@ jobs:
           echo "matrix=${{ steps.parse.outputs.matrix }}" | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/dl-packs
       image: ghcr.io/freetz-ng/dl-packs
+      options: --user 1001:1001
     needs: matrizifizieren
     strategy:
-      max-parallel: 16
+      max-parallel: 17
       fail-fast: false
       matrix:
         fritz: ${{ fromJson(needs.matrizifizieren.outputs.matrix) }}
@@ -91,20 +101,27 @@ jobs:
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
       - name: clone
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          umask 0022
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git clone https://github-actions:$GITHUB_TOKEN@${GITHUB_SERVER_URL##*/}/$GITHUB_REPOSITORY.git $GITHUB_WORKSPACE --branch $GITHUB_REF_NAME
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          set-safe-directory: true
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref_name }}
+          path: ${{ github.workspace }}
+          fetch-depth: 0
+          clean: false
+          persist-credentials: true
 
-      - name: cache
-        uses: actions/cache@v4
+      - name: cache_load
+        uses: actions/cache/restore@v4
+        if: always()
         with:
           path: |
             dl/*
+            !dl/linux-*.tar.xz
             !dl/*-freetz-*-shared-glibc.tar.lzma
-          key: ${{ github.workflow }}
+          key: make_cache
+          restore-keys: make_cache
 
       - name: version
         id: version
@@ -117,16 +134,14 @@ jobs:
         env:
           ACTIONS_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          mkdir -p dl/ 2>/dev/null || true
-          useradd freetz -s $(which bash) -d $(pwd) -M && chown freetz . -R
-          su freetz -c "umask 0022 && tools/dl-toolchains_make $ACTIONS_VERSION ${{ steps.args.outputs.args }}"
+          tools/dl-toolchains_make $ACTIONS_VERSION ${{ steps.args.outputs.args }}
 
       - name: result
         env:
           ACTIONS_VERSION: ${{ steps.version.outputs.version }}
         run: |
           echo "################################################################"
-          su freetz -c "umask 0022 && tools/dl-toolchains_eval $ACTIONS_VERSION all | grep -v '"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"'"
+          tools/dl-toolchains_eval $ACTIONS_VERSION all | grep -v '"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"'
           ls -al dl/*-shared-glibc.tar.lzma && du -sh dl/*-shared-glibc.tar.lzma
 
 #     - name: cleanup

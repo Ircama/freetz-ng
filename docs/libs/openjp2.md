@@ -1,4 +1,4 @@
-# openjp2: libopenjp2 (libopenjp2.so) 2.5.0
+# openjp2: libopenjp2 (libopenjp2.so) 2.5.4
   - Homepage: [https://www.openjpeg.org/](https://www.openjpeg.org/)
   - Manpage: [https://github.com/uclouvain/openjpeg/wiki](https://github.com/uclouvain/openjpeg/wiki)
   - Changelog: [https://github.com/uclouvain/openjpeg/blob/master/NEWS.md](https://github.com/uclouvain/openjpeg/blob/master/NEWS.md)

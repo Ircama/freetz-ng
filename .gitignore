@@ -10,6 +10,10 @@
 
 /.config*
 /.fakeroot-cache
+/.freetz-ccache
+/.freetz-dl
+/.freetz-props
+/.freetz-signature
 /.fwmod_custom
 /.packages
 /.signature

@@ -1,7 +1,7 @@
-$(call TOOLS_INIT, 3.5.3)
+$(call TOOLS_INIT, 3.5.4)
 $(PKG)_LIB_VERSION:=3
 $(PKG)_SOURCE:=$(pkg_short)-$($(PKG)_VERSION).tar.gz
-$(PKG)_HASH:=c9489d2abcf943cdc8329a57092331c598a402938054dc3a22218aea8a8ec3bf
+$(PKG)_HASH:=967311f84955316969bdb1d8d4b983718ef42338639c621ec4c34fddef355e99
 $(PKG)_SITE:=https://www.openssl.org/source,https://github.com/openssl/openssl/releases/download/openssl-$($(PKG)_VERSION)
 ### WEBSITE:=https://www.openssl.org/source/
 ### MANPAGE:=https://www.openssl.org/docs/
@@ -40,9 +40,9 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 	@touch $@
 
 define $(PKG)_FIXHARDCODED
-	@$(PATCHELF) --replace-needed $(1)libcrypto.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/libcrypto.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/libssl.so.$(OPENSSL_HOST_LIB_VERSION)
+	@$(PATCHELF_HOST) --replace-needed $(1)libcrypto.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/libcrypto.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/libssl.so.$(OPENSSL_HOST_LIB_VERSION)
 	@for libfile in libcrypto libssl; do \
-	$(PATCHELF) --replace-needed $(1)$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_TARGET_BINARY) ;\
+	$(PATCHELF_HOST) --replace-needed $(1)$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_DESTDIR)/$${libfile}.so.$(OPENSSL_HOST_LIB_VERSION) $(OPENSSL_HOST_TARGET_BINARY) ;\
 	done ;
 endef
 

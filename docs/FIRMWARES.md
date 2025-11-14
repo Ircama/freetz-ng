@@ -27,7 +27,7 @@ Currently supported devices and firmwares
 
 ### Not supported devices
 
-  * Repeater N/G, 310, 600 v1+v2 & 1160: No LAN ports, so a recovery is not possible.
+  * Repeater N/G, 310 a+b, 600 v1+v2 & 1160: No LAN ports, so a recovery is not possible.
 
 ### Newer firmware versions
 
@@ -106,7 +106,7 @@ Currently supported devices and firmwares
     - 155.07.14 rev73181 {ALL} [MESH18 NL4]
     - 155.07.29 rev92647 {ALL} [PSQ19P2NL4]
     - 155.07.59 rev113615 {ALL} [MOVE21NL2]
-    - 155.08.02 rev118220 {ALL} [Smart24 P1 NL1]
+    - 155.08.03 rev125908 {ALL} [Smart24 P1 WU25]
   * __Fritz!Box 4050__
     - 287.07.58 rev115740 {ALL} [MOVE21NL1]
     - 287.08.02 rev118032 {ALL} [Smart24 P1 FCS]
@@ -235,12 +235,12 @@ Currently supported devices and firmwares
     - 262.07.29 rev92911 {ALL} [PSQ19P2NL4]
     - 262.07.59 rev114651 {ALL} [MOVE21NL2]
     - 262.08.03 rev119186 {ALL} [Smart24 P1 NL1]
-    - 262.08.10 rev122255 {ALL} [Smart24 P2] (Labor)
+    - 262.08.20 rev124916 {ALL} [Smart24 P2]
   * __Fritz!Box 6850 5G__
     - 258.07.30 rev94600 {ALL} [PSQ19P2NL4]
     - 258.07.59 rev114650 {ALL} [MOVE21NL2]
     - 258.08.03 rev119185 {ALL} [Smart24 P1 NL1]
-    - 258.08.10 rev122254 {ALL} [Smart24 P2] (Labor)
+    - 258.08.20 rev124915 {ALL} [Smart24 P2]
 
   * __Fritz!Box 6860 5G (UNTESTED)__
     - 277.08.03 rev119187 {ALL} [Smart24 P1 FCS]
@@ -406,7 +406,7 @@ Currently supported devices and firmwares
     - 113.07.01 rev61484 {INT}
     - 113.07.12 rev70401 {INT} [MESH18 NL2]
     - 113.07.29 rev92201 {ALL} [PSQ19P2NL4]
-    - 113.07.60 rev118285 {ALL} [MOVE21NL2]
+    - 113.07.61 rev124973 {ALL} [MOVE21NL2]
 
 ### Fritz!Box Fon WLAN (75xx)
 
@@ -490,7 +490,7 @@ Currently supported devices and firmwares
     - 154.07.29 rev92051 {ALL} [PSQ19P2NL4]
     - 154.07.59 rev113250 {ALL} [MOVE21NL2]
     - 154.08.03 rev119633 {ALL} [Smart24 P1 NL1]
-    - 154.08.20 rev122916 {ALL} [Smart24 P2]
+    - 154.08.21 rev124969 {ALL} [Smart24 P2]
   * __Fritz!Box Fon WLAN 7590 AX__
     - 259.07.31 rev94867 {ALL} [PSQ19P2NL4]
     - 259.07.57 rev107809 {ALL} [MOVE21NL1]
@@ -571,7 +571,7 @@ Currently supported devices and firmwares
     - 169.07.12 rev71975 {ALL} [MESH18 NL2]
     - 169.07.29 rev93265 {ALL} [PSQ19P2NL4]
     - 169.07.58 rev111615 {ALL} [MOVE21NL1]
-    - 169.08.10 rev120721 {ALL} [Smart24 P2] (Labor)
+    - 169.08.20 rev125176 {ALL} [Smart24 P2]
   * __FRITZ!Repeater 2700 (UNTESTED)__
     - 301.08.06 rev123890 {ALL} [Smart24 P1 FCS]
   * __Fritz!Repeater 3000__
@@ -579,6 +579,7 @@ Currently supported devices and firmwares
     - 174.07.14 rev73940 {ALL} [MESH18 NL4]
     - 174.07.29 rev93268 {ALL} [PSQ19P2NL4]
     - 174.07.58 rev111617 {ALL} [MOVE21NL1]
+    - 174.08.20 rev125177 {ALL} [Smart24 P2]
   * __Fritz!Repeater 3000 AX (UNTESTED)__
     - 270.07.42 rev108161 {ALL} [MOVE21]
     - 270.07.58 rev113013 {ALL} [MOVE21NL1]

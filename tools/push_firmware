@@ -78,18 +78,18 @@ quit
 
 	local count=0
 	while true; do
-		sleep 1
+		[ $count -gt 5 ] && echo "Timeout while receiving environment!!!!!!!!!!!!!!!!!!" && break
 		let count++
-#		grep -q "^ProductID" "$tmpenv" && break
-#		grep -q "^226 " "$tmpout" && break  # Transfer complete
-		grep -q "^221 " "$tmpout" && break  # Thank you for using the FTP service on ADAM2
-		[ $count -gt 5 ] && echo "Timeout!!!!!!!!!!!!!!!!!!" && break
+		sleep 1
+		grep -q "^ProductID" "$tmpenv" || continue  # exists for all devices and is mandatory!
+		grep -q "^226 " "$tmpout" && sleep 1 && break  # "Transfer complete"
+		grep -q "^221 " "$tmpout" && sleep 1 && break  # "Thank you for using the FTP service on ADAM2"
 	done
 	kill $log_pid >/dev/null 2>&1  # cant get (simply) correct ftp/ppid in pipe if using tee
 	kill $ftp_pid >/dev/null 2>&1  # this is needed as the FTP client freezes at the end of the file transfer
 	wait $ftp_pid
 
-	dos2unix -q "$tmpenv"
+	LANG=C dos2unix --force "$tmpenv" 2>&1 | grep -v ' converting file ' >&2  # error, warn and info of dos2unix go all to stderr °_°
 }
 
 function read_enval() {
@@ -839,12 +839,15 @@ if [ -n "$ISRAM$ISFIT" ]; then
 			Fritz_Box_HW272*)	MAPSTART=0x40000000 ;;  # 5590
 			Fritz_Box_HW275*)	MAPSTART=0x40000000 ;;  # 1240 AX
 #			Fritz_Box_HW277*)	MAPSTART=0x?0000000 ;;  # 6860 5G
+#			Fritz_Box_HW278*)	MAPSTART=0x?0000000 ;;  # 7530 AX B
 			Fritz_Box_HW279*)	MAPSTART=0x40000000 ;;  # 5690 Pro
 			Fritz_Box_HW285*)	MAPSTART=0x40000000 ;;  # 7690
 #			Fritz_Box_HW286*)	MAPSTART=0x?0000000 ;;  # 7682
 			Fritz_Box_HW287*)	MAPSTART=0x40000000 ;;  # 4050
+#			Fritz_Box_HW290*)	MAPSTART=0x?0000000 ;;  # 1700
 #			Fritz_Box_HW291*)	MAPSTART=0x?0000000 ;;  # 4690
 #			Fritz_Box_HW298*)	MAPSTART=0x?0000000 ;;  # 5690
+#			Fritz_Box_HW301*)	MAPSTART=0x?0000000 ;;  # 2700
 			*)
 				[ $ISRAM ] &&   MAPSTART=0x80000000
 				[ $ISFIT ] &&   MAPSTART=0x40000000

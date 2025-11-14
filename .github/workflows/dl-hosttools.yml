@@ -16,10 +16,13 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/dl-packs
       image: ghcr.io/freetz-ng/dl-packs
+      options: --user 1001:1001
     runs-on: ubuntu-latest
 
 
@@ -42,20 +45,26 @@ jobs:
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
       - name: clone
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          umask 0022
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git clone https://github-actions:$GITHUB_TOKEN@${GITHUB_SERVER_URL##*/}/$GITHUB_REPOSITORY.git $GITHUB_WORKSPACE --branch $GITHUB_REF_NAME
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          set-safe-directory: true
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref_name }}
+          path: ${{ github.workspace }}
+          fetch-depth: 0
+          clean: false
+          persist-credentials: true
 
       - name: cache
         uses: actions/cache@v4
+        if: always()
         with:
           path: |
             dl/*
             !dl/tools-*.tar.xz
-          key: ${{ github.workflow }}
+          key: ${{ github.workflow }}-${{ github.run_id }}
+          restore-keys: ${{ github.workflow }}
 
       - name: version
         id: version
@@ -68,9 +77,7 @@ jobs:
         env:
           ACTIONS_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          mkdir -p dl/ 2>/dev/null || true
-          useradd freetz -s $(which bash) -d $(pwd) -M && chown freetz . -R
-          su freetz -c "umask 0022 && tools/dl-hosttools $ACTIONS_VERSION && rm -f tools-$ACTIONS_VERSION.*"
+          tools/dl-hosttools $ACTIONS_VERSION
 
       - name: cleanup
         env:

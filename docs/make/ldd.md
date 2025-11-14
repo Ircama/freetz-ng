@@ -1,4 +1,7 @@
-# ldd 0.1 (binary only) - DEPRECATED
+# ldd 0.1/1.0.55 (binary only)
+  - Homepage: [https://uclibc-ng.org/](https://uclibc-ng.org/)
+  - Changelog: [https://cgit.uclibc-ng.org/cgi/cgit/uclibc-ng.git/log/utils/ldd.c](https://cgit.uclibc-ng.org/cgi/cgit/uclibc-ng.git/log/utils/ldd.c)
+  - Repository: [https://github.com/wbx-github/uclibc-ng](https://github.com/wbx-github/uclibc-ng)
   - Package: [master/make/pkgs/ldd/](https://github.com/Freetz-NG/freetz-ng/tree/master/make/pkgs/ldd/)
   - Maintainer: -
 
