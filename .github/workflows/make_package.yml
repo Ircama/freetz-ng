@@ -786,7 +786,7 @@ jobs:
             make olddefconfig 2>&1 | grep -v "warning: override: reassigning to symbol FREETZ_DL_OVERRIDE" || true
             
             # Extract device product name for firmware filename (use first match only)
-            FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)"
+            FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' | sed 's#.*/##' || true)"
 
             # Create fake firmware
             mkdir -p dl/fw
