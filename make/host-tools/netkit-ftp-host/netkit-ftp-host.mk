@@ -1,7 +1,7 @@
 $(call TOOLS_INIT, 0.17)
 $(PKG)_SOURCE:=netkit-ftp_$($(PKG)_VERSION).orig.tar.gz
 $(PKG)_HASH:=61c913299b81a4671ff089aac821329f7db9bc111aa812993dd585798b700349
-$(PKG)_SITE:=https://deb.debian.org/debian/pool/main/n/netkit-ftp
+$(PKG)_SITE:=@DEBIAN/netkit-ftp
 ### VERSION:=0.17-35
 ### WEBSITE:=https://packages.debian.org/source/bullseye/netkit-ftp
 ### MANPAGE:=https://manpages.debian.org/bullseye/ftp/netkit-ftp.1.en.html

@@ -42,4 +42,5 @@ for dir in $(find "$INPWD" -maxdepth 1 -mindepth 1 -type d | sort); do
 	done
 
 done >> "$MDPWD/README.md"
+exit 0
 

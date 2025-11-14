@@ -1,7 +1,7 @@
-$(call TOOLS_INIT, 0.36.2)
+$(call TOOLS_INIT, 0.37.0)
 $(PKG)_SOURCE_DOWNLOAD_NAME:=referencing-$($(PKG)_VERSION).tar.gz
 $(PKG)_SOURCE:=$(pkg_short)-$($(PKG)_VERSION).tar.gz
-$(PKG)_HASH:=df2e89862cd09deabbdba16944cc3f10feb6b3e6f18e902f7cc25609a34775aa
+$(PKG)_HASH:=44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8
 $(PKG)_SITE:=https://github.com/python-jsonschema/referencing/releases/download/v$($(PKG)_VERSION)
 ### WEBSITE:=https://pypi.org/project/referencing/
 ### MANPAGE:=https://referencing.readthedocs.io
