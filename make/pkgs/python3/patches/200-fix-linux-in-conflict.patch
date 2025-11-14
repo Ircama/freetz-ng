@@ -1,12 +1,18 @@
 --- Modules/socketmodule.h
 +++ Modules/socketmodule.h
-@@ -1,6 +1,10 @@
+@@ -1,6 +1,15 @@
  /* Socket module header file */
  
  /* Includes needed for the sockaddr_* symbols below */
 +
-+/* Prevent duplicate definitions from linux/in.h when using uClibc */
-+#define _LINUX_IN_H
++/* Prevent duplicate definitions from linux headers when using uClibc
++ * uClibc's netinet/in.h and linux/in.h both define the same structures
++ * causing redefinition errors. Only apply this workaround for uClibc.
++ */
++#ifdef __UCLIBC__
++#  define _LINUX_IN_H
++#  define _LINUX_IN6_H
++#endif
 +
  #ifndef MS_WINDOWS
  #ifdef __VMS
