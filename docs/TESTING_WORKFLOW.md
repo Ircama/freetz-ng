@@ -12,6 +12,30 @@ The workflow supports manual triggering via `workflow_dispatch`.
 
 ## Workflows Description
 
+### Come usare make
+
+Esempio per `bzip2`:
+
+`bzip2-clean`
+
+- Cosa fa: Rimuove solo i file compilati e gli artefatti di build, mantenendo il codice sorgente scaricato e spacchettato.
+- Uso: Quando vuoi ricompilare senza riscaricare tutto, mantenendo le modifiche locali ai sorgenti.
+
+`bzip2-dirclean`
+
+- Cosa fa: Rimuove completamente la directory di build del pacchetto `($(BZIP2_DIR))` e la directory target del pacchetto. `bzip2-dirclean` è un superset di `bzip2-clean` e quindi comprende tutto quello che fa `bzip2-clean`, più altro.
+- Uso: Quando vuoi ricominciare da zero la compilazione, forzando il riscaricamento e la ricompilazione completa.
+
+`bzip2-precompiled`
+
+- Cosa fa: Compila e installa il pacchetto nella directory target, rendendolo pronto per l'inclusione nel firmware.
+- Uso: Target principale per compilare il pacchetto. Include dipendenze automatiche basate sulla configurazione (es. libreria se `FREETZ_LIB_libbz2=y`).
+
+`bzip2-recompile`
+
+- Cosa fa: Combinazione di dirclean + precompiled - rimuove tutto e ricompila da zero.
+- Uso: Quando vuoi essere sicuro di una compilazione completamente pulita, utile dopo modifiche significative alla configurazione o al codice.
+
 ### make_package.yml
 
 **Purpose**: Comprehensive testing of packages and firmware builds across multiple toolchain configurations using a matrix build strategy. Supports both individual package testing and full firmware builds.
@@ -27,7 +51,7 @@ The workflow supports manual triggering via `workflow_dispatch`.
 | `download_hosttools` | boolean | No | `false` | Try to download precompiled host tools |
 | `cancel_previous` | boolean | No | `true` | Cancel previous runs of this workflow |
 | `use_queue` | boolean | No | `true` | Use workflow queue to prevent concurrent runs |
-| `custom_config` | string | No | `""` | Custom device/firmware/language (e.g., `'7530_W6_V1 08_2X EN'` or `'7590 08_0X'` or just `'7530'`, separators: space/tab/comma/semicolon/pipe/dash) |
+| `custom_config` | string | No | `""` | Custom device/firmware/language (e.g., `'7530_W6_V1 08_2X EN'` or `'7590 08_0X'` or just `'7530'`, separators: space/tab/comma/semicolon/pipe/dash). When used with `-firmware` target, can specify custom pre-build commands to execute before firmware build (e.g., `'make python3-host-dirclean && make python3-host-precompiled'`) |
 | `add_or_override` | choice | No | `"add"` | Add custom config to matrix or override with only custom configuration |
 | `create_artifacts` | boolean | No | `false` | Create and upload build artifacts |
 
@@ -35,14 +59,6 @@ The workflow supports manual triggering via `workflow_dispatch`.
 - Tests packages across all available toolchains (when `add_or_override="add"` or no overrides)
 - Tests only custom configuration (when `add_or_override="override"`)
 - Maximum 16 parallel jobs
-- Fail-fast disabled (continues testing other combinations on failure)
-- Each job tests one package-toolchain combination
-
-**Build Output Categorization**:
-- **System packages**: Core Freetz components (mod, modcgi, haserl, inetd, dropbear, etc.)
-- **User packages**: User-selected packages
-- **Base libraries**: uClibc/GCC runtime and AVM compatibility (libgcc_s, ld-uClibc, libcrypt, libdl, libm, libpthread, librt, libuClibc, libctlmgr, libavmhmac, libcapi, libmultid, etc.)
-- **User libraries**: Additional libraries selected by user or required by packages
 
 **Target Suffixes**:
 - `package` → `-precompiled` (default)
@@ -50,10 +66,12 @@ The workflow supports manual triggering via `workflow_dispatch`.
 - `package-recompile` → Force recompilation from source
 - `firmware` → Build complete firmware image
 - `-firmware` → Build firmware with native .config (no modifications, uses configuration as-is)
-- `fake-firmware` → Generate fake firmware for testing device configuration without real firmware download
+- `fake-firmware` → Generate fake firmware for testing device configuration
 - `package-firmware` → Build firmware and the specified package
 - `package-recompile-firmware` → Build firmware and force recompilation of the specified package
 - `package-precompiled-firmware` → Build firmware and compile precompiled package
+- `libs` → Build only libraries
+- `=package` → Build package skipping library dependencies
 
 **Special Packages**:
 - `firmware` → Build complete firmware image instead of package
@@ -66,6 +84,15 @@ The workflow supports manual triggering via `workflow_dispatch`.
 
 ### 1. Verify and Configure Remotes
 
+Locally clone your already forked repository from GitHub:
+
+```bash
+git clone https://github.com/<your user>/freetz-ng
+cd freetz-ng
+```
+
+Add upstream:
+
 ```bash
 git remote -v
 # If upstream is missing, add it:
@@ -74,10 +101,12 @@ git remote add upstream https://github.com/Freetz-NG/freetz-ng.git
 
 ### 2. Enable GitHub Actions
 
-- Navigate to: https://github.com/Ircama/freetz-ng/settings/actions
+- Navigate to: `https://github.com/<your user>/freetz-ng/settings/actions`
 - Select: "Allow all actions and reusable workflows"
 
-### 3. Download Required Files
+Abilita GitHub Pages !!!!!!!!!!!!!!!!!!!!
+
+### 3. Download Required Files !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ```bash
 # Download workflow documentation
@@ -109,7 +138,7 @@ git reset --hard upstream/master  # Align with upstream
 git push origin master --force    # Force push to your fork
 ```
 
-### Step 2: Generate Test Environment
+### Step 2: Generate Test Environment !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 **Option A - Merge All Open PRs:**
 ```bash
@@ -167,7 +196,24 @@ echo "Config uploaded to: $URL"
 
 This method creates a temporary release and provides a direct download URL that can be used with the `url` parameter in workflows.
 
-### Step 5: Copy Configurations
+### Step 5: Copy Configurations !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+```bash
+git fetch origin
+git branch -D integration-testing
+git push origin --delete integration-testing
+git checkout -b integration-testing origin/ircama-python315a1
+git checkout origin/testing-tools -- .github/workflows/make_package.yml
+git add .github/workflows/make_package.yml
+git commit -m "Use make_package.yml from testing-tools"
+git push origin integration-testing
+
+URL=$(gh release create python315 -t ".config" -n ".config" --prerelease .config | sed 's#/releases/tag/#/releases/download/#; s#$#/default.config#')
+echo $URL
+
+
+gh workflow run make_package.yml -r integration-testing -f make_target='firmware' -f url='https://github.com/Ircama/freetz-ng/releases/download/python315/default.config' -f verbosity="0" -f cancel_previous="true" -f use_queue=false
+```
 
 ```bash
 # Optionally clean existing workflows:
@@ -185,7 +231,7 @@ git commit -m "CI: Update myconfig for testing $(date +%Y-%m-%d)"
 git push origin master
 ```
 
-### Step 7: Execute Workflow Manually
+### Step 7: Execute Workflow Manually !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 **Via Web Interface:**
 1. Go to: https://github.com/Ircama/freetz-ng/actions
@@ -200,7 +246,7 @@ gh repo set-default Ircama/freetz-ng
 gh workflow run make_package.yml -f make_target="util-linux-recompile"
 ```
 
-### Step 8: Monitor Execution
+### Step 8: Monitor Execution !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 **Via CLI:**
 ```bash
@@ -257,6 +303,7 @@ The workflow interprets different `make_target` inputs as follows:
   - Building firmware with user-specific settings preserved
   - CI/CD testing of exact configuration files
   - Validating firmware builds with precise configuration control
+  - Executing custom pre-build commands via `custom_config` parameter (e.g., for rebuilding host tools)
 - `fake-firmware` generates a realistic fake firmware structure for testing device configuration without requiring real firmware download. This is useful for:
   - Testing device configurations when firmware is unavailable or obsolete
   - Validating build system configuration without full firmware build
@@ -301,6 +348,9 @@ gh workflow run make_package.yml -f make_target="firmware"
 # Test firmware build with native configuration (no workflow modifications)
 gh workflow run make_package.yml -f make_target="-firmware" -f url="$URL"
 
+# Test firmware build with custom pre-build commands (e.g., rebuild Python host tools)
+gh workflow run make_package.yml -f make_target="-firmware" -f url="$URL" -f custom_config="make python3-host-dirclean && make python3-host-precompiled python3-pip-host-precompiled python3-setuptools-host-precompiled"
+
 # Test device configuration with fake firmware
 gh workflow run make_package.yml -f make_target="fake-firmware" -f custom_config="7530 08_2X EN"
 
@@ -329,7 +379,7 @@ gh workflow run make_package.yml -f make_target="php-recompile-firmware"
 gh workflow run make_package.yml -f make_target="php-precompiled-firmware"
 ```
 
-## Automatic Triggers
+## Automatic Triggers !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 You can trigger workflows automatically by including build commands in commit messages:
 
@@ -345,6 +395,10 @@ git commit -m "test: make firmware"
 
 # Build firmware with native configuration (no modifications)
 git commit -m "test: make -firmware"
+
+# Note: custom pre-build commands (custom_config) only work with manual triggers
+# For custom commands use:
+# gh workflow run make_package.yml -f make_target="-firmware" -f custom_config="<commands>"
 
 # Build firmware and package
 git commit -m "test: make php-firmware"
@@ -365,20 +419,6 @@ git commit -m "test: make"
 **Note**: Commits starting with "CI:", "workflow:", "build:" are automatically skipped.
 
 **Supported Patterns**
-
-### Target Formats
-
-- `package` → `-precompiled` (default)
-- `package-precompiled` → Compile precompiled package
-- `package-recompile` → Force recompilation from source
-- `firmware` → Build complete firmware image
-- `-firmware` → Build firmware with native .config (no modifications)
-- `fake-firmware` → Generate fake firmware for testing device configuration
-- `package-firmware` → Build firmware and the specified package
-- `package-recompile-firmware` → Build firmware and force recompilation of the specified package
-- `package-precompiled-firmware` → Build firmware and compile precompiled package
-- `libs` → Build only libraries
-- `=package` → Build package skipping library dependencies
 
 ### Multiple Inputs
 
@@ -501,6 +541,9 @@ gh workflow run make_package.yml -f make_target="firmware" -f verbosity="2"
 # Firmware build with native configuration (no modifications)
 gh workflow run make_package.yml -f make_target="-firmware" -f url="<config-url>"
 
+# Firmware build with native configuration and custom pre-build commands
+gh workflow run make_package.yml -f make_target="-firmware" -f url="<config-url>" -f custom_config="make python3-host-dirclean && make python3-host-precompiled"
+
 # Fake firmware for device configuration testing
 gh workflow run make_package.yml -f make_target="fake-firmware"
 
@@ -511,7 +554,7 @@ gh workflow run make_package.yml -f make_target="libs"
 gh workflow run make_package.yml -f make_target="=package-name"
 ```
 
-### Automatic Triggers
+### Automatic Triggers !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ```bash
 git commit -m "test: make php-recompile"
 
