@@ -102,11 +102,11 @@ $($(PKG)_BINARY_BUILD_DIR) $($(PKG)_LIBS_BUILD_DIR): $($(PKG)_DIR)/.configured
 	$(MAKE) openssl-clean-staging openssl-uninstall $(SILENT)
 	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) depend
 ifeq ($(strip $(FREETZ_OPENSSL_VERSION_09_MAX)),y)
-	# OpenSSL 0.9.8: Build static libs first, then shared libs separately to avoid race condition
-	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) -C $(OPENSSL_DIR)/crypto libcrypto.a
-	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) -C $(OPENSSL_DIR)/ssl libssl.a
-endif
+	# OpenSSL 0.9.8: Force serial build to avoid race condition
+	$(SUBMAKE) -j1 $(OPENSSL_MAKE_FLAGS) all
+else
 	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) all
+endif
 
 $($(PKG)_LIBS_STAGING_DIR): $($(PKG)_LIBS_BUILD_DIR)
 	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) $(if $(FREETZ_OPENSSL_VERSION_10_MAX),install,install_sw)
