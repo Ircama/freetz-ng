@@ -1,7 +1,5 @@
 name: make_package
 
-run-name: ${{ github.event.inputs.run_label || github.workflow }}
-
 on:
   # push:
   #   branches: [ master ]
@@ -12,11 +10,6 @@ on:
   #     - 'make/libs/**'
   workflow_dispatch:
     inputs:
-      run_label:
-        description: "Custom run name for this workflow execution (gh param: -f run_label='My custom build')"
-        required: false
-        type: string
-        default: ""
       make_target:
         description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware' (creates fake fw for testing), or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
         required: false
@@ -98,7 +91,6 @@ jobs:
           
           # Check if all parameters are at default values
           HAS_PARAMS=""
-          [ -n "${{ github.event.inputs.run_label }}" ] && HAS_PARAMS="yes"
           [ -n "${{ github.event.inputs.make_target }}" ] && HAS_PARAMS="yes"
           [ -n "${{ github.event.inputs.url }}" ] && HAS_PARAMS="yes"
           [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
@@ -113,7 +105,6 @@ jobs:
             echo "gh workflow run ${{ github.workflow }}.yml -r ${{ github.ref_name }}"
           else
             echo "gh workflow run ${{ github.workflow }}.yml -r ${{ github.ref_name }} \\"
-            [ -n "${{ github.event.inputs.run_label }}" ] && echo "  -f run_label='${{ github.event.inputs.run_label }}' \\"
             [ -n "${{ github.event.inputs.make_target }}" ] && echo "  -f make_target='${{ github.event.inputs.make_target }}' \\"
             [ -n "${{ github.event.inputs.url }}" ] && echo "  -f url='${{ github.event.inputs.url }}' \\"
             [ "${{ github.event.inputs.verbosity }}" != "0" ] && echo "  -f verbosity='${{ github.event.inputs.verbosity }}' \\"
