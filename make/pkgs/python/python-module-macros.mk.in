@@ -33,7 +33,7 @@ define HostPython
 		export AR="$(TARGET_AR)"; \
 		export RANLIB="$(TARGET_RANLIB)"; \
 		export CFLAGS="$(TARGET_CFLAGS) -I$(PYTHON_STAGING_INC_DIR)"; \
-		export LDFLAGS="$(TARGET_LDFLAGS) -L$(PYTHON_STAGING_LIB_DIR) -L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"; \
+		export LDFLAGS="$(TARGET_LDFLAGS) -L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib -L$(PYTHON_STAGING_LIB_DIR) -Wl,--rpath-link=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"; \
 		unset LIBRARY_PATH; \
 		unset LD_LIBRARY_PATH; \
 		$(1) \
