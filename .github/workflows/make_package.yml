@@ -1008,12 +1008,18 @@ jobs:
           
           # Show toolchain information
           echo "=== 👉 Toolchain information ==="
+          echo "ℹ️ Target architecture:"
+          grep "^FREETZ_TARGET_ARCH=" .config | head -1
+          echo "ℹ️ CPU model:"
+          grep "^FREETZ_CPU_MODEL_" .config | grep "=y" | head -3
+          echo "ℹ️ Architecture properties:"
+          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -5
+          echo "ℹ️ Target arch flags:"
+          grep "^FREETZ_TARGET_ARCH_" .config | grep "=y" | head -3
           echo "ℹ️ GCC version:"
           grep "^FREETZ_TARGET_GCC_" .config | grep "=y" | head -3
           echo "ℹ️ uClibc version:"
           grep "^FREETZ_TARGET_UCLIBC_" .config | grep "=y" | head -3
-          echo "ℹ️ Architecture:"
-          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -3
           echo "ℹ️ Kernel version:"
           grep "^FREETZ_AVM_PROP_KERNEL_" .config | grep "=y" | head -3
           echo ""
