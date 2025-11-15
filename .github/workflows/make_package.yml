@@ -1,5 +1,12 @@
 name: make_package
 
+run-name: >-
+  ${{
+    startsWith(github.event.inputs.make_target, '#') && format('{0} - {1}', github.workflow, github.event.inputs.make_target)
+    || contains(github.event.inputs.make_target, '#') && github.event.inputs.make_target
+    || github.workflow
+  }}
+
 on:
   # push:
   #   branches: [ master ]
@@ -11,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       make_target:
-        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware' (creates fake fw for testing), or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
+        description: "Make target: 'pkg1,pkg2' or 'pkg1 # label' (label appears in workflow name), 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware', or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (gh param: -f make_target=php or -f 'make_target=php # my test')"
         required: false
         type: string
         default: ""
@@ -136,11 +143,36 @@ jobs:
           clean: false
           persist-credentials: true
 
+      - name: Extract workflow label from make_target
+        id: extract_label
+        run: |
+          # Extract label from make_target if it contains '#'
+          MAKE_TARGET="${{ github.event.inputs.make_target }}"
+          if echo "$MAKE_TARGET" | grep -q '#'; then
+            # Extract part after '#' and trim whitespace
+            LABEL="$(echo "$MAKE_TARGET" | sed 's/.*#\s*//' | sed 's/^\s*//' | sed 's/\s*$//')"
+            echo "label=$LABEL" >> $GITHUB_OUTPUT
+            echo "Extracted label: $LABEL"
+          else
+            echo "label=" >> $GITHUB_OUTPUT
+            echo "No label found in make_target"
+          fi
+
       - name: parse
         id: parse
         run: |
           # Produce the target list:
-          make_cmd="$(echo "${{ github.event.inputs.make_target }}" | tr -d ' ')"
+          # Remove label part (everything after #) before processing
+          # If make_target starts with '#', it's only a label - use empty target
+          MAKE_INPUT="${{ github.event.inputs.make_target }}"
+          if echo "$MAKE_INPUT" | grep -q '^#'; then
+            # Only label, no target specified
+            make_cmd=""
+            echo "Only label provided, using default targets"
+          else
+            # Remove label part (everything after #) and trim whitespace
+            make_cmd="$(echo "$MAKE_INPUT" | sed 's/#.*//' | tr -d ' ')"
+          fi
           if [ -z "$make_cmd" ]; then
             # Extract from commit message (look for "make" or "make-*")
             commit_msg="$(git log --format=%B -n1 ${{ github.sha }})"
