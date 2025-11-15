@@ -81,6 +81,10 @@ $(PKG)_MAKE_FLAGS += SHARED_LDFLAGS=""
 $(PKG)_MAKE_FLAGS += $(if $(FREETZ_OPENSSL_VERSION_10_MAX),INSTALL_PREFIX,DESTDIR)="$(TARGET_TOOLCHAIN_STAGING_DIR)"
 $(PKG)_MAKE_FLAGS += CROSS_COMPILE=1
 $(PKG)_MAKE_FLAGS += $(if $(FREETZ_PACKAGE_OPENSSL_STATIC),STATIC_APPS=1)
+# OpenSSL 0.9.8 has race conditions in parallel builds - force sequential
+ifeq ($(strip $(FREETZ_OPENSSL_VERSION_09_MAX)),y)
+$(PKG)_MAKE_FLAGS += -j1
+endif
 
 
 # openssl-host and openssl using the same source
@@ -96,12 +100,8 @@ $($(PKG)_BINARY_BUILD_DIR) $($(PKG)_LIBS_BUILD_DIR): $($(PKG)_DIR)/.configured
 #	Remove installed libs also from freetz' packages dir to ensure
 #	that it doesn't contain files from previous builds (0.9.8 to/from 1.0.x switch).
 	$(MAKE) openssl-clean-staging openssl-uninstall $(SILENT)
-	$(SUBMAKE) -j1 $(OPENSSL_MAKE_FLAGS) depend
-ifeq ($(strip $(FREETZ_OPENSSL_VERSION_09_MAX)),y)
-	$(SUBMAKE) -j1 $(OPENSSL_MAKE_FLAGS) all
-else
+	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) depend
 	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) all
-endif
 
 $($(PKG)_LIBS_STAGING_DIR): $($(PKG)_LIBS_BUILD_DIR)
 	$(SUBMAKE) $(OPENSSL_MAKE_FLAGS) $(if $(FREETZ_OPENSSL_VERSION_10_MAX),install,install_sw)
