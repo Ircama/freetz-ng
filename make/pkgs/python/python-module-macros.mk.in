@@ -25,6 +25,7 @@ define HostPython
 		export PYTHONPATH="$(PYTHON_STAGING_LIB_DIR):$(TARGET_TOOLCHAIN_STAGING_DIR)/$(PYTHON_SITE_PKG_DIR)"; \
 		export PYTHONOPTIMIZE=""; \
 		export PYTHONDONTWRITEBYTECODE="x"; \
+		export PYTHONNOUSERSITE="1"; \
 		export CC="$(TARGET_CC)"; \
 		export CXX="$(TARGET_CXX)"; \
 		export LD="$(TARGET_CC)"; \
@@ -33,9 +34,11 @@ define HostPython
 		export AR="$(TARGET_AR)"; \
 		export RANLIB="$(TARGET_RANLIB)"; \
 		export CFLAGS="$(TARGET_CFLAGS) -I$(PYTHON_STAGING_INC_DIR)"; \
-		export LDFLAGS="$(TARGET_LDFLAGS) -L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib -L$(PYTHON_STAGING_LIB_DIR) -Wl,--rpath-link=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"; \
+		export LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib -L$(PYTHON_STAGING_LIB_DIR) $(TARGET_LDFLAGS) -Wl,--rpath-link=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"; \
+		export GIT_PAGER="cat"; \
 		unset LIBRARY_PATH; \
 		unset LD_LIBRARY_PATH; \
+		unset CPPFLAGS; \
 		$(1) \
 		$(HOST_PYTHON_BIN) $(2); \
 	)
