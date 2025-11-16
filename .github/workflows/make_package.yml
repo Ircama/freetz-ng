@@ -1,5 +1,12 @@
 name: make_package
 
+run-name: >-
+  ${{
+    startsWith(github.event.inputs.make_target, '#') && format('{0} - {1}', github.workflow, github.event.inputs.make_target)
+    || contains(github.event.inputs.make_target, '#') && github.event.inputs.make_target
+    || github.workflow
+  }}
+
 on:
   # push:
   #   branches: [ master ]
@@ -11,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       make_target:
-        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
+        description: "Make target: 'pkg1,pkg2' or 'pkg1 # label' (label appears in workflow name), 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware', or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (gh param: -f make_target=php or -f 'make_target=php # my test')"
         required: false
         type: string
         default: ""
@@ -136,11 +143,37 @@ jobs:
           clean: false
           persist-credentials: true
 
+      - name: Extract workflow label from make_target
+        id: extract_label
+        run: |
+          # Extract label from make_target if it contains '#'
+          MAKE_TARGET="${{ github.event.inputs.make_target }}"
+          if echo "$MAKE_TARGET" | grep -q '#'; then
+            # Extract part after '#' and trim whitespace
+            LABEL="$(echo "$MAKE_TARGET" | sed 's/.*#\s*//' | sed 's/^\s*//' | sed 's/\s*$//')"
+            echo "label=$LABEL" >> $GITHUB_OUTPUT
+            echo "### 🏷️ Workflow Label: $LABEL" >> $GITHUB_STEP_SUMMARY
+            echo "Extracted label: $LABEL"
+          else
+            echo "label=" >> $GITHUB_OUTPUT
+            echo "No label found in make_target"
+          fi
+
       - name: parse
         id: parse
         run: |
           # Produce the target list:
-          make_cmd="$(echo "${{ github.event.inputs.make_target }}" | tr -d ' ')"
+          # Remove label part (everything after #) before processing
+          # If make_target starts with '#', it's only a label - use empty target
+          MAKE_INPUT="${{ github.event.inputs.make_target }}"
+          if echo "$MAKE_INPUT" | grep -q '^#'; then
+            # Only label, no target specified
+            make_cmd=""
+            echo "Only label provided, using default targets"
+          else
+            # Remove label part (everything after #) and trim whitespace
+            make_cmd="$(echo "$MAKE_INPUT" | sed 's/#.*//' | tr -d ' ')"
+          fi
           if [ -z "$make_cmd" ]; then
             # Extract from commit message (look for "make" or "make-*")
             commit_msg="$(git log --format=%B -n1 ${{ github.sha }})"
@@ -177,6 +210,11 @@ jobs:
             echo 'matrix=["skip"]' >> $GITHUB_OUTPUT
             echo "⚠️ Specify package names: 'make pkg1,pkg2' or use 'make package-precompiled'"
             echo "💡 Run 'tools/make_progress_monitor.sh --list-packages' to see configured packages"
+            exit 0
+          elif [ "$make_cmd" = "-firmware" ]; then
+            # Native firmware build - skip matrix generation
+            echo "Native firmware build requested (uses existing .config without modifications)"
+            echo 'matrix=[{pkg:"firmware",target:"",skip_libs:"false",name:"native-configuration",tcs:""}]' >> $GITHUB_OUTPUT
             exit 0
           elif echo "$make_cmd" | grep -q ','; then
             # Multiple packages separated by commas
@@ -252,6 +290,11 @@ jobs:
               
               # Check for target suffix and remove it
               case "$pkg_name" in
+                fake-firmware)
+                  pkg_name="fake-firmware"
+                  pkg_target=""
+                  build_description=" (fake firmware for testing)"
+                  ;;
                 *firmware)
                   pkg_name="$pkg_name"
                   pkg_target=""
@@ -446,6 +489,7 @@ jobs:
           echo "##########################################################" && echo -n "Number of lines in file: " && wc -l .config
           
       - name: config
+        if: matrix.fritz.name != 'native-configuration'
         run: |
           # Prepare .config based on downloaded file (or myconfig fallback)
           TCS="${{ matrix.fritz.tcs }}"
@@ -538,31 +582,31 @@ jobs:
           sed -i '/^#\? \?FREETZ_UTIL_LINUX_VERSION_/d' .config
           
           # Remove existing settings before adding new ones to avoid override warnings
-          sed -i '/FREETZ_MODULES_OWN/d' .config
-          sed -i '/FREETZ_PATCH_UDEVMOUNT/d' .config
-          sed -i '/FREETZ_MODULE_dummy/d' .config
-          sed -i '/FREETZ_MODULE_loop/d' .config
-          sed -i '/FREETZ_MODULE_usbserial/d' .config
-          sed -i '/FREETZ_PACKAGE_DROPBEAR/d' .config
-          sed -i '/FREETZ_PACKAGE_LDD/d' .config
-          sed -i '/FREETZ_SIZEINFO_COMPRESSED/d' .config
-          sed -i '/FREETZ_SIZEINFO_UNCOMPRESSED/d' .config
-          sed -i '/FREETZ_TOOLCHAIN_CCACHE/d' .config
-          sed -i '/FREETZ_VERBOSITY_FWMOD_/d' .config
-          sed -i '/FREETZ_VERBOSITY_LEVEL_/d' .config
-          sed -i '/FREETZ_VERBOSITY_LEVEL=/d' .config
-          sed -i '/FREETZ_SERIES_ALL/d' .config
-          sed -i '/FREETZ_USER_LEVEL_DEVELOPER/d' .config
-          sed -i '/FREETZ_MODULES_TEST/d' .config
-          sed -i '/FREETZ_DL_SITE_USER/d' .config
-          sed -i '/FREETZ_REAL_DEVELOPER_ONLY__DLIMG/d' .config
-          sed -i '/FREETZ_REAL_DEVELOPER_ONLY__DLURL/d' .config
-          sed -i '/FREETZ_DOWNLOAD_TOOLCHAIN/d' .config
-          sed -i '/FREETZ_BUILD_TOOLCHAIN/d' .config
-          sed -i '/FREETZ_HOSTTOOLS_DOWNLOAD/d' .config
-          sed -i '/FREETZ_AVM_PROP_NAME/d' .config
-          sed -i '/FREETZ_AVM_PROP_MAJOR/d' .config
-          sed -i '/FREETZ_AVM_PROP_HWREV/d' .config
+          sed -i '/FREETZ_MODULES_OWN/d'                                               .config
+          sed -i '/FREETZ_PATCH_UDEVMOUNT/d'                                           .config
+          sed -i '/FREETZ_MODULE_dummy/d'                                              .config
+          sed -i '/FREETZ_MODULE_loop/d'                                               .config
+          sed -i '/FREETZ_MODULE_usbserial/d'                                          .config
+          sed -i '/FREETZ_PACKAGE_DROPBEAR/d'                                          .config
+          sed -i '/FREETZ_PACKAGE_LDD/d'                                               .config
+          sed -i '/FREETZ_SIZEINFO_COMPRESSED/d'                                       .config
+          sed -i '/FREETZ_SIZEINFO_UNCOMPRESSED/d'                                     .config
+          sed -i '/FREETZ_TOOLCHAIN_CCACHE/d'                                          .config
+          sed -i '/FREETZ_VERBOSITY_FWMOD_/d'                                          .config
+          sed -i '/FREETZ_VERBOSITY_LEVEL_/d'                                          .config
+          sed -i '/FREETZ_VERBOSITY_LEVEL=/d'                                          .config
+          sed -i '/FREETZ_SERIES_ALL/d'                                                .config
+          sed -i '/FREETZ_USER_LEVEL_DEVELOPER/d'                                      .config
+          sed -i '/FREETZ_MODULES_TEST/d'                                              .config
+          sed -i '/FREETZ_DL_SITE_USER/d'                                              .config
+          sed -i '/FREETZ_REAL_DEVELOPER_ONLY__DLIMG/d'                                .config
+          sed -i '/FREETZ_REAL_DEVELOPER_ONLY__DLURL/d'                                .config
+          sed -i '/FREETZ_DOWNLOAD_TOOLCHAIN/d'                                        .config
+          sed -i '/FREETZ_BUILD_TOOLCHAIN/d'                                           .config
+          sed -i '/FREETZ_HOSTTOOLS_DOWNLOAD/d'                                        .config
+          sed -i '/FREETZ_AVM_PROP_NAME/d'                                             .config
+          sed -i '/FREETZ_AVM_PROP_MAJOR/d'                                            .config
+          sed -i '/FREETZ_AVM_PROP_HWREV/d'                                            .config
           
           # Apply standardized settings
           echo 'FREETZ_MODULES_OWN=""'                                                                >> .config
@@ -633,6 +677,10 @@ jobs:
           echo "  - Firmware: $(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
           echo "  - Language: $(grep '^FREETZ_TYPE_LANG_[A-Z][A-Z]=y' .config | sed 's/FREETZ_TYPE_LANG_//;s/=y//' | head -1)"
           echo "  - Kernel:   $(grep '^FREETZ_AVM_PROP_KERNEL_' .config | grep '=y' | sed 's/.*KERNEL_//;s/_/./g;s/=y//' | head -1)"
+          echo "  - KernelVer:$(grep '^FREETZ_KERNEL_VERSION=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - KernMajor:$(grep '^FREETZ_KERNEL_VERSION_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - KernDir:  $(grep '^FREETZ_KERNEL_VANILLA_DLDIR=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - KernMods: $(grep '^FREETZ_KERNEL_VERSION_MODULES_SUBDIR=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - Arch:     $(grep '^FREETZ_AVM_PROP_ARCH_' .config | grep '=y' | sed 's/.*ARCH_//;s/=y//' | head -5 | tr '\n' ' ')"
           echo "  - GCC:      $(grep '^FREETZ_TARGET_GCC_' .config | grep -v MIN | grep -v MAX | grep '=y' | sed 's/.*GCC_//;s/_/./g;s/=y//' | head -1)"
           echo "  - uClibc:   $(grep '^FREETZ_TARGET_UCLIBC_' .config | grep -v HAS | grep '=y' | sed 's/.*UCLIBC_//;s/_/./g;s/=y//' | head -1)"
@@ -690,105 +738,6 @@ jobs:
 #         for x in prv pub; do wget -q "${{ secrets.ACTIONS_CUSTOM }}$x" -O ~/.freetz-signature/$x >/dev/null 2>&1 || rm -f ~/.freetz-signature/$x; done
 #         echo "################################################################" && ls -l ~/.freetz-signature/
 
-      - name: prepare-firmware
-        if: matrix.fritz != 'skip'
-        run: |
-          # Check firmware availability and create fake firmware if needed
-          echo "################################################################"
-          echo "Checking firmware availability..."
-          
-          # Source .config to get firmware details
-          source .config 2>/dev/null || true
-          
-          FIRMWARE_FILE="${FREETZ_DL_SOURCE}"
-          FIRMWARE_SITE="${FREETZ_DL_SITE}"
-
-          echo "Firmware file: $FIRMWARE_FILE"
-          echo "Firmware site: $FIRMWARE_SITE"
-          
-          if [ -z "$FIRMWARE_FILE" ] || [ -z "$FIRMWARE_SITE" ]; then
-            echo "⚠️ No firmware download configured - skipping firmware check"
-            exit 0
-          fi
-          
-          # Transform URL using Freetz's replacement logic
-          FIRMWARE_SITE="${FIRMWARE_SITE//@AVM\//https://download.avm.de/fritzbox/}"
-          
-          # Handle {alternative1,alternative2} syntax - take first alternative
-          if [[ "$FIRMWARE_SITE" == *"{"* ]]; then
-            FIRMWARE_SITE=$(echo "$FIRMWARE_SITE" | sed 's/{//g' | sed 's/,.*}//')
-          fi
-          
-          # Handle comma-separated sites - take first one
-          if [[ "$FIRMWARE_SITE" == *","* ]]; then
-            FIRMWARE_SITE="${FIRMWARE_SITE%%,*}"
-          fi
-          
-          # Handle slash-separated sources - take first one
-          if [[ "$FIRMWARE_FILE" == *"/"* ]]; then
-            FIRMWARE_FILE="${FIRMWARE_FILE%%/*}"
-          fi
-          
-          # Remove trailing slash from site
-          FIRMWARE_SITE="${FIRMWARE_SITE%/}"
-          
-          # Construct URLs
-          PRIMARY_URL="${FIRMWARE_SITE}/${FIRMWARE_FILE}"
-          ARCHIVE_URL=$(echo "$PRIMARY_URL" | sed 's|/fritzbox/|/archive/fritz.box/|')
-          
-          mkdir -p dl/fw
-          FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
-          
-          # Check if firmware already exists
-          if [ -f "$FIRMWARE_PATH" ] && [ -s "$FIRMWARE_PATH" ]; then
-            echo "✅ Firmware already exists: $FIRMWARE_PATH"
-            exit 0
-          fi
-          
-          echo "Trying to download firmware..."
-          echo "  Primary URL: $PRIMARY_URL"
-          
-          # Try primary URL
-          if wget --spider -q --timeout=10 "$PRIMARY_URL" 2>/dev/null; then
-            echo "✅ Firmware available at primary URL"
-            exit 0
-          fi
-          
-          echo "  Archive URL: $ARCHIVE_URL"
-          
-          # Try AVM archive
-          if wget --spider -q --timeout=10 "$ARCHIVE_URL" 2>/dev/null; then
-            echo "✅ Firmware available at AVM archive"
-            # Update .config to use archive URL
-            sed -i "s|FREETZ_DL_SITE=\".*\"|FREETZ_DL_SITE=\"${ARCHIVE_URL%/*}\"|" .config
-            exit 0
-          fi
-          
-          echo "⚠️ Firmware not found on AVM servers"
-          echo "Creating minimal fake firmware for package-only build..."
-          
-          # Create minimal valid tar structure that mimics a real firmware
-          FAKE_DIR="/tmp/fake-fw-$$"
-          mkdir -p "$FAKE_DIR/var/tmp"
-          mkdir -p "$FAKE_DIR/var/install"
-          
-          # Create minimal required files
-          echo "# Fake firmware for package testing" > "$FAKE_DIR/var/tmp/.fake_firmware"
-          echo "FAKE_BUILD=1" > "$FAKE_DIR/var/install"
-          
-          # Create tar archive with proper structure
-          tar -C "$FAKE_DIR" -cf "$FIRMWARE_PATH" ./var
-          rm -rf "$FAKE_DIR"
-          
-          if [ -f "$FIRMWARE_PATH" ]; then
-            echo "✅ Fake firmware created: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH") bytes)"
-            echo "⚠️ Note: This is a minimal fake firmware for package-only builds"
-            echo "⚠️ Full firmware image generation will likely fail with this fake firmware"
-          else
-            echo "❌ Failed to create fake firmware"
-            exit 1
-          fi
-
       - name: generate
         id: generate
         if: matrix.fritz != 'skip'
@@ -809,14 +758,171 @@ jobs:
           
           echo "pkg=$pkg" >> $GITHUB_OUTPUT
           
-          # Check if this is a firmware target
-          if echo "$pkg" | grep -q "firmware"; then
-            # Build firmware image
-            make olddefconfig
+          # Check if this is a native firmware build (uses existing .config as-is)
+          if [ "${{ matrix.fritz.name }}" = "native-configuration" ]; then
+            echo "################################################################"
+            echo "🔧 Building firmware with native .config (no modifications)"
+            echo "################################################################"
+            echo "Using configuration as-is from downloaded .config or myconfig"
+            echo ""
+
+            sed -i '/FREETZ_VERBOSITY_FWMOD_/d'                                          .config
+            sed -i '/FREETZ_VERBOSITY_LEVEL_/d'                                          .config
+            sed -i '/FREETZ_VERBOSITY_LEVEL=/d'                                          .config
+            echo 'FREETZ_VERBOSITY_FWMOD_2=y'                                         >> .config
+            VERBOSITY="${{ github.event.inputs.verbosity }}"
+            [ -z "$VERBOSITY" ] && VERBOSITY="0"
+            echo "FREETZ_VERBOSITY_LEVEL_${VERBOSITY}=y"                              >> .config
+            echo "FREETZ_VERBOSITY_LEVEL=${VERBOSITY}"                                >> .config
+            
+            echo "Validating configuration..."
+            make olddefconfig 2>&1 | grep -v "warning: override:" || true
+
+            # Execute custom pre-build commands if provided via custom_config
+            CUSTOM_PREBUILD="${{ github.event.inputs.custom_config }}"
+            if [ -n "$CUSTOM_PREBUILD" ]; then
+              echo "################################################################"
+              echo "⚙️  Executing custom pre-build commands..."
+              echo "################################################################"
+              echo "Commands: $CUSTOM_PREBUILD"
+              echo ""
+              if bash -c "$CUSTOM_PREBUILD"; then
+                echo ""
+                echo "✅ Custom pre-build commands completed successfully"
+                echo "################################################################"
+                echo ""
+              else
+                EXIT_CODE=$?
+                echo ""
+                echo "❌ Custom pre-build commands failed with exit code: $EXIT_CODE"
+                echo "################################################################"
+                exit $EXIT_CODE
+              fi
+            fi
+            
+            echo "⏳ Building firmware image with native configuration"
+            bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+            echo "bad=n" >> $GITHUB_OUTPUT
+          
+          # Check if this is a fake-firmware target (create minimal fake firmware)
+          elif [ "$pkg" = "fake-firmware" ]; then
+            echo "################################################################"
+            echo "🔧 Creating fake firmware"
+            echo "################################################################"
+            
+            # Enable FREETZ_DL_OVERRIDE before olddefconfig to populate FREETZ_AVM_HW
+            sed -i '/FREETZ_DL_OVERRIDE=/d' .config
+            echo 'FREETZ_DL_OVERRIDE=y' >> .config
+            
+            # Run olddefconfig to populate hardware variables
+            echo "Populating hardware variables via FREETZ_DL_OVERRIDE..."
+            make olddefconfig 2>&1 | grep -v "warning: override: reassigning to symbol FREETZ_DL_OVERRIDE" || true
+            
+            # Extract device product name for firmware filename (use first match only)
+            FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)"
+
+            # Create fake firmware (create directory structure if path contains /)
+            mkdir -p "dl/fw/$(dirname "$FIRMWARE_FILE")"
+            FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
+            echo "Fake firmware placeholder" > "$FIRMWARE_PATH"
+            echo "✅ Created fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"            
+
+            # Create simplified fwmod replacement inline
+            echo 'set -e'                                                                    > fwmod
+            echo 'DOT_CONFIG=".config"'                                                     >> fwmod
+            echo 'DIR=""'                                                                   >> fwmod
+            echo 'while getopts umpsanfzc:i:d:v:w:x: opt; do'                               >> fwmod
+            echo 'case "$opt" in'                                                           >> fwmod
+            echo 'i) DOT_CONFIG="$OPTARG" ;;'                                               >> fwmod
+            echo 'd) DIR="$OPTARG" ;;'                                                      >> fwmod
+            echo '*) ;;'                                                                    >> fwmod
+            echo 'esac'                                                                     >> fwmod
+            echo 'done'                                                                     >> fwmod
+            echo 'shift $((OPTIND-1))'                                                      >> fwmod
+            echo 'FIRMWARE_PATH="$1"'                                                       >> fwmod
+            echo 'if [ -z "$FIRMWARE_PATH" ]; then'                                         >> fwmod
+            echo 'echo "ERROR: No firmware path specified"'                                 >> fwmod
+            echo 'exit 1'                                                                   >> fwmod
+            echo 'fi'                                                                       >> fwmod
+            echo 'FIRMWARE_NAME=$(basename "$FIRMWARE_PATH" | sed "s/\.[^.]*\$//")'         >> fwmod
+            echo 'if [ ! -f "$DOT_CONFIG" ]; then'                                          >> fwmod
+            echo 'echo "ERROR: Config file not found: $DOT_CONFIG"'                         >> fwmod
+            echo 'exit 1'                                                                   >> fwmod
+            echo 'fi'                                                                       >> fwmod
+            echo 'VERSION=$(git describe --always --dirty 2>/dev/null || echo "unknown")'   >> fwmod
+            echo 'TIMESTAMP=$(date +%Y%m%d-%H%M%S)'                                         >> fwmod
+            echo 'BASE_DIR=$(pwd)'                                                          >> fwmod
+            echo 'PACKAGES_DIR="packages"'                                                  >> fwmod
+            echo 'IMAGES_DIR="images"'                                                      >> fwmod
+            echo 'OUTPUT_IMAGE_REL="${IMAGES_DIR}/${FIRMWARE_NAME}_freetz-ng-${VERSION}_${TIMESTAMP}.image"' >> fwmod
+            echo 'OUTPUT_IMAGE="${BASE_DIR}/${OUTPUT_IMAGE_REL}"'                           >> fwmod
+            echo 'mkdir -p "$IMAGES_DIR"'                                                   >> fwmod
+            echo 'echo ""'                                                                  >> fwmod
+            echo 'printf "\033[1mBUILD COMPLETED. ARCHIVE CREATION:\033[0m\n"'              >> fwmod
+            echo 'echo "Creating TAR image file from fake firmware $FIRMWARE_PATH"'         >> fwmod
+            echo 'echo "TAR file name: $OUTPUT_IMAGE_REL"'                                  >> fwmod
+            echo 'echo ""'                                                                  >> fwmod
+            echo 'if [ -d "$PACKAGES_DIR" ]; then'                                          >> fwmod
+            echo 'echo "Package statistics:"'                                               >> fwmod
+            echo 'cd "$PACKAGES_DIR"'                                                       >> fwmod
+            echo 'du --max-depth=1 -h --time * 2>/dev/null | grep -v "^0" || true'          >> fwmod
+            echo 'cd ..'                                                                    >> fwmod
+            echo 'echo ""'                                                                  >> fwmod
+            echo 'fi'                                                                       >> fwmod
+            echo 'TEMP_BUILD_DIR=$(mktemp -d)'                                              >> fwmod
+            echo 'trap "rm -rf $TEMP_BUILD_DIR" EXIT'                                       >> fwmod
+            echo 'echo "Collecting package files..."'                                       >> fwmod
+            echo 'PKG_COUNT=0'                                                              >> fwmod
+            echo 'if [ -d "$PACKAGES_DIR" ]; then'                                          >> fwmod
+            echo 'for pkg_dir in "$PACKAGES_DIR"/*; do'                                     >> fwmod
+            echo 'if [ -d "$pkg_dir/root" ]; then'                                          >> fwmod
+            echo 'echo "Adding package: $(basename "$pkg_dir")"'                            >> fwmod
+            echo 'cp -a "$pkg_dir/root/"* "$TEMP_BUILD_DIR/" 2>/dev/null || true'           >> fwmod
+            echo 'PKG_COUNT=$((PKG_COUNT + 1))'                                             >> fwmod
+            echo 'fi'                                                                       >> fwmod
+            echo 'done'                                                                     >> fwmod
+            echo 'fi'                                                                       >> fwmod
+            echo 'if [ "$PKG_COUNT" -eq 0 ]; then'                                          >> fwmod
+            echo 'echo "WARNING: No packages found in $PACKAGES_DIR"'                       >> fwmod
+            echo 'fi'                                                                       >> fwmod
+            echo 'echo ""'                                                                  >> fwmod
+            echo 'echo "Creating .image archive (TAR format)..."'                           >> fwmod
+            echo 'cd "$TEMP_BUILD_DIR"'                                                     >> fwmod
+            echo 'tar -cf "$OUTPUT_IMAGE" --owner=0 --group=0 --numeric-owner --format=oldgnu . 2>/dev/null || {' >> fwmod
+            echo 'echo "ERROR: Failed to create image archive"'                             >> fwmod
+            echo 'exit 1'                                                                   >> fwmod
+            echo '}'                                                                        >> fwmod
+            echo 'cd "$BASE_DIR"'                                                           >> fwmod
+            echo 'rm -f "${IMAGES_DIR}/latest.image"'                                       >> fwmod
+            echo 'ln -s "$(basename "$OUTPUT_IMAGE_REL")" "${IMAGES_DIR}/latest.image"'     >> fwmod
+            echo 'IMAGE_SIZE=$(stat -c%s "$OUTPUT_IMAGE" 2>/dev/null || echo 0)'            >> fwmod
+            echo 'IMAGE_SIZE_KB=$((IMAGE_SIZE / 1024))'                                     >> fwmod
+            echo 'echo "Image size of $OUTPUT_IMAGE_REL: $IMAGE_SIZE_KB KB ($IMAGE_SIZE bytes)."' >> fwmod
+            echo ''                                                                         >> fwmod
+            echo 'printf "\033[1mFINISHED\033[0m\n"'                                        >> fwmod
+            echo ''                                                                         >> fwmod
+            
+            chmod +x fwmod
+            echo "✅ Created simplified fwmod replacement"
+            
             echo "⏳ Building firmware image"
             bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
             echo "bad=n" >> $GITHUB_OUTPUT
+          
+          # Check if this is a standard firmware target
+          elif echo "$pkg" | grep -q "firmware"; then
+            # Build firmware image (expects real firmware available)
             
+            # Enable firmware download override
+            sed -i '/FREETZ_DL_OVERRIDE/d' .config
+            echo 'FREETZ_DL_OVERRIDE=y' >> .config
+
+            make olddefconfig
+            echo "⏳ Building firmware image"
+
+            bash -c "export TERM=xterm-256color; make 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
+            echo "bad=n" >> $GITHUB_OUTPUT
+          
           # Standard package-only build
           else
             TYPE=""
@@ -890,7 +996,7 @@ jobs:
                 bash -c "export TERM=xterm-256color; make ${pkg}-${target} 2>&1 | tee make_output.log; pstat=\${PIPESTATUS[0]}; exit \$pstat"
               fi
             fi
-          fi  # End of if firmware / else standard build
+          fi  # End of if fake-firmware / elif firmware / else standard build
 
       - name: debug-on-failure
         if: steps.generate.outcome == 'failure' || steps.generate.outputs.debug_needed == 'true'
@@ -936,12 +1042,18 @@ jobs:
           
           # Show toolchain information
           echo "=== 👉 Toolchain information ==="
+          echo "ℹ️ Target architecture:"
+          grep "^FREETZ_TARGET_ARCH=" .config | head -1
+          echo "ℹ️ CPU model:"
+          grep "^FREETZ_CPU_MODEL_" .config | grep "=y" | head -3
+          echo "ℹ️ Architecture properties:"
+          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -5
+          echo "ℹ️ Target arch flags:"
+          grep "^FREETZ_TARGET_ARCH_" .config | grep "=y" | head -3
           echo "ℹ️ GCC version:"
           grep "^FREETZ_TARGET_GCC_" .config | grep "=y" | head -3
           echo "ℹ️ uClibc version:"
           grep "^FREETZ_TARGET_UCLIBC_" .config | grep "=y" | head -3
-          echo "ℹ️ Architecture:"
-          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -3
           echo "ℹ️ Kernel version:"
           grep "^FREETZ_AVM_PROP_KERNEL_" .config | grep "=y" | head -3
           echo ""
