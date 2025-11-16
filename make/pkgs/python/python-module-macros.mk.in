@@ -34,8 +34,10 @@ define HostPython
 		export AR="$(TARGET_AR)"; \
 		export RANLIB="$(TARGET_RANLIB)"; \
 		export CFLAGS="$(TARGET_CFLAGS) -I$(PYTHON_STAGING_INC_DIR)"; \
-		export LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib -L$(PYTHON_STAGING_LIB_DIR) $(TARGET_LDFLAGS) -Wl,--rpath-link=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"; \
+		export LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib -L$(PYTHON_STAGING_LIB_DIR) -Wl,--rpath-link=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"; \
 		export GIT_PAGER="cat"; \
+		export _PYTHON_HOST_PLATFORM="$(GNU_TARGET_NAME)"; \
+		export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata"; \
 		unset LIBRARY_PATH; \
 		unset LD_LIBRARY_PATH; \
 		unset CPPFLAGS; \
@@ -54,8 +56,15 @@ define Build/PyMod/Generic
 		$(TARGET_CONFIGURE_ENV) \
 		$(FREETZ_LD_RUN_PATH) \
 		$(3) \
+		_python_sysroot="$(TARGET_TOOLCHAIN_STAGING_DIR)" \
+		_python_prefix="/usr" \
+		_python_exec_prefix="/usr" \
 		, \
-		./setup.py build_ext --include-dirs=$(PYTHON_STAGING_INC_DIR) --library-dirs=$(PYTHON_STAGING_LIB_DIR) $(2) \
+		./setup.py build_ext \
+			--include-dirs=$(PYTHON_STAGING_INC_DIR) \
+			--library-dirs=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib:$(PYTHON_STAGING_LIB_DIR) \
+			--rpath=/usr/lib/freetz \
+		$(2) \
 	)
 	$(if $(strip $(4)),find $(strip $(4)) -type f -name "*.so" -exec $(TARGET_STRIP) \{\} \+)
 endef
