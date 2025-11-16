@@ -44,7 +44,7 @@ Esempio per `bzip2`:
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'-firmware'`, `'fake-firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php) |
+| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'-firmware'`, `'fake-firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php). Supports custom labels using `#` syntax (e.g., `'php#Test PHP 8.4'` or `'php # Test PHP 8.4'`) to customize the workflow run name. Spaces before and after `#` are optional and ignored |
 | `url` | string | No | `""` | URL of config file (.tar, .tgz, .tbz, .config) or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
@@ -295,6 +295,7 @@ The workflow interprets different `make_target` inputs as follows:
 | `=php` | `make php-precompiled` (skip libs) | Build package skipping library dependencies |
 | `=php-precompiled` | `make php-precompiled` (skip libs) | Build package as precompiled skipping library dependencies |
 | `php,patchelf` | Multiple builds | Test multiple packages sequentially |
+| `php#Test PHP 8.4` | `make php-precompiled` | Build package with custom label for workflow run name (spaces around `#` are optional) |
 
 **Notes:**
 - Firmware targets (`*-firmware`) build the complete firmware image with the specified package(s) included
@@ -315,8 +316,18 @@ The workflow interprets different `make_target` inputs as follows:
 
 ```bash
 
-# Make firmware for a specific device
+# Make firmware for a specific device using the generic "make" compilation.
+# It includes the standard download of the original firmware from AVM.
+# The assumption for make_target="firmware" to work is that AVM has the hosted
+# file of the requested firmware release. 
 gh workflow run make_package.yml -f make_target="firmware" -f url="$URL" -f verbosity="0" -f cancel_previous="false" -f custom_config="7590_W6 08_2X EN" -f add_or_override=override -f use_queue=false -f create_artifacts=true
+
+# Run a full build across all devices configured in the "integration-testing" branch.
+# The URL references the python2-based ".config" generated manually via "make menuconfig".
+# The "fake-firmware" target triggers a complete build ("make") for each device in the
+# matrix without requiring the original AVM firmware, enabling end-to-end workflow testing
+# even when the vendor firmware is unavailable.
+gh workflow run make_package.yml -r integration-testing -f make_target='fake-firmware # python2' -f url='https://github.com/<your user>/freetz-ng/releases/download/python2/default.config' -f verbosity="0" -f cancel_previous="false" -f use_queue=false
 
 # Test single package with all configured devices
 gh workflow run make_package.yml -f make_target="patchelf" -f url="$URL" -f verbosity="0" -f cancel_previous="false" -f use_queue=false
@@ -349,7 +360,13 @@ gh workflow run make_package.yml -f make_target="firmware"
 gh workflow run make_package.yml -f make_target="-firmware" -f url="$URL"
 
 # Test firmware build with custom pre-build commands (e.g., rebuild Python host tools)
-gh workflow run make_package.yml -f make_target="-firmware" -f url="$URL" -f custom_config="make python3-host-dirclean && make python3-host-precompiled python3-pip-host-precompiled python3-setuptools-host-precompiled"
+gh workflow run make_package.yml -f make_target="-firmware" -f url="$URL" -f custom_config="make python3-host-dirclean && make python3-host-precompiled"
+
+# Test package with custom label for workflow run name
+gh workflow run make_package.yml -f make_target="php#Test PHP 8.4 with libxml2"
+
+# Test multiple packages with custom label
+gh workflow run make_package.yml -f make_target="php,openssl,libxml2#Test PHP dependencies"
 
 # Test device configuration with fake firmware
 gh workflow run make_package.yml -f make_target="fake-firmware" -f custom_config="7530 08_2X EN"
@@ -411,6 +428,9 @@ git commit -m "test: make fake-firmware"
 
 # Build package skipping library dependencies
 git commit -m "test: make =php-precompiled"
+
+# Build with custom label for workflow run name
+git commit -m "test: make php#Test PHP 8.4 with all dependencies"
 
 # Full build (not supported - will be skipped)
 git commit -m "test: make"
