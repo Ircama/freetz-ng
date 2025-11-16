@@ -1,5 +1,12 @@
 name: make_package
 
+run-name: >-
+  ${{
+    startsWith(github.event.inputs.make_target, '#') && format('{0} - {1}', github.workflow, github.event.inputs.make_target)
+    || contains(github.event.inputs.make_target, '#') && github.event.inputs.make_target
+    || github.workflow
+  }}
+
 on:
   # push:
   #   branches: [ master ]
@@ -11,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       make_target:
-        description: "Make target: 'pkg1,pkg2', 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware' (creates fake fw for testing), or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (builds firmware and the specified package, gh param: -f make_target=php)"
+        description: "Make target: 'pkg1,pkg2' or 'pkg1 # label' (label appears in workflow name), 'package-precompiled', 'package-recompile', 'firmware', 'fake-firmware', or 'pkg-firmware', 'pkg-recompile-firmware', 'pkg-precompiled-firmware' (gh param: -f make_target=php or -f 'make_target=php # my test')"
         required: false
         type: string
         default: ""
@@ -136,11 +143,37 @@ jobs:
           clean: false
           persist-credentials: true
 
+      - name: Extract workflow label from make_target
+        id: extract_label
+        run: |
+          # Extract label from make_target if it contains '#'
+          MAKE_TARGET="${{ github.event.inputs.make_target }}"
+          if echo "$MAKE_TARGET" | grep -q '#'; then
+            # Extract part after '#' and trim whitespace
+            LABEL="$(echo "$MAKE_TARGET" | sed 's/.*#\s*//' | sed 's/^\s*//' | sed 's/\s*$//')"
+            echo "label=$LABEL" >> $GITHUB_OUTPUT
+            echo "### 🏷️ Workflow Label: $LABEL" >> $GITHUB_STEP_SUMMARY
+            echo "Extracted label: $LABEL"
+          else
+            echo "label=" >> $GITHUB_OUTPUT
+            echo "No label found in make_target"
+          fi
+
       - name: parse
         id: parse
         run: |
           # Produce the target list:
-          make_cmd="$(echo "${{ github.event.inputs.make_target }}" | tr -d ' ')"
+          # Remove label part (everything after #) before processing
+          # If make_target starts with '#', it's only a label - use empty target
+          MAKE_INPUT="${{ github.event.inputs.make_target }}"
+          if echo "$MAKE_INPUT" | grep -q '^#'; then
+            # Only label, no target specified
+            make_cmd=""
+            echo "Only label provided, using default targets"
+          else
+            # Remove label part (everything after #) and trim whitespace
+            make_cmd="$(echo "$MAKE_INPUT" | sed 's/#.*//' | tr -d ' ')"
+          fi
           if [ -z "$make_cmd" ]; then
             # Extract from commit message (look for "make" or "make-*")
             commit_msg="$(git log --format=%B -n1 ${{ github.sha }})"
@@ -644,6 +677,10 @@ jobs:
           echo "  - Firmware: $(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
           echo "  - Language: $(grep '^FREETZ_TYPE_LANG_[A-Z][A-Z]=y' .config | sed 's/FREETZ_TYPE_LANG_//;s/=y//' | head -1)"
           echo "  - Kernel:   $(grep '^FREETZ_AVM_PROP_KERNEL_' .config | grep '=y' | sed 's/.*KERNEL_//;s/_/./g;s/=y//' | head -1)"
+          echo "  - KernelVer:$(grep '^FREETZ_KERNEL_VERSION=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - KernMajor:$(grep '^FREETZ_KERNEL_VERSION_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - KernDir:  $(grep '^FREETZ_KERNEL_VANILLA_DLDIR=' .config | sed 's/.*=//' | tr -d '"')"
+          echo "  - KernMods: $(grep '^FREETZ_KERNEL_VERSION_MODULES_SUBDIR=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - Arch:     $(grep '^FREETZ_AVM_PROP_ARCH_' .config | grep '=y' | sed 's/.*ARCH_//;s/=y//' | head -5 | tr '\n' ' ')"
           echo "  - GCC:      $(grep '^FREETZ_TARGET_GCC_' .config | grep -v MIN | grep -v MAX | grep '=y' | sed 's/.*GCC_//;s/_/./g;s/=y//' | head -1)"
           echo "  - uClibc:   $(grep '^FREETZ_TARGET_UCLIBC_' .config | grep -v HAS | grep '=y' | sed 's/.*UCLIBC_//;s/_/./g;s/=y//' | head -1)"
@@ -784,10 +821,10 @@ jobs:
             # Extract device product name for firmware filename (use first match only)
             FIRMWARE_FILE="$(grep '^FREETZ_DL_SOURCE=' .config 2>/dev/null | head -1 | cut -d'=' -f2- | tr -d '"' || true)"
 
-            # Create fake firmware
-            mkdir -p dl/fw
+            # Create fake firmware (create directory structure if path contains /)
+            mkdir -p "dl/fw/$(dirname "$FIRMWARE_FILE")"
             FIRMWARE_PATH="dl/fw/${FIRMWARE_FILE}"
-            echo "Fake firmware placeholder" > $FIRMWARE_PATH            
+            echo "Fake firmware placeholder" > "$FIRMWARE_PATH"
             echo "✅ Created fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"            
 
             # Create simplified fwmod replacement inline
@@ -860,7 +897,8 @@ jobs:
             echo 'ln -s "$(basename "$OUTPUT_IMAGE_REL")" "${IMAGES_DIR}/latest.image"'     >> fwmod
             echo 'IMAGE_SIZE=$(stat -c%s "$OUTPUT_IMAGE" 2>/dev/null || echo 0)'            >> fwmod
             echo 'IMAGE_SIZE_KB=$((IMAGE_SIZE / 1024))'                                     >> fwmod
-            echo 'echo "Image size of $OUTPUT_IMAGE_REL: $IMAGE_SIZE_KB KB ($IMAGE_SIZE bytes)"' >> fwmod
+            echo 'echo "Image size of $OUTPUT_IMAGE_REL: $IMAGE_SIZE_KB KB ($IMAGE_SIZE bytes)."' >> fwmod
+            echo ''                                                                         >> fwmod
             echo 'printf "\033[1mFINISHED\033[0m\n"'                                        >> fwmod
             echo ''                                                                         >> fwmod
             
@@ -1004,12 +1042,18 @@ jobs:
           
           # Show toolchain information
           echo "=== 👉 Toolchain information ==="
+          echo "ℹ️ Target architecture:"
+          grep "^FREETZ_TARGET_ARCH=" .config | head -1
+          echo "ℹ️ CPU model:"
+          grep "^FREETZ_CPU_MODEL_" .config | grep "=y" | head -3
+          echo "ℹ️ Architecture properties:"
+          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -5
+          echo "ℹ️ Target arch flags:"
+          grep "^FREETZ_TARGET_ARCH_" .config | grep "=y" | head -3
           echo "ℹ️ GCC version:"
           grep "^FREETZ_TARGET_GCC_" .config | grep "=y" | head -3
           echo "ℹ️ uClibc version:"
           grep "^FREETZ_TARGET_UCLIBC_" .config | grep "=y" | head -3
-          echo "ℹ️ Architecture:"
-          grep "^FREETZ_AVM_PROP_ARCH_" .config | grep "=y" | head -3
           echo "ℹ️ Kernel version:"
           grep "^FREETZ_AVM_PROP_KERNEL_" .config | grep "=y" | head -3
           echo ""
