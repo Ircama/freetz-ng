@@ -483,7 +483,7 @@ jobs:
             custom_name="$custom_device - $custom_firmware ($custom_lang)"
             custom_tcs="_$custom_device _FIRMWARE_$custom_firmware _LANG_$custom_lang"
             
-            if [ "$override_pkg_target" ];then
+            if [ "$pkg_target" ];then
               echo "  Custom override: $override_pkg_name with target: -$override_pkg_target on $custom_name"
             else
               echo "  Custom override: $override_pkg_name on $custom_name"
