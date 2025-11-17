@@ -159,6 +159,113 @@ jobs:
             echo "No label found in make_target"
           fi
 
+      - name: Check branch status against upstream
+        run: |
+          # Compare current branch with upstream/master
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Fetch upstream repository
+          git remote add upstream https://github.com/Freetz-NG/freetz-ng 2>/dev/null || true
+          git fetch upstream master 2>/dev/null || true
+          
+          # Check if branch is even with upstream/master
+          COMMITS_AHEAD=$(git rev-list --count upstream/master..HEAD 2>/dev/null || echo "0")
+          COMMITS_BEHIND=$(git rev-list --count HEAD..upstream/master 2>/dev/null || echo "0")
+          
+          if [ "$COMMITS_AHEAD" = "0" ] && [ "$COMMITS_BEHIND" = "0" ]; then
+            # Branch is even with upstream
+            echo "### ✅ Branch Status" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This branch is **even** with [upstream/master](https://github.com/Freetz-NG/freetz-ng/tree/master) (\`Freetz-NG/freetz-ng\`)." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            # Branch has differences
+            echo "### 📊 Branch Status vs Upstream" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "Upstream: [\`Freetz-NG/freetz-ng:master\`](https://github.com/Freetz-NG/freetz-ng/tree/master)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$COMMITS_AHEAD" != "0" ]; then
+              echo "- 🔼 **$COMMITS_AHEAD commit(s) ahead** of upstream" >> $GITHUB_STEP_SUMMARY
+            fi
+            if [ "$COMMITS_BEHIND" != "0" ]; then
+              echo "- 🔽 **$COMMITS_BEHIND commit(s) behind** upstream" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Show commit differences if ahead
+            if [ "$COMMITS_AHEAD" != "0" ]; then
+              echo "#### 📝 Commits in this branch (not in upstream)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              git log --oneline --no-decorate upstream/master..HEAD | head -20 | while read -r line; do
+                COMMIT_HASH=$(echo "$line" | awk '{print $1}')
+                COMMIT_MSG=$(echo "$line" | cut -d' ' -f2-)
+                echo "- [\`$COMMIT_HASH\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$COMMIT_HASH) $COMMIT_MSG" >> $GITHUB_STEP_SUMMARY
+              done
+              
+              if [ "$COMMITS_AHEAD" -gt 20 ]; then
+                echo "- _... and $((COMMITS_AHEAD - 20)) more commits_" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # Show modified files
+            echo "#### 📂 Modified Files" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Get list of modified files with their change types
+            MODIFIED_FILES=$(git diff --name-status upstream/master...HEAD 2>/dev/null || echo "")
+            
+            if [ -n "$MODIFIED_FILES" ]; then
+              FILE_COUNT=$(echo "$MODIFIED_FILES" | wc -l)
+              echo "<details>" >> $GITHUB_STEP_SUMMARY
+              echo "<summary><strong>$FILE_COUNT file(s) modified</strong> (click to expand)</summary>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Status | File | Link |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|------|------|" >> $GITHUB_STEP_SUMMARY
+              
+              echo "$MODIFIED_FILES" | head -50 | while IFS=$'\t' read -r status filepath; do
+                case "$status" in
+                  A*) STATUS_ICON="✨ Added" ;;
+                  M*) STATUS_ICON="📝 Modified" ;;
+                  D*) STATUS_ICON="🗑️ Deleted" ;;
+                  R*) STATUS_ICON="🔄 Renamed" ;;
+                  *) STATUS_ICON="$status" ;;
+                esac
+                
+                # Create link to file comparison
+                if [ "$status" != "D"* ]; then
+                  FILE_LINK="[\`$filepath\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/${{ github.sha }}/$filepath)"
+                  DIFF_LINK="[📋 diff]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/Freetz-NG:master...${{ github.sha }}#diff-$(echo -n "$filepath" | md5sum | cut -d' ' -f1))"
+                else
+                  FILE_LINK="\`$filepath\`"
+                  DIFF_LINK="—"
+                fi
+                
+                echo "| $STATUS_ICON | $FILE_LINK | $DIFF_LINK |" >> $GITHUB_STEP_SUMMARY
+              done
+              
+              if [ "$FILE_COUNT" -gt 50 ]; then
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "_... and $((FILE_COUNT - 50)) more files_" >> $GITHUB_STEP_SUMMARY
+              fi
+              
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "</details>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              # Add full diff comparison link
+              echo "🔗 [**View full comparison**]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/Freetz-NG:master...${{ github.ref_name }})" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "_No modified files detected_" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
       - name: parse
         id: parse
         run: |
