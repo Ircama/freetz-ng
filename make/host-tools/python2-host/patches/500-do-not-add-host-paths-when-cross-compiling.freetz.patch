@@ -1,0 +1,31 @@
+--- Lib/distutils/sysconfig.py
++++ Lib/distutils/sysconfig.py
+@@ -80,7 +80,13 @@
+     sys.exec_prefix -- i.e., ignore 'plat_specific'.
+     """
+     if prefix is None:
+-        prefix = plat_specific and EXEC_PREFIX or PREFIX
++        # For cross-compilation, override prefix with _PYTHON_SYSROOT
++        if '_PYTHON_SYSROOT' in os.environ:
++            prefix = os.path.join(os.environ['_PYTHON_SYSROOT'], 'usr')
++        elif prefix is not None:
++            pass  # use provided prefix
++        else:
++            prefix = plat_specific and EXEC_PREFIX or PREFIX
+ 
+     if os.name == "posix":
+         if python_build:
+@@ -477,6 +483,13 @@
+             import _osx_support
+             _osx_support.customize_config_vars(_config_vars)
+ 
++    # Override with environment variables for cross-compilation
++    # This ensures that environment settings take precedence over compiled-in values
++    if _config_vars is not None:
++        for key in ('CC', 'CXX', 'LDSHARED', 'LDFLAGS', 'CFLAGS', 'CPPFLAGS', 'AR', 'RANLIB', 'LD'):
++            if key in os.environ:
++                _config_vars[key] = os.environ[key]
++
+     if args:
+         vals = []
+         for name in args:

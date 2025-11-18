@@ -27,6 +27,8 @@ define HostPython
 		export PYTHONDONTWRITEBYTECODE="x"; \
 		export PYTHONNOUSERSITE="1"; \
 		export DISTUTILS_USE_SDK="1"; \
+		export _python_sysroot="$(TARGET_TOOLCHAIN_STAGING_DIR)"; \
+		export _PYTHON_SYSROOT="$(TARGET_TOOLCHAIN_STAGING_DIR)"; \
 		export CC="$(TARGET_CC)"; \
 		export CXX="$(TARGET_CXX)"; \
 		export LD="$(TARGET_CC)"; \
@@ -70,9 +72,6 @@ define Build/PyMod/Generic
 			$(TARGET_CONFIGURE_ENV) \
 			$(FREETZ_LD_RUN_PATH) \
 			$(3) \
-			_python_sysroot="$(TARGET_TOOLCHAIN_STAGING_DIR)" \
-			_python_prefix="/usr" \
-			_python_exec_prefix="/usr" \
 			, \
 			./setup.py build_ext \
 				--include-dirs=$(PYTHON_STAGING_INC_DIR) \
@@ -80,8 +79,11 @@ define Build/PyMod/Generic
 				--rpath=/usr/lib/freetz \
 			$(2) \
 		); \
+		dest_dir="$(strip $(4))"; \
+		if [ -n "$$dest_dir" ] && [ -d "$$dest_dir" ]; then \
+			find "$$dest_dir" -type f -name "*.so" -exec $(TARGET_STRIP) \{\} \+; \
+		fi; \
 	'
-	$(if $(strip $(4)),find $(strip $(4)) -type f -name "*.so" -exec $(TARGET_STRIP) \{\} \+)
 endef
 
 # $(1) => PKG value
