@@ -55,18 +55,8 @@ endef
 # $(3) => additional variables
 # $(4) => dir to look for .so files to be stripped
 define Build/PyMod/Generic
-	# Temporarily hide host libpython to prevent distutils from linking against it (trap ensures restoration)
 	@bash -c ' \
 		set -e; \
-		cleanup() { \
-			[ -f "$(HOST_TOOLS_DIR)/usr/lib/libpython$(PYTHON_MAJOR_VERSION).a.hidden-by-pymod" ] && \
-			mv "$(HOST_TOOLS_DIR)/usr/lib/libpython$(PYTHON_MAJOR_VERSION).a.hidden-by-pymod" \
-			   "$(HOST_TOOLS_DIR)/usr/lib/libpython$(PYTHON_MAJOR_VERSION).a" 2>/dev/null || true; \
-		}; \
-		trap cleanup EXIT INT TERM; \
-		[ -f "$(HOST_TOOLS_DIR)/usr/lib/libpython$(PYTHON_MAJOR_VERSION).a" ] && \
-		mv "$(HOST_TOOLS_DIR)/usr/lib/libpython$(PYTHON_MAJOR_VERSION).a" \
-		   "$(HOST_TOOLS_DIR)/usr/lib/libpython$(PYTHON_MAJOR_VERSION).a.hidden-by-pymod"; \
 		$(call HostPython, \
 			cd $(strip $(1)); \
 			$(TARGET_CONFIGURE_ENV) \
