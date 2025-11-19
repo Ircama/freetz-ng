@@ -23,6 +23,14 @@ It supports a wide range of encodings, including:
 - **libiconv (libiconv.so)**: Includes the shared library libiconv.so.2.7.0
 - **External libiconv**: Allows externalizing the libiconv library instead of compiling it into the firmware
 
+## Version Selection
+The package automatically selects the appropriate libiconv version based on the uClibc toolchain:
+
+- **uClibc 0.9.28**: Forces libiconv 1.13.1 (ABANDON) due to compatibility issues with modern libiconv
+- **uClibc 0.9.29+**: Uses libiconv 1.18 (CURRENT) by default
+
+Manual version selection is still available in menuconfig, but the CURRENT version is automatically disabled for uClibc 0.9.28 toolchains.
+
 ## Dependencies
 - zlib (when used by other libraries)
 

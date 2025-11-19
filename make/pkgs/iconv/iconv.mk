@@ -3,7 +3,9 @@
 ### MANPAGE:=https://www.gnu.org/savannah-checkouts/gnu/libiconv/documentation/
 ### CHANGES:=https://ftp.gnu.org/pub/gnu/libiconv/
 ### CVSREPO:=https://git.savannah.gnu.org/gitweb/?p=libiconv.git
-$(call PKG_INIT_BIN, $(if $(FREETZ_LIB_libiconv_WITH_VERSION_ABANDON),1.13.1,1.18))
+# Force ABANDON version (1.13.1) for uClibc 0.9.28 compatibility
+# Use CURRENT version (1.18) only for uClibc 0.9.29+
+$(call PKG_INIT_BIN, $(if $(or $(FREETZ_LIB_libiconv_WITH_VERSION_ABANDON),$(FREETZ_TARGET_UCLIBC_0_9_28)),1.13.1,1.18))
 $(PKG)_LIB_VERSION_ABANDON := 2.5.0
 $(PKG)_LIB_VERSION_CURRENT := 2.7.0
 $(PKG)_LIB_VERSION := $($(PKG)_LIB_VERSION_$(if $(FREETZ_LIB_libiconv_WITH_VERSION_ABANDON),ABANDON,CURRENT))
@@ -11,7 +13,9 @@ $(PKG)_SOURCE:=lib$(pkg)-$($(PKG)_VERSION).tar.gz
 $(PKG)_HASH_ABANDON:=55a36168306089009d054ccdd9d013041bfc3ab26be7033d107821f1c4949a49
 $(PKG)_HASH_CURRENT:=3b08f5f4f9b4eb82f151a7040bfd6fe6c6fb922efe4b1659c66ea933276965e8
 $(PKG)_HASH:=$($(PKG)_HASH_$(if $(FREETZ_LIB_libiconv_WITH_VERSION_ABANDON),ABANDON,CURRENT))
-$(PKG)_SITE:=@GNU/lib$(pkg)
+$(PKG)_SITE_ABANDON:=@GNU/lib$(pkg)
+$(PKG)_SITE_CURRENT:=https://mirrors.kernel.org/gnu/lib$(pkg),https://ftp.gnu.org/gnu/lib$(pkg)
+$(PKG)_SITE:=$($(PKG)_SITE_$(if $(FREETZ_LIB_libiconv_WITH_VERSION_ABANDON),ABANDON,CURRENT))
 
 ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0_9_28)),y)
 LIB$(PKG)_PREFIX:=/usr

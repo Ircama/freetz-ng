@@ -17,6 +17,7 @@ if FREETZ_LIB_libiconv
 
 		config FREETZ_LIB_libiconv_WITH_VERSION_CURRENT
 			bool "2.7.0 (from libiconv 1.18)"
+			depends on !FREETZ_TARGET_UCLIBC_0_9_28
 
 	endchoice
 
