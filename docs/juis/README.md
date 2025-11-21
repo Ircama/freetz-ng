@@ -87,6 +87,7 @@ Content: [FOS-Release](#fos-release) - [FOS-Labor](#fos-labor) - [FOS-Inhaus](#f
   - HWR 229: [FRITZ.Powerline_1260E-08.10-126297-LabBETA.image](http://download.avm.de/labor/Smart24P2/1260E/FRITZ.Powerline_1260E-08.10-126297-LabBETA.image)
   - HWR 236: [FRITZ.Box_7530-08.10-125959-LabBETA.image](http://download.avm.de/labor/Smart24P2/7530/FRITZ.Box_7530-08.10-125959-LabBETA.image)
   - HWR 239: [FRITZ.Box_7583-07.39-103075-LabBETA.image](http://download.avm.de/labor/MOVE21/7583/FRITZ.Box_7583-07.39-103075-LabBETA.image)
+  - HWR 240: [FRITZ.Repeater_600-07.58.image](http://download.avm.de/fritzwlan/fritzrepeater-600/deutschland/fritz.os/FRITZ.Repeater_600-07.58.image)
   - HWR 247: [FRITZ.Box_7520-08.10-123542-LabBETA.image](http://download.avm.de/labor/Smart24P2/7520/FRITZ.Box_7520-08.10-123542-LabBETA.image)
   - HWR 249: [FRITZ.Powerline_1260-08.10-126298-LabBETA.image](http://download.avm.de/labor/Smart24P2/1260/FRITZ.Powerline_1260-08.10-126298-LabBETA.image)
   - HWR 253: [FRITZ.Repeater_6000-08.10-126469-LabBETA.image](http://download.avm.de/labor/Smart24P2/6000/FRITZ.Repeater_6000-08.10-126469-LabBETA.image)
