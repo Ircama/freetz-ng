@@ -1,15 +1,15 @@
 #!/bin/bash
 #
-# Create Python 3.15 firmware test
-# This script enables Python 3.15 in the configuration, builds the firmware,
+# Build Python 3.15 external archive
+# This script enables Python 3.15 in the configuration, builds the external package,
 # and performs basic tests to ensure Python 3.15 is properly included.
 #
-# Usage: create-python315-firmware-test.sh
+# Usage: build-python315-external.sh
 #
 
 set -e
 
-echo "Creating firmware test for Python 3.15..."
+echo "Creating external archive for Python 3.15..."
 
 # Check if we're in the Freetz-NG root directory
 if [ ! -f "Makefile" ] || [ ! -d "make/pkgs/python3" ]; then
@@ -49,9 +49,9 @@ fi
 echo "Running make olddefconfig..."
 make olddefconfig > /dev/null
 
-# Build the firmware
-echo "Building firmware with Python 3.15..."
-make
+# Build the external package
+echo "Building Python 3.15 external package..."
+make external-pkg PKG=python3
 
 # Check if build succeeded and Python 3.15 is included
 echo "Checking build results..."
@@ -60,30 +60,29 @@ if [ ! -d "images" ]; then
     exit 1
 fi
 
-# Find the latest image
-LATEST_IMAGE=$(ls -t images/*.image 2>/dev/null | head -1)
-if [ -z "$LATEST_IMAGE" ]; then
-    echo "ERROR: No firmware image found in images/"
+# Find the latest external archive for python3
+LATEST_EXTERNAL=$(ls -t images/*python3*.external 2>/dev/null | head -1)
+if [ -z "$LATEST_EXTERNAL" ]; then
+    echo "ERROR: No Python 3 external archive found in images/"
     exit 1
 fi
 
-echo "Latest firmware image: $LATEST_IMAGE"
+echo "Latest Python 3 external archive: $LATEST_EXTERNAL"
 
 # Extract and check for Python 3.15
-TEMP_DIR=$(mktemp -d /tmp/firmware_check.XXXXXX)
-echo "Extracting firmware to check for Python 3.15..."
+TEMP_DIR=$(mktemp -d /tmp/external_check.XXXXXX)
+echo "Extracting external archive to check for Python 3.15..."
 cd "$TEMP_DIR"
-unsquashfs -q "$LATEST_IMAGE" usr/lib/python315.zip 2>/dev/null || true
-unsquashfs -q "$LATEST_IMAGE" usr/bin/python3 2>/dev/null || true
+tar -xf "$LATEST_EXTERNAL" 2>/dev/null || true
 
-if [ -f "squashfs-root/usr/lib/python315.zip" ] || [ -f "squashfs-root/usr/bin/python3" ]; then
-    echo "SUCCESS: Python 3.15 found in firmware image"
+if [ -f "usr/lib/python315.zip" ] || [ -f "usr/bin/python3" ]; then
+    echo "SUCCESS: Python 3.15 found in external archive"
 else
-    echo "WARNING: Python 3.15 not found in firmware image"
+    echo "WARNING: Python 3.15 not found in external archive"
 fi
 
 # Cleanup
 cd /
 rm -rf "$TEMP_DIR"
 
-echo "Python 3.15 firmware test completed successfully!"
+echo "Python 3.15 external archive creation completed successfully!"
