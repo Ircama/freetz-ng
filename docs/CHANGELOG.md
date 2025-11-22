@@ -63,20 +63,27 @@ Latest changes
 ### devel
 
   - Build system:
+    * binutils (kernel) 2.18/2.22/2.23.2/2.24/2.25.1/2.26.1/2.31.1/2.36.1/2.42/2.45.1
+    * binutils (target) 2.22/2.23.2/2.24/2.25.1/2.26.1/2.31.1/2.36.1/2.43.1/2.45.1
+    * new architecture: aarch64
+    * new architecture: aarch64_eb
+    * new architecture: armeb
 
   - Host tools:
     * ca-bundle 2025-11-04
+    * cmake 4.1.3
     * dos2unix 7.5.3
     * file 5.46
     * gperf 3.3
     * patchelf 0.14.5/0.18.0-b49de1b33
     * patchelf-target 0.14.5/0.15.0
+    * pseudo 1.9.2
     * python3 3.14.0
     * python3-attrs 25.4.0
     * python3-jsonschema 4.25.1
     * python3-pip 25.3
     * python3-referencing 0.37.0
-    * tools 2025-11-05
+    * tools 2025-11-21
     * uboot 2025.10
 
   - AVM sources:
@@ -91,7 +98,7 @@ Latest changes
 
   - Packages:
     * BIND 9.11.37/9.20.15
-    * Binutils 2.45
+    * Binutils 2.45.1
     * Bzip2 1.0.8
     * CA-bundle 2025-11-04
     * Curl 8.12.1/8.17.0
@@ -99,19 +106,27 @@ Latest changes
     * GNU Make 4.2.1/4.4.1
     * hostapd_cli 2.7/2.10/2.11
     * Info-ZIP 3.0
+    * iPerf3 3.3/3.20
     * ldd 0.1/1.0.55
+    * MTR 0.80/0.96
+    * Nmap 4.76/5.51/7.98
     * OpenSSH 9.3p2/10.2p1
+    * OpenVPN 2.4.12/2.5.11/2.6.16
     * PatchELF 0.18.0
     * procps-ng 4.0.5
     * Python 3.14.0
+    * sslh 2.2.4/2.3.0
     * Stunnel 5.76
-    * Tor 0.4.8.19
+    * Tor 0.4.8.21
     * Unbound 1.24.1
+    * UnRAR 6.1.7/7.2.1
     * Whois 5.6.5
 
   - Libraries:
-    * harfbuzz 12.1.0
+    * harfbuzz 12.2.0
+    * libcap 2.49/2.77
     * libdeflate 1.25
+    * liburcu 0.15.4
     * libxml2 2.15.1
     * libyaml 0.2.5
     * MbedTLS 2.7.19/2.28.10/3.6.5
@@ -205,7 +220,7 @@ Latest changes
     * mc (Midnight Commander) 4.8.31/4.8.33
     * Minicom 2.10
     * Mosquitto 2.0.22
-    * Nano 8.6
+    * Nano 8.7
     * NcFTP 3.3.0
     * Nmap 4.76/5.51/7.97
     * OpenSSH 9.3p2/10.0p1

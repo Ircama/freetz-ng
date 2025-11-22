@@ -84,7 +84,7 @@ choice
 		help
 			Select your box type here.
 
-	comment "T-Com hardware"
+	comment "T-Com"
 		depends on FREETZ_SERIES_0 || FREETZ_SERIES_1
 
 	config FREETZ_TYPE_300IP
@@ -263,21 +263,25 @@ choice
 		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_ALDER
 		bool "5690 Pro"
 
+	config FREETZ_TYPE_5690_XGS
+		depends on FREETZ_SERIES_6
+		depends on FREETZ_SHOW_DEVELOPER
+		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_AIROHA
+		bool "5690 XGS - DEVELOPER"
+
 
 	comment "Cable"
 		depends on FREETZ_SERIES_3 || FREETZ_SERIES_4 || FREETZ_SERIES_5 || FREETZ_SERIES_6
 
 	config FREETZ_TYPE_6320
 		depends on FREETZ_SERIES_3
-		depends on FREETZ_SHOW_DEVELOPER
 		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_PUMA5
-		bool "6320 - DEVELOPER"
+		bool "6320 - UNTESTED"
 
 	config FREETZ_TYPE_6360
 		depends on FREETZ_SERIES_3
-		depends on FREETZ_SHOW_DEVELOPER
 		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_PUMA5
-		bool "6360 - DEVELOPER"
+		bool "6360 - UNTESTED"
 
 	config FREETZ_TYPE_6430
 		depends on FREETZ_SERIES_4
@@ -699,10 +703,15 @@ choice
 		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_IPQ40xx
 		bool "1200"
 
-	config FREETZ_TYPE_1200_W6
+	config FREETZ_TYPE_1200_W6_V1
 		depends on FREETZ_SERIES_X
 		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_MAPLE
-		bool "1200 AX"
+		bool "1200 AX v1"
+
+	config FREETZ_TYPE_1200_W6_V2
+		depends on FREETZ_SERIES_X
+		select FREETZ_AVM_SOURCE_FOR_SYSTEM_TYPE_MAPLE
+		bool "1200 AX v2 - UNTESTED"
 
 	config FREETZ_TYPE_1700
 		depends on FREETZ_SERIES_X
@@ -1021,6 +1030,7 @@ config FREETZ_TYPE_FIRMWARE_UNTESTED
 	depends on !FREETZ_MODULES_TEST
 	depends on \
 		FREETZ_TYPE_0300 || \
+		FREETZ_TYPE_1200_W6_V2 || \
 		FREETZ_TYPE_1240_W5 || \
 		FREETZ_TYPE_1260_V2 || \
 		FREETZ_TYPE_1700 || \
@@ -1049,8 +1059,7 @@ config FREETZ_TYPE_FIRMWARE_DEVELOPER
 		FREETZ_TYPE_0600_V1 || \
 		FREETZ_TYPE_0600_V2 || \
 		FREETZ_TYPE_1160 || \
-		FREETZ_TYPE_6320 || \
-		FREETZ_TYPE_6360
+		FREETZ_TYPE_5690_XGS
 
 ###
 ### Alien firmware

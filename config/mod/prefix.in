@@ -18,7 +18,8 @@ config FREETZ_TYPE_PREFIX
 	default "600_v2"            if FREETZ_TYPE_0600_V2
 	default "1160"              if FREETZ_TYPE_1160
 	default "1200"              if FREETZ_TYPE_1200_W5
-	default "1200_AX"           if FREETZ_TYPE_1200_W6
+	default "1200_AX_v1"        if FREETZ_TYPE_1200_W6_V1
+	default "1200_AX_v2"        if FREETZ_TYPE_1200_W6_V2
 	default "1240E"             if FREETZ_TYPE_1240_W5
 	default "1240_AX"           if FREETZ_TYPE_1240_W6
 	default "1260E"             if FREETZ_TYPE_1260_V1
@@ -57,6 +58,7 @@ config FREETZ_TYPE_PREFIX
 	default "5590"              if FREETZ_TYPE_5590
 	default "5690"              if FREETZ_TYPE_5690_NIX
 	default "5690_Pro"          if FREETZ_TYPE_5690_PRO
+	default "5690_XGS"          if FREETZ_TYPE_5690_XGS
 	default "6000"              if FREETZ_TYPE_6000
 	default "6320"              if FREETZ_TYPE_6320
 	default "6360"              if FREETZ_TYPE_6360

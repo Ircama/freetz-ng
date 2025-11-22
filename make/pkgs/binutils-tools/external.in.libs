@@ -4,7 +4,7 @@ config EXTERNAL_FREETZ_LIB_libbfd
 	default n
 	help
 		externals the following file(s):
-		 ${FREETZ_LIBRARY_DIR}/libbfd-2.45.so
+		 ${FREETZ_LIBRARY_DIR}/libbfd-2.45.1.so
 
 config EXTERNAL_FREETZ_LIB_libctf
 	depends on EXTERNAL_ENABLED && FREETZ_LIB_libctf
@@ -28,7 +28,7 @@ config EXTERNAL_FREETZ_LIB_libopcodes
 	default n
 	help
 		externals the following file(s):
-		 ${FREETZ_LIBRARY_DIR}/libopcodes-2.45.so
+		 ${FREETZ_LIBRARY_DIR}/libopcodes-2.45.1.so
 
 config EXTERNAL_FREETZ_LIB_libsframe
 	depends on EXTERNAL_ENABLED && FREETZ_LIB_libsframe

@@ -19,6 +19,7 @@ Es gibt folgende Möglichkeiten die benötigten Pakete (prerequisites) zu instal
 ### Problematische Distributionen
   - Gentoo
   - NixOS
+  - Ubuntu 25.10
   - WSL/WSL2
 
 ### Alle anderen Distributionen
@@ -154,6 +155,17 @@ sudo apt-get -y upgrade
 sudo apt-get -y dist-upgrade
 ```
 
+  - uutil-Coreutils Problem ab Ubuntu 25.10:<br>
+Canonical Ltd. hat die GNU-Coreutils (GPL) durch uutil-Coreutils (MIT+Rust+Code-of-Conduct) ersetzt, was viele Probleme, unter anderem mit `pseudo-host` verursacht.
+Siehe [Carefully But Purposefully Oxidising Ubuntu](https://discourse.ubuntu.com/t/carefully-but-purposefully-oxidising-ubuntu/56995) und
+[Der Wechsel von Ubuntu 25.10 zu Rust Coreutils verursacht bei einigen ausführbaren Dateien erhebliche Probleme](https://www.reddit.com/r/linux/comments/1nr1bas/ubuntu_2510s_move_to_rust_coreutils_is_causing/?tl=de).<br>
+Die Fehlermeldung lautet `couldn't allocate absolute path for 'null'`.<br>
+Grundsätzlich ist von uutil-Coreutils abzuraten da diese unausgereift und vielfältige [Fehler in allen möglichen tools](https://freetz-ng.github.io/freetz-ng/NEWS/#2025-11-21) wie date, cp, mv, base64, du, sort, tail, ls, md5sum, dd, sudo usw usf aso aufweisen.<br>
+Workaround: Deinstallation von uutil-Coreutils und gleichzeitige Installation von GNU-Coreutils mittels
+```
+sudo apt-get remove --allow-remove-essential coreutils-from-uutils
+```
+
   - Ubuntu 23/24/25 64-Bit:
 ```
 sudo apt-get -y install %%Ubuntu23%%
@@ -236,5 +248,5 @@ Kali rolling wurde schon erfolgreich zum Bauen benutzt. Einfach die Pakete insta
 Das meiste wird bei Kali sowieso schon dabei installiert sein.
 
 ### Arch
-Unter Arch wurde das Metapackage [freetz-ng-devel](https://aur.archlinux.org/packages/freetz-ng-devel)<sup>AUR</sup> erfolgreich zum Bauen benutzt.
+Unter Arch wurde das Metapackage [freetz-ng-tools](https://aur.archlinux.org/packages/freetz-ng-tools-git)<sup>AUR</sup> erfolgreich zum Bauen benutzt.
 

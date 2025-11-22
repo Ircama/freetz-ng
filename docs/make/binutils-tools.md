@@ -1,4 +1,4 @@
-# Binutils 2.45 (binary only)
+# Binutils 2.45.1 (binary only)
   - Homepage: [https://www.gnu.org/software/binutils/](https://www.gnu.org/software/binutils/)
   - Manpage: [https://sourceware.org/binutils/docs/](https://sourceware.org/binutils/docs/)
   - Changelog: [https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=binutils/NEWS](https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=binutils/NEWS)

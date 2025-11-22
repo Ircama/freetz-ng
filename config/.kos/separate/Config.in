@@ -1,3 +1,4 @@
+source "config/.kos/separate/config-airoha-5699_08.10.in"
 source "config/.kos/separate/config-alder-5690_07.62.in"
 source "config/.kos/separate/config-alder-5690_08.01.in"
 source "config/.kos/separate/config-ar10-3272_06.86.in"

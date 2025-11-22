@@ -18,7 +18,7 @@ $(PKG_UNPACKED)
 $(PKG_CONFIGURED_CONFIGURE)
 
 $($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
-	$(call Build/PyMod/PKG, PYTHON_PYCRYPTO, , TARGET_ARCH_BE="$(TARGET_ARCH_BE)")
+	$(call Build/PyMod2/PKG, PYTHON_PYCRYPTO, , TARGET_ARCH_BE="$(TARGET_ARCH_BE)")
 	@touch $@
 
 $(pkg):

@@ -27,6 +27,7 @@
 /source
 /toolchain
 
-# ignore eclipse project files
+# ignore ide project files
 /.project
+/.vs
 

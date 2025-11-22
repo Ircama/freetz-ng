@@ -1,4 +1,4 @@
-# Python 3.15.0a1
+# Python 3.14.0
   - Homepage: [https://www.python.org/](https://www.python.org/)
   - Manpage: [https://docs.python.org/3/](https://docs.python.org/3/)
   - Changelog: [https://www.python.org/downloads/](https://www.python.org/downloads/)

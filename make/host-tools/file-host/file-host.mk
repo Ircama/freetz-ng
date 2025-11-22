@@ -16,8 +16,8 @@ $(PKG)_MAGIC_TARGET := $(TOOLS_BUILD_DIR)/usr/share/misc/magic.mgc
 
 $(PKG)_CONFIGURE_OPTIONS += --enable-static
 $(PKG)_CONFIGURE_OPTIONS += --disable-shared
-$(PKG)_CONFIGURE_OPTIONS += --disable-elf
-$(PKG)_CONFIGURE_OPTIONS += --disable-elf-core
+$(PKG)_CONFIGURE_OPTIONS += --enable-elf
+$(PKG)_CONFIGURE_OPTIONS += --enable-elf-core
 $(PKG)_CONFIGURE_OPTIONS += --disable-zlib
 $(PKG)_CONFIGURE_OPTIONS += --disable-bzlib
 $(PKG)_CONFIGURE_OPTIONS += --disable-xzlib

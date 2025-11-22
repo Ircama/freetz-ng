@@ -13,7 +13,7 @@ on:
       fos:
         description: "FOS Version to check"
         required: true
-        default: "08_2X"
+        default: "Fos08"
         type: choice
         options:
           - "Fos04"
@@ -42,6 +42,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/dl-packs
@@ -69,7 +71,7 @@ jobs:
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
       - name: clone
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true
@@ -84,7 +86,7 @@ jobs:
         id: parse
         run: |
           FOS="${{ github.event.inputs.fos }}"
-          [ -z "$FOS" ] && FOS="08_2X"
+          [ -z "$FOS" ] && FOS="Fos08"
           [ "$FOS" = "alles" ] && FOS="${FOS%es}"
           [ "$FOS" = "freetz_org" ] && FOS="$(sed -rn "s/^config FREETZ_AVM_HAS_FIRMWARE_(0[456])/\1/p" config/avm/availability.in) 07_0X 07_1X"
           [ "$FOS" = "freetz-ng" ] && FOS="07_2X 07_5X $(sed -rn "s/^config FREETZ_AVM_HAS_FIRMWARE_(0[89])/\1/p" config/avm/availability.in)"
@@ -101,12 +103,12 @@ jobs:
 
       - name: tools
         run: |
-          echo 'FREETZ_USER_LEVEL_EXPERT=y\nFREETZ_HOSTTOOLS_DOWNLOAD=y\nFREETZ_DL_SITE_USER="https://raw.githubusercontent.com/Freetz-NG/dl-mirror/master"' > .config
+          echo 'FREETZ_USER_LEVEL_EXPERT=y\nFREETZ_HOSTTOOLS_DOWNLOAD=y\nFREETZ_DL_SITE_USER="https://github.com/Freetz-NG/dl-mirror/releases/download/dl"' > .config
           make tools
 
       - name: generate
         env:
-          ACTIONS_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
+          FREETZ_DLTOKEN: ${{ secrets.FREETZ_DLTOKEN }}
           ACTIONS_IMAGE: ${{ secrets.ACTIONS_IMAGE }}
         run: |
           export LANG=en_US.utf8

@@ -25,6 +25,9 @@ if FREETZ_LIB_librrd
 
 		config FREETZ_LIB_librrd_WITH_VERSION_ABANDON
 			bool "1.2.30"
+			depends on FREETZ_TARGET_BITS_32
+			help
+				libart_lgpl has no 64bit support
 
 		config FREETZ_LIB_librrd_WITH_VERSION_CURRENT
 			bool "1.9.0"

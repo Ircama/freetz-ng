@@ -52,6 +52,12 @@ config FREETZ_AVM_HAS_CTLMGR_CTL
 config FREETZ_AVM_HAS_SHOWDSLDSTAT
 	def_bool y
 
+config FREETZ_AVM_HAS_HOSTAPD
+	def_bool y
+
+config FREETZ_AVM_HAS_HOSTAPD_VERSION_2_0
+	def_bool y
+
 config FREETZ_AVM_HAS_OPENSSL
 	def_bool y
 

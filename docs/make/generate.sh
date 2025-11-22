@@ -71,4 +71,5 @@ echo "$PKGS" | sed 's/##.*//g' | uniq | while read cat; do
 	done
 done >> "$INPWD/README.md"
 grep -v '^     - ' "$INPWD/README.md" | sed 's,](../../docs/make/,](,g' > "$MDPWD/README.md"
+exit 0
 

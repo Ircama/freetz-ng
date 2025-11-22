@@ -18,6 +18,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/firmware
@@ -31,8 +33,6 @@ jobs:
     runs-on: ubuntu-latest
 #   if: github.repository == 'freetz-ng/freetz-ng'
 
-    env:
-      CACHE_KEY: "${{ github.workflow }}"
     steps:
 
 #     - name: update
@@ -64,7 +64,7 @@ jobs:
 ##        echo -n "V6: " ; wget -q https://ipaddress.ai -6 -O - || echo none
 
       - name: clone
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true
@@ -81,10 +81,10 @@ jobs:
         with:
           path: |
             dl/*
-            dl/fw/*
-          key: ${{ env.CACHE_KEY }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}
+            !dl/linux-*.tar.xz
+            !dl/*-freetz-*-shared-glibc.tar.lzma
+          key: make_cache-${{ github.run_id }}
+          restore-keys: make_cache
 
       - name: download
         run: |
@@ -107,6 +107,8 @@ jobs:
           echo '# FREETZ_TOOLCHAIN_CCACHE is not set'                                                 >> .config
           sed '/FREETZ_USER_LEVEL_/d'                                                                 -i .config
           echo 'FREETZ_USER_LEVEL_DEVELOPER=y'                                                        >> .config
+          sed '/FREETZ_DL_IMAGE_AT_LAST/d'                                                            -i .config
+          echo '# FREETZ_DL_IMAGE_AT_LAST is not set'                                                 >> .config
           sed '/FREETZ_HOSTTOOLS_DOWNLOAD/d'                                                          -i .config
           echo 'FREETZ_HOSTTOOLS_DOWNLOAD=y'                                                          >> .config
           sed '/FREETZ_DOWNLOAD_TOOLCHAIN/d'                                                          -i .config

@@ -30,9 +30,9 @@ $(PKG)_MODULES_ALL := \
 $(PKG)_MODULES_SELECTED := $(call PKG_SELECTED_SUBOPTIONS,$($(PKG)_MODULES_ALL),MOD)
 $(PKG)_MODULES_EXCLUDED := $(filter-out $($(PKG)_MODULES_SELECTED),$($(PKG)_MODULES_ALL))
 
-$(PKG)_EXCLUDED_FILES   := $(call newline2space,$(foreach mod,$($(PKG)_MODULES_EXCLUDED),$(PyMod/$(mod)/files)))
-$(PKG)_UNNECESSARY_DIRS := $(if $(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC),$(call newline2space,$(Python/unnecessary-if-compression-enabled/dirs)))
-$(PKG)_UNNECESSARY_DIRS += $(call newline2space,$(foreach mod,$($(PKG)_MODULES_EXCLUDED),$(PyMod/$(mod)/dirs)))
+$(PKG)_EXCLUDED_FILES   := $(call newline2space,$(foreach mod,$($(PKG)_MODULES_EXCLUDED),$(PyMod3/$(mod)/files)))
+$(PKG)_UNNECESSARY_DIRS := $(if $(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC),$(call newline2space,$(Python3/unnecessary-if-compression-enabled/dirs)))
+$(PKG)_UNNECESSARY_DIRS += $(call newline2space,$(foreach mod,$($(PKG)_MODULES_EXCLUDED),$(PyMod3/$(mod)/dirs)))
 
 $(PKG)_DEPENDS_ON += python3-host expat libffi zlib
 $(PKG)_DEPENDS_ON += $(if $(FREETZ_SEPARATE_AVM_UCLIBC),patchelf-target-host)
@@ -91,7 +91,7 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 		install
 	(cd $(FREETZ_BASE_DIR)/$(PYTHON3_LOCAL_INSTALL_DIR); \
 		chmod -R u+w usr; \
-		$(RM) -r $(call newline2space,$(Python/unnecessary/files)); \
+		$(RM) -r $(call newline2space,$(Python3/unnecessary/files)); \
 		\
 		find usr/lib/python$(PYTHON3_MAJOR_VERSION)/ -name "*.pyo" -delete; \
 		\
@@ -117,7 +117,7 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.installed
 	(cd $(PYTHON3_DEST_DIR); \
 		echo -n > usr/lib/python$(PYTHON3_MAJOR_VERSION)/config-$(PYTHON3_MAJOR_VERSION)/Makefile; \
 		find usr/include/python$(PYTHON3_MAJOR_VERSION)/ -name "*.h" \! -name "pyconfig.h" \! -name "Python.h" -delete; \
-		$(RM) -r $(call newline2space,$(Python/development/files)); \
+		$(RM) -r $(call newline2space,$(Python3/development/files)); \
 	); \
 	touch -c $@
 
@@ -141,8 +141,8 @@ $($(PKG)_TARGET_DIR)/excluded-module-files.lst: $(TOPDIR)/.config $(PACKAGES_DIR
 $($(PKG)_TARGET_DIR)/excluded-module-files-zip.lst: $($(PKG)_TARGET_DIR)/excluded-module-files.lst
 	@cat $< | sed -r 's,usr/lib/python$(PYTHON3_MAJOR_VERSION)/,,g' > $@
 
-# Python 3.15 zip importer fix: copy .pyc files from __pycache__ to package level
-# This ensures compatibility with Python 3.15's zip importer which expects
+# Python 3.14 zip importer fix: copy .pyc files from __pycache__ to package level
+# This ensures compatibility with Python 3.14's zip importer which expects
 # .pyc files to be available at both __pycache__ and package level
 
 $($(PKG)_ZIPPED_PYC_TARGET_DIR): $($(PKG)_TARGET_DIR)/excluded-module-files-zip.lst $($(PKG)_TARGET_BINARY)

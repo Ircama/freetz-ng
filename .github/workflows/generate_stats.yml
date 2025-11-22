@@ -5,8 +5,15 @@ on:
     branches: [ master ]
     paths:
       - '.github/workflows/generate_stats.yml'
-      - 'config/ui/firmware.in'
       - 'docs/stats/generate.sh'
+      - 'config/ui/firmware.in'
+      - 'config/mod/dl-firmware.in'
+      - 'config/.img/**'
+      - 'tools/layoutGens.sh'
+      - 'tools/dl-toolchains_eval'
+      - 'tools/dl-toolchains_make'
+      - 'config/mod/dl-toolchain.in'
+      - 'config/ui/toolchain.in '
   workflow_dispatch:
 
 concurrency:
@@ -15,10 +22,12 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
-#     image: freetzng/generate
-      image: ghcr.io/freetz-ng/generate
+#     image: freetzng/dl-packs
+      image: ghcr.io/freetz-ng/dl-packs
       options: --user 1001:1001
     runs-on: ubuntu-latest
     if: github.repository == 'freetz-ng/freetz-ng'
@@ -31,13 +40,18 @@ jobs:
 #     - name: install
 #       run: |
 #         DEBIAN_FRONTEND=noninteractive apt-get -y install \
-#           git locales imagemagick
+#           locales bash \
+#           pv cpio rsync kmod imagemagick inkscape graphicsmagick subversion git bc unar wget sudo gcc g++ binutils autoconf automake \
+#           autopoint libtool-bin make bzip2 libncurses5-dev libreadline-dev zlib1g-dev flex bison patch texinfo tofrodos gettext pkg-config ecj \
+#           perl libstring-crc32-perl ruby ruby1.9 gawk libusb-dev unzip intltool libacl1-dev libcap-dev libc6-dev-i386 lib32ncurses5-dev \
+#           gcc-multilib bsdmainutils lib32stdc++6 libglib2.0-dev ccache cmake lib32z1-dev libsqlite3-dev sqlite3 libzstd-dev netcat curl \
+#           uuid-dev libssl-dev libgnutls28-dev u-boot-tools device-tree-compiler openssl build-essential libelf-dev
 #
 #     - name: locale
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
       - name: clone
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true

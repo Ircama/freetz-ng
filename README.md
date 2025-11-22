@@ -18,7 +18,7 @@ More features - less bugs!
   * For more see: [freetz-ng.github.io](https://freetz-ng.github.io/)
 
 ### Requirements:
-  * You need an up to date Linux System with some [prerequisites](docs/PREREQUISITES/README.md).
+  * You need an up to date Linux System with some [prerequisites](docs/prerequisites/README.md).
   * Or download a ready-to-use VM like Gismotro's [Freetz-Linux](https://freetz.digital-eliteboard.com/?dir=Teamserver/Freetz/Freetz-VM/VirtualBox/) (user & pass: `freetz`).
   * There are also Docker images available like [pfichtner-freetz](https://hub.docker.com/r/pfichtner/freetz) ([README](https://github.com/pfichtner/pfichtner-freetz#readme)).
 
@@ -116,7 +116,7 @@ Please make sure you fork the repo and change the clone URL in the example below
     - Running the docs server:
 
     ```bash
-    mkdocs serve --dev-addr 0.0.0.0:8000
+    mkdocs serve --dev-addr 0.0.0.0:8000 --config-file .github/mkdocs/mkdocs.yml
     ```
 
 - Fedora Linux instructions (tested on Fedora Linux 28):
@@ -131,7 +131,7 @@ Please make sure you fork the repo and change the clone URL in the example below
     - Running the docs server:
 
     ```bash
-    mkdocs serve --dev-addr 0.0.0.0:8000
+    mkdocs serve --dev-addr 0.0.0.0:8000 --config-file .github/mkdocs/mkdocs.yml
     ```
 
 After these commands, the current branch is accessible through your favorite browser at <http://localhost:8000>

@@ -7,18 +7,20 @@ on:
       - '.github/workflows/generate_docs.yml'
       - 'docs/generate.sh'
       - 'docs/*/generate.sh'
+      - '!docs/stats/generate.sh'
       - 'make/host-tools/*/*.mk'
       - 'make/pkgs/*/Config.in'
       - 'make/pkgs/*/*.mk'
       - 'make/libs/*/Config.in'
       - 'make/libs/*/*.mk'
       - 'config/ui/patches.in'
+      - 'config/ui/firmware.in'
+      - 'docs/*/*.tpl'
       - 'docs/*/*.md'
       - 'docs/wiki/*/*.md'
       - 'docs/screenshots/*.png'
       - 'docs/screenshots/*.jpg'
       - 'docs/screenshots/*.gif'
-      - 'docs/PREREQUISITES/*.md'
       - 'tools/.prerequisites/*'
   workflow_dispatch:
 
@@ -28,6 +30,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     container:
 #     image: ubuntu:20.04
 #     image: freetzng/generate
@@ -50,7 +54,7 @@ jobs:
 #       run: locale-gen en_US.utf8 && locale-gen de_DE.UTF-8 && update-locale
 
       - name: clone
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           set-safe-directory: true

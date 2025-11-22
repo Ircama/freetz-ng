@@ -1,5 +1,39 @@
 # Neuigkeiten
 
+  * __[2025-11-22](#2025-11-22)__<a id='2025-11-22'></a><br>
+    Die Fritzbox 5690xgs ist die erste mit einm 64-Bit `aarch64 (le)` Linux-Kernel. Da es sich um einen ARM-Prozessor handelt<br>
+    können keine 32-Bit Dateien mehr ausgeführt werden.<br>
+    Grundsätlich kann man aarch64 mit Freetz-NG compilieren, mangels [Sourcen von AVM](mailto:fritzbox_info@avm.de) fehlen noch Configs und evtl Patches.<br>
+    Ausserdem sind für Libraries wegen dem Pfad `lib64` noch Anpassungen notwendig, manches wird ganz inkompatibel sein.<br>
+
+  * __[2025-11-21](#2025-11-21)__<a id='2025-11-21'></a><br>
+    Warnung vor Ubuntu 25.10! Dieses wechselte von GNU-Coreutils zu uutils-Coreutils.<br>
+    Der Vorteil für Canonical ist der Wechsel der Lizenz von GNU zu MIT. Auserdem sind die uutils-Coreutils mit fancy Rust programmiert und haben einen zeitgemässen
+    Code-Of-Conduct. Das war's dann auch schon mit den Vorteilen.<br>
+    Die Nachteile sind Sicherheitslücken zB in sudo die das Passwort offenlegt. Oder dass keine unbeaufsichtigten Sicherheitsupdates anderer Komponenten mehr
+    eingespielt werden, da uutils-Coreutils die Checksumme ganz individuell (falsch) berechnet. "Unschön" ist auch dass uutils-Coreutils alle Parameter
+    akzeptiert die es in GNU-Coreutils gibt - die noch nicht implementiert sind werden stillschweigend ohne Fehlermeldung ignoriert, zB bei sort.
+    Immerhin ist uutils-Coreutils laut Release-Notes schon ganze 85,80% kompatibel zu GNU-Coreutils! Da ist es schon fast ein Vorteil dass uutils-Coreutils bis zu
+    17x langsamer als die GNU-Coreutils sind, man kann sich in der Zeit Gedanken über eine bessere Linux-Distribution (vielleicht Fedora?) machen.
+    Es gibt weitere witzige Fehler in date, cp, mv, base64, du, sort, tail, ls, md5sum, dd, sudo die man beim schmökern in den über 400 offenen Issues auf Github
+    findet.<br>
+    Falls man schon Ubuntu 25.10 benutzt hilft ein nachhaltiges `sudo apt-get remove --allow-remove-essential coreutils-from-uutils`<br>
+    Siehe<br>
+    - [https://github.com/advisories/GHSA-c978-wq47-pvvw](https://github.com/advisories/GHSA-c978-wq47-pvvw)
+    - [https://www.phoronix.com/news/sudo-rs-security-ubuntu-25.10](https://www.phoronix.com/news/sudo-rs-security-ubuntu-25.10)
+    - [https://www.reddit.com/r/linux/comments/1ov5q57/sudors_affected_by_multiple_security/](https://www.reddit.com/r/linux/comments/1ov5q57/sudors_affected_by_multiple_security/)
+    - [https://www.reddit.com/r/linux/comments/1oetmbo/ubuntu_2510_unattended_upgrades_broken_due_to/](https://www.reddit.com/r/linux/comments/1oetmbo/ubuntu_2510_unattended_upgrades_broken_due_to/)
+    - [https://github.com/uutils/coreutils/issues/8573](https://github.com/uutils/coreutils/issues/8573)
+    - [https://github.com/uutils/coreutils/releases](https://github.com/uutils/coreutils/releases)
+    - [https://askubuntu.com/questions/1309213/du-reports-wrong-folder-size](https://askubuntu.com/questions/1309213/du-reports-wrong-folder-size)
+    - [https://askubuntu.com/questions/1557259/sort-command-ignores-locale-rules-for-capitalization-accentuation-and-special](https://askubuntu.com/questions/1557259/sort-command-ignores-locale-rules-for-capitalization-accentuation-and-special)
+    - [https://bugs.launchpad.net/ubuntu/+source/makeself/+bug/2125535](https://bugs.launchpad.net/ubuntu/+source/makeself/+bug/2125535)
+    - [https://www.phoronix.com/news/Ubuntu-Rust-Coreutils-Perf](https://www.phoronix.com/news/Ubuntu-Rust-Coreutils-Perf)
+    - [https://github.com/uutils/coreutils/pull/8750](https://github.com/uutils/coreutils/pull/8750)
+    - [https://github.com/VirtualBox/virtualbox/issues/226](https://github.com/VirtualBox/virtualbox/issues/226)
+    - [https://www.webpronews.com/ubuntu-25-10-tests-rust-coreutils-checksum-errors-and-performance-challenges/](https://www.webpronews.com/ubuntu-25-10-tests-rust-coreutils-checksum-errors-and-performance-challenges/)
+    - [https://www.phoronix.com/news/Ubuntu-25.10-Coreutils-Makeself](https://www.phoronix.com/news/Ubuntu-25.10-Coreutils-Makeself)
+
   * __[2025-09-30](#2025-09-30)__<a id='2025-09-30'></a><br>
     Es wurde ein neuer [Tag](https://github.com/Freetz-NG/freetz-ng/tags) `ng25090` erstellt.<br>
     Ein Tag sollte wie in der [README](https://github.com/Freetz-NG/freetz-ng#or-clone-a-single-tag) beschrieben mit git ausgecheckt werden.<br>
@@ -254,7 +288,7 @@
 
   * __[2023-01-14](#2023-01-14)__<a id='2023-01-14'></a><br>
     Mit `tools/prerequisites` können alle nötigen Packages für das laufende Linux angezeigt und installiert werden.<br>
-    Es werden die Packages verwendet die auch unter [PREREQUISITES](https://freetz-ng.github.io/freetz-ng/PREREQUISITES) zu sehen sind<br>
+    Es werden die Packages verwendet die auch unter [PREREQUISITES](https://freetz-ng.github.io/freetz-ng/prerequisites) zu sehen sind<br>
     Siehe [182abe40](https://github.com/Freetz-NG/freetz-ng/commit/182abe4084a7e4ca511596702740726f147f20e1)<br>
 
   * __[2023-01-06](#2023-01-06)__<a id='2023-01-06'></a><br>
