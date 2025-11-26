@@ -11,22 +11,22 @@ $(PKG)_HASH:=447700a657182d60338bab09fdb27518f8856aecd80ae4c6bdddb67ff5da44ef
 $(PKG)_DEPENDS_ON += python3
 $(PKG)_DEPENDS_ON += python3-setuptools-host
 
+$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)$(PYTHON3_SITE_PKG_DIR)/Crypto/__init__.py
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
-$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+$($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.configured
 	$(call Build/PyMod3/PKG, PYTHON3_PYCRYPTODOME, , )
-	@touch $@
 
 $(pkg):
 
-$(pkg)-precompiled: $($(PKG)_DIR)/.compiled
+$(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
 
 $(pkg)-clean:
-	$(RM) $(PYTHON3_PYCRYPTODOME_DIR)/{.configured,.compiled}
+	$(RM) $(PYTHON3_PYCRYPTODOME_DIR)/.configured
 	$(RM) -r $(PYTHON3_PYCRYPTODOME_DIR)/build
 
 $(pkg)-uninstall:

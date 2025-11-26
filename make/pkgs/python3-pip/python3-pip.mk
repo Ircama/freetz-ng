@@ -11,22 +11,22 @@ $(PKG)_HASH:=ebcb60557f2aefabc2e0f918751cd24ea0d56d8ec5445fe1807f1d2109660b99
 $(PKG)_DEPENDS_ON += python3
 $(PKG)_DEPENDS_ON += python3-setuptools
 
+$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)$(PYTHON3_SITE_PKG_DIR)/pip/__init__.py
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
-$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+$($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.configured
 	$(call Build/PyMod3/Pip, PYTHON3_PIP, , )
-	@touch $@
 
 $(pkg):
 
-$(pkg)-precompiled: $($(PKG)_DIR)/.compiled
+$(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
 
 $(pkg)-clean:
-	$(RM) $(PYTHON3_PIP_DIR)/{.configured,.compiled}
+	$(RM) $(PYTHON3_PIP_DIR)/.configured
 	$(RM) -r $(PYTHON3_PIP_DIR)/build
 
 $(pkg)-uninstall:

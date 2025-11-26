@@ -14,22 +14,22 @@ $(PKG)_DEPENDS_ON += jpeg
 $(PKG)_DEPENDS_ON += libpng
 $(PKG)_DEPENDS_ON += zlib
 
+$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)$(PYTHON3_SITE_PKG_DIR)/PIL/__init__.py
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
-$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+$($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.configured
 	$(call Build/PyMod3/PKG, PYTHON3_PILLOW, , )
-	@touch $@
 
 $(pkg):
 
-$(pkg)-precompiled: $($(PKG)_DIR)/.compiled
+$(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
 
 $(pkg)-clean:
-	$(RM) $(PYTHON3_PILLOW_DIR)/{.configured,.compiled}
+	$(RM) $(PYTHON3_PILLOW_DIR)/.configured
 	$(RM) -r $(PYTHON3_PILLOW_DIR)/build
 
 $(pkg)-uninstall:
