@@ -13,26 +13,26 @@ $(PKG)_DEPENDS_ON += python3-setuptools-host
 $(PKG)_DEPENDS_ON += libxml2
 $(PKG)_DEPENDS_ON += xsltproc
 
+$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)$(PYTHON3_SITE_PKG_DIR)/lxml/__init__.py
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
-$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+$($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.configured
 	$(call Build/PyMod3/PKG, PYTHON3_LXML, \
 		, \
 		XSLT_CONFIG=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/xslt-config \
 		XML2_CONFIG=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/xml2-config \
 	)
-	@touch $@
 
 $(pkg):
 
-$(pkg)-precompiled: $($(PKG)_DIR)/.compiled
+$(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
 
 $(pkg)-clean:
-	$(RM) $(PYTHON3_LXML_DIR)/{.configured,.compiled}
+	$(RM) $(PYTHON3_LXML_DIR)/.configured
 	$(RM) -r $(PYTHON3_LXML_DIR)/build
 
 $(pkg)-uninstall:

@@ -109,8 +109,7 @@ $($(PKG)_DIR)/.installed: $($(PKG)_DIR)/.compiled
 $($(PKG)_STAGING_BINARY): $($(PKG)_DIR)/.installed
 	@$(call COPY_USING_TAR,$(PYTHON3_LOCAL_INSTALL_DIR)/usr,$(TARGET_TOOLCHAIN_STAGING_DIR)/usr,--exclude='*.pyc' .) \
 	$(PKG_FIX_LIBTOOL_LA) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/python-$(PYTHON3_MAJOR_VERSION).pc; \
-	ln -sf python$(PYTHON3_MAJOR_VERSION).bin $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/python$(PYTHON3_MAJOR_VERSION) ; \
-	touch -c $@
+	ln -sf python$(PYTHON3_MAJOR_VERSION).bin $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/python$(PYTHON3_MAJOR_VERSION)
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.installed
 	@$(call COPY_USING_TAR,$(PYTHON3_LOCAL_INSTALL_DIR),$(PYTHON3_DEST_DIR),--exclude='libpython$(PYTHON3_MAJOR_VERSION).so*' .) \
@@ -118,14 +117,12 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.installed
 		echo -n > usr/lib/python$(PYTHON3_MAJOR_VERSION)/config-$(PYTHON3_MAJOR_VERSION)/Makefile; \
 		find usr/include/python$(PYTHON3_MAJOR_VERSION)/ -name "*.h" \! -name "pyconfig.h" \! -name "Python.h" -delete; \
 		$(RM) -r $(call newline2space,$(Python3/development/files)); \
-	); \
-	touch -c $@
+	)
 
 ifneq ($(strip $(FREETZ_PACKAGE_PYTHON3_STATIC)),y)
 $($(PKG)_LIB_PYTHON3_TARGET_DIR): $($(PKG)_DIR)/.installed
 	@mkdir -p $(dir $@); \
-	cp -a $(PYTHON3_LOCAL_INSTALL_DIR)/usr/lib/libpython$(PYTHON3_MAJOR_VERSION).so* $(dir $@); \
-	touch -c $@
+	cp -a $(PYTHON3_LOCAL_INSTALL_DIR)/usr/lib/libpython$(PYTHON3_MAJOR_VERSION).so* $(dir $@)
 endif
 
 $(pkg): $($(PKG)_TARGET_DIR)/.exclude-extra
@@ -153,7 +150,6 @@ $($(PKG)_ZIPPED_PYC_TARGET_DIR): $($(PKG)_TARGET_DIR)/excluded-module-files-zip.
 	$(if $(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC), \
 		$(FREETZ_BASE_DIR)/make/pkgs/python3/scripts/fix-python314-zip.sh $(FREETZ_BASE_DIR)/$@; \
 	)
-	touch $@
 
 $($(PKG)_TARGET_DIR)/.exclude-extra: $(TOPDIR)/.config $($(PKG)_TARGET_DIR)/py.lst $($(PKG)_TARGET_DIR)/pyc.lst $($(PKG)_TARGET_DIR)/excluded-module-files.lst
 	@echo -n "" > $@; \
@@ -161,15 +157,14 @@ $($(PKG)_TARGET_DIR)/.exclude-extra: $(TOPDIR)/.config $($(PKG)_TARGET_DIR)/py.l
 	[ "$(FREETZ_PACKAGE_PYTHON3_PYC)" != y -o "$(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC)" == y ] && cat $(PYTHON3_TARGET_DIR)/pyc.lst >> $@; \
 	(set -f; echo $(PYTHON3_UNNECESSARY_DIRS) | tr " " "\n" | sort >> $@); \
 	[ "$(FREETZ_PACKAGE_PYTHON3_COMPRESS_PYC)" != y ] && echo "$(PYTHON3_ZIPPED_PYC)" >> $@; \
-	cat $(PYTHON3_TARGET_DIR)/excluded-module-files.lst >> $@; \
-	touch -c $@
+	cat $(PYTHON3_TARGET_DIR)/excluded-module-files.lst >> $@
 
 $(pkg)-precompiled: $($(PKG)_STAGING_BINARY) $($(PKG)_TARGET_BINARY) $(if $(FREETZ_PACKAGE_PYTHON3_STATIC),,$($(PKG)_LIB_PYTHON3_TARGET_DIR)) $($(PKG)_ZIPPED_PYC_TARGET_DIR)
 
 $(pkg)-clean:
 	-$(SUBMAKE) -C $(PYTHON3_DIR) clean
 	$(RM) $(PYTHON3_FREETZ_CONFIG_FILE)
-	$(RM) $(PYTHON3_DIR)/.configured $(PYTHON3_DIR)/.compiled $(PYTHON3_DIR)/.installed
+	$(RM) $(PYTHON3_DIR)/.configured
 	$(RM) $(PYTHON3_TARGET_DIR)/py.lst $(PYTHON3_TARGET_DIR)/pyc.lst
 	$(RM) $(PYTHON3_TARGET_DIR)/excluded-module-files.lst $(PYTHON3_TARGET_DIR)/excluded-module-files-zip.lst $(PYTHON3_TARGET_DIR)/.exclude-extra
 	$(RM) -r $(PYTHON3_LOCAL_INSTALL_DIR)
