@@ -18,25 +18,25 @@ $(PKG)_CONDITIONAL_PATCHES+=$(if $(FREETZ_OPENSSL_VERSION_09),openssl-0.9,) \
 $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_PYTHON3_CRYPTOGRAPHY
 $(PKG)_CATEGORY:=External (3rd party) modules
 
+$(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)$(PYTHON3_SITE_PKG_DIR)/cryptography/__init__.py
+
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
-$($(PKG)_DIR)/.compiled: $($(PKG)_DIR)/.configured
+$($(PKG)_TARGET_BINARY): $($(PKG)_DIR)/.configured
 	$(call Build/PyMod3/Pip, PYTHON3_CRYPTOGRAPHY, , \
 		OPENSSL_DIR="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr" \
 		OPENSSL_LIB_DIR="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib" \
 		OPENSSL_INCLUDE_DIR="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
 	)
-	@touch $@
 
 $(pkg):
 
-$(pkg)-precompiled: $($(PKG)_DIR)/.compiled
+$(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
 
 $(pkg)-clean:
 	-$(RM) -r $(PYTHON3_CRYPTOGRAPHY_DIR)/.configured
-	-$(RM) -r $(PYTHON3_CRYPTOGRAPHY_DIR)/.compiled
 	-$(RM) -r $(PYTHON3_CRYPTOGRAPHY_DIR)/build
 
 $(pkg)-uninstall:
