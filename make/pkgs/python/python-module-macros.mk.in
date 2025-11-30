@@ -17,7 +17,7 @@ HOST_PYTHON_BIN:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/hostpython
 
 # $(1) => statements to be executed before calling host-python
 # $(2) => parameters to be passed to host-python
-define HostPython2
+define HostPython
 	( \
 		export PYTHONHOME="$(HOST_TOOLS_DIR)/usr"; \
 		export PYTHON_INCDIR="$(PYTHON_STAGING_INC_DIR)"; \
@@ -38,7 +38,7 @@ endef
 # $(3) => additional variables
 # $(4) => dir to look for .so files to be stripped
 define Build/PyMod2/Generic
-	$(call HostPython2, \
+	$(call HostPython, \
 		cd $(strip $(1)); \
 		$(TARGET_CONFIGURE_ENV) \
 		$(FREETZ_LD_RUN_PATH) \
