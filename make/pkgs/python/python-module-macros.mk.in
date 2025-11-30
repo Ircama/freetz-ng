@@ -28,6 +28,12 @@ define HostPython2
 		export CFLAGS="$(TARGET_CFLAGS) -I$(PYTHON_STAGING_INC_DIR)"; \
 		export CPPFLAGS="$(TARGET_CFLAGS) -I$(PYTHON_STAGING_INC_DIR)"; \
 		export LDFLAGS="$(TARGET_LDFLAGS) -L$(PYTHON_STAGING_LIB_DIR)"; \
+		export CC="$(TARGET_CC)"; \
+		export CXX="$(TARGET_CXX)"; \
+		export LD="$(TARGET_LD)"; \
+		export AR="$(TARGET_AR)"; \
+		export RANLIB="$(TARGET_RANLIB)"; \
+		export STRIP="$(TARGET_STRIP)"; \
 		$(1) \
 		$(HOST_PYTHON_BIN) $(2); \
 	)
