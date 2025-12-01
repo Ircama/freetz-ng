@@ -152,7 +152,7 @@ jobs:
             # Extract part after '#' and trim whitespace
             LABEL="$(echo "$MAKE_TARGET" | sed 's/.*#\s*//' | sed 's/^\s*//' | sed 's/\s*$//')"
             echo "label=$LABEL" >> $GITHUB_OUTPUT
-            echo "### 🏷️ Workflow Label: $LABEL" >> $GITHUB_STEP_SUMMARY
+            echo "### 🏷️ Workflow Label: `$LABEL`" >> $GITHUB_STEP_SUMMARY
             echo "Extracted label: $LABEL"
           else
             echo "label=" >> $GITHUB_OUTPUT
@@ -182,7 +182,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           else
             # Branch has differences
-            echo "### 📊 Branch Status vs Upstream" >> $GITHUB_STEP_SUMMARY
+            echo "### 📊 Branch Status vs Upstream/master" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
             echo "Upstream: [\`Freetz-NG/freetz-ng:master\`](https://github.com/Freetz-NG/freetz-ng/tree/master)" >> $GITHUB_STEP_SUMMARY
