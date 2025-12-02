@@ -348,31 +348,38 @@ jobs:
           
           # Build matrix by writing to temp file (avoid subshell variable issues)
           rm -f /tmp/matrix_entries.txt
+          rm -f /tmp/custom_configs.txt
           
           # Parse custom_config parameter (format: "device firmware lang" with flexible separators)
+          # Support multiple entries separated by comma: "dev1 fw1 lang1,dev2 fw2 lang2,..."
           custom_config="${{ github.event.inputs.custom_config }}"
-          custom_device=""
-          custom_firmware=""
-          custom_lang=""
           
           if [ -n "$custom_config" ]; then
-            # Normalize separators to spaces (support: space, tab, comma, semicolon, pipe, dash)
-            custom_config="$(echo "$custom_config" | tr ',;|\t-' ' ' | tr -s ' ')"
-            
-            # Parse up to 3 fields
-            custom_device="$(echo "$custom_config" | awk '{print $1}')"
-            custom_firmware="$(echo "$custom_config" | awk '{print $2}')"
-            custom_lang="$(echo "$custom_config" | awk '{print $3}')"
-            
-            echo "Parsed custom_config:"
-            echo "  Device:   ${custom_device:-<not specified>}"
-            echo "  Firmware: ${custom_firmware:-<not specified>}"
-            echo "  Language: ${custom_lang:-<not specified>}"
+            echo "Parsing custom_config entries..."
+            # Split by comma to get multiple entries
+            echo "$custom_config" | tr ',' '\n' | while IFS= read -r entry; do
+              [ -z "$entry" ] && continue
+              # Normalize separators within each entry to spaces (support: space, tab, semicolon, pipe)
+              entry="$(echo "$entry" | tr ';|\t' ' ' | tr -s ' ' | sed 's/^ *//;s/ *$//')"
+              
+              # Parse up to 3 fields for each entry
+              custom_device="$(echo "$entry" | awk '{print $1}')"
+              custom_firmware="$(echo "$entry" | awk '{print $2}')"
+              custom_lang="$(echo "$entry" | awk '{print $3}')"
+              
+              # Default values if not fully specified
+              [ -z "$custom_device" ] && custom_device="7530_W6_V1"
+              [ -z "$custom_firmware" ] && custom_firmware="08_0X"
+              [ -z "$custom_lang" ] && custom_lang="EN"
+              
+              echo "  Entry: Device=$custom_device Firmware=$custom_firmware Language=$custom_lang"
+              echo "$custom_device|$custom_firmware|$custom_lang" >> /tmp/custom_configs.txt
+            done
           fi
           
           # Check if override is requested
           has_override=""
-          [ -n "$custom_device" ] || [ -n "$custom_firmware" ] || [ -n "$custom_lang" ] && has_override="yes"
+          [ -f /tmp/custom_configs.txt ] && [ -s /tmp/custom_configs.txt ] && has_override="yes"
           
           if [ -z "$has_override" ] || [ "${{ github.event.inputs.add_or_override }}" = "add" ]; then
             # Process each package (replace , with newline for iteration)
@@ -441,7 +448,7 @@ jobs:
               # Clear existing entries for override mode
               rm -f /tmp/matrix_entries.txt
             else
-              echo "Adding custom configuration entry to matrix..."
+              echo "Adding custom configuration entries to matrix..."
             fi
             
             # Use first package from pkg_list for the override entry, or default if none
@@ -474,21 +481,23 @@ jobs:
                 ;;
             esac
             
-            # Default values if not specified
-            [ -z "$custom_device" ] && custom_device="7530_W6_V1"
-            [ -z "$custom_firmware" ] && custom_firmware="08_0X"
-            [ -z "$custom_lang" ] && custom_lang="EN"
+            # Process each custom config entry
+            while IFS='|' read -r custom_device custom_firmware custom_lang; do
+              [ -z "$custom_device" ] && continue
+              
+              # Create custom name and tcs
+              custom_name="$custom_device - $custom_firmware ($custom_lang)"
+              custom_tcs="_$custom_device _FIRMWARE_$custom_firmware _LANG_$custom_lang"
+              
+              if [ -n "$override_pkg_target" ]; then
+                echo "  Custom entry: $override_pkg_name with target: -$override_pkg_target on $custom_name"
+              else
+                echo "  Custom entry: $override_pkg_name on $custom_name"
+              fi
+              echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",skip_libs:\"$override_skip_libs\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+            done < /tmp/custom_configs.txt
             
-            # Create custom name and tcs
-            custom_name="$custom_device - $custom_firmware ($custom_lang)"
-            custom_tcs="_$custom_device _FIRMWARE_$custom_firmware _LANG_$custom_lang"
-            
-            if [ "$pkg_target" ];then
-              echo "  Custom override: $override_pkg_name with target: -$override_pkg_target on $custom_name"
-            else
-              echo "  Custom override: $override_pkg_name on $custom_name"
-            fi
-            echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",skip_libs:\"$override_skip_libs\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+            rm -f /tmp/custom_configs.txt
           fi
           
           # Read matrix from file and output

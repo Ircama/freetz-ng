@@ -1,0 +1,12 @@
+--- a/ext/sockets/sockets.c
++++ b/ext/sockets/sockets.c
+@@ -43,6 +43,9 @@
+ # include <netinet/tcp.h>
+ # include <sys/un.h>
+ # include <arpa/inet.h>
++#ifndef AI_ADDRCONFIG
++#define AI_ADDRCONFIG 0x0020
++#endif
+ # include <sys/time.h>
+ # include <unistd.h>
+ # include <errno.h>
