@@ -765,25 +765,13 @@ jobs:
           #echo '# FREETZ_CHECK_CHANGED is not set'                                                    >> .config
           
           # Override device settings from matrix (test on all toolchains)
-          FALLBACK_USED=""
           for x in $TCS; do
             var_name="$(echo "$x" | sed 's/^_/FREETZ_TYPE_/')"
             sed -i "/${var_name}/d" .config
             echo "${var_name}=y" >> .config
           done
-          
-          # Check if device/firmware are missing and apply fallbacks
-          if ! grep -q '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -qv '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX'; then
-            echo 'FREETZ_TYPE_7530_W6_V1=y' >> .config
-            FALLBACK_USED="${FALLBACK_USED}device "
-            echo "⚠️ WARNING: No device type found in configuration - using fallback: FREETZ_TYPE_7530_W6_V1"
-          fi
-          
-          if ! grep -q '^FREETZ_TYPE_FIRMWARE_'; then
-            echo 'FREETZ_TYPE_FIRMWARE_08_0X=y' >> .config
-            FALLBACK_USED="${FALLBACK_USED}firmware "
-            echo "⚠️ WARNING: No firmware version found in configuration - using fallback: FREETZ_TYPE_FIRMWARE_08_0X"
-          fi
+          grep -q '^FREETZ_TYPE_' .config || echo 'FREETZ_TYPE_7530_W6_V1=y'                          >> .config
+          grep -q '^FREETZ_TYPE_FIRMWARE_' .config || echo 'FREETZ_TYPE_FIRMWARE_08_0X=y'             >> .config
 
           # Extract device and firmware from .config
           DEVICE_CONFIG="$(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
@@ -794,27 +782,6 @@ jobs:
           DEVICE_MATRIX="$(echo "$MATRIX_NAME" | sed 's/ - .*//')"
           FIRMWARE_MATRIX="$(echo "$MATRIX_NAME" | sed 's/.* - \([^ ]*\) .*/\1/')"
           # LANG_MATRIX="$(echo "$MATRIX_NAME" | sed 's/.*(\([^)]*\)).*/\1/')"
-          
-          # Report configuration status to step summary
-          if [ -n "$FALLBACK_USED" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### ⚠️ Configuration Fallback Applied" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Build:** \`${{ matrix.fritz.pkg }}\` on \`${{ matrix.fritz.name }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            if echo "$FALLBACK_USED" | grep -q "device"; then
-              echo "- ❌ **Missing device type** → Applied fallback: \`FREETZ_TYPE_7530_W6_V1\`" >> $GITHUB_STEP_SUMMARY
-            fi
-            if echo "$FALLBACK_USED" | grep -q "firmware"; then
-              echo "- ❌ **Missing firmware version** → Applied fallback: \`FREETZ_TYPE_FIRMWARE_08_0X\`" >> $GITHUB_STEP_SUMMARY
-            fi
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Reason:** Matrix configuration (\`$TCS\`) did not specify required parameters." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Recommendation:** Verify \`custom_config\` parameter includes both device and firmware (e.g., \`'7590_W6 08_2X DE'\`)." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
-          
           if [ "$DEVICE_CONFIG" != "$DEVICE_MATRIX" ] || [ "$FIRMWARE_CONFIG" != "$FIRMWARE_MATRIX" ]; then
               [ "$HAS_CONFIG_FILE" ] && echo "ℹ️ Note: original .config specified device $DEVICE_CONFIG $FIRMWARE_CONFIG; target will be $DEVICE_MATRIX $FIRMWARE_MATRIX"
           fi
