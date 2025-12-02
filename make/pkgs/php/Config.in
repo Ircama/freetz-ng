@@ -102,9 +102,10 @@ config FREETZ_PACKAGE_PHP_WITH_GD
 
 config FREETZ_PACKAGE_PHP_WITH_GETTEXT
        bool "gettext support (libintl.so.8)"
+       depends on !FREETZ_TARGET_UCLIBC_0_9_28 && !FREETZ_TARGET_UCLIBC_0_9_29 && !FREETZ_TARGET_UCLIBC_0_9_32 && !FREETZ_TARGET_UCLIBC_0_9_33
        default n
        help
-	       Enables internationalization and localization (libintl.so.8)
+	       Enables internationalization and localization (libintl.so.8, requires intl library not available in old uClibc)
 
 config FREETZ_PACKAGE_PHP_WITH_ICONV
 	bool "ICONV support (libiconv.so.2 or uClibc built-in)"
@@ -288,6 +289,7 @@ config FREETZ_PACKAGE_PHP_WITH_LIBXML2_HTML
 config FREETZ_PACKAGE_PHP_WITH_PCRE2_JIT
 	bool "Enable PCRE2 JIT compilation"
 	select FREETZ_LIB_libpcre2_WITH_JIT if !FREETZ_PACKAGE_PHP_STATIC
+	depends on !FREETZ_KERNEL_VERSION_2_6_39_3
 	default y
 	help
 		Enable Just-In-Time compilation in PCRE2 for faster regex execution.
@@ -306,7 +308,8 @@ config FREETZ_PACKAGE_PHP_WITH_PCRE2_JIT
 		- Device has very limited flash space
 		- Regex performance is not critical
 		
-		Note: Disabling may cause PHP to show warnings about PCRE2 JIT not available.
+		Note: Not available on kernel 2.6.39.3 (JIT compilation issue).
+		Disabling may cause PHP to show warnings about PCRE2 JIT not available.
 
 config FREETZ_PACKAGE_PHP_OMIT_PHPINFO_CONFIGURE
 	bool "Omit configure command from phpinfo()"

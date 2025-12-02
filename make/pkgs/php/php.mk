@@ -232,6 +232,16 @@ $(PKG)_CONFIGURE_PRE_CMDS+=$(call PKG_PREVENT_RPATH_HARDCODING,./configure)
 ifneq ($(strip $(FREETZ_TARGET_IPV6_SUPPORT)),y)
 $(PKG)_CONFIGURE_OPTIONS+=--disable-ipv6
 endif
+# Disable ZTS on old toolchains (GCC < 4.7) to avoid atomic operations issues
+ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0_9_28)),y)
+$(PKG)_CONFIGURE_OPTIONS+=--disable-zts
+else ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0_9_29)),y)
+$(PKG)_CONFIGURE_OPTIONS+=--disable-zts
+else ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0_9_32)),y)
+$(PKG)_CONFIGURE_OPTIONS+=--disable-zts
+else ifeq ($(strip $(FREETZ_TARGET_UCLIBC_0_9_33)),y)
+$(PKG)_CONFIGURE_OPTIONS+=--disable-zts
+endif
 $(PKG)_CONFIGURE_OPTIONS+=--enable-exif
 $(PKG)_CONFIGURE_OPTIONS+=--enable-mbstring
 $(PKG)_CONFIGURE_OPTIONS+=--disable-phar
