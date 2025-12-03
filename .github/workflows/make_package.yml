@@ -433,9 +433,21 @@ jobs:
               # Process each toolchain line
               echo "$toolchain_list" | while IFS= read -r line; do
                 [ -z "$line" ] && continue
-                # Use basic sed without -r (extended regex)
-                name="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1 - \2/g')"
-                tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
+                # Extract device, firmware, and language from toolchain definition
+                device="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\).*/\1/')"
+                firmware="$(echo "$line" | sed 's/^[^ ]* *FREETZ_TYPE_FIRMWARE_\([^ ]*\).*/\1/')"
+                # Check if language is specified in the line
+                if echo "$line" | grep -q 'FREETZ_TYPE_LANG_'; then
+                  lang="$(echo "$line" | sed 's/.*FREETZ_TYPE_LANG_\([A-Z][A-Z]\).*/\1/')"
+                  name="${device} - ${firmware} (${lang})"
+                  tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g')"
+                else
+                  # Default to German (DE) when language not specified
+                  lang="DE"
+                  name="${device} - ${firmware} (${lang})"
+                  # Add _LANG_DE to tcs when not present
+                  tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g') _LANG_DE"
+                fi
                 echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",skip_libs:\"$skip_libs\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
               done
             done
