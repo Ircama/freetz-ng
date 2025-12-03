@@ -370,7 +370,7 @@ jobs:
               # Default values if not fully specified
               [ -z "$custom_device" ] && custom_device="7530_W6_V1"
               [ -z "$custom_firmware" ] && custom_firmware="08_0X"
-              [ -z "$custom_lang" ] && custom_lang="EN"
+              [ -z "$custom_lang" ] && custom_lang="DE"
               
               echo "  Entry: Device=$custom_device Firmware=$custom_firmware Language=$custom_lang"
               echo "$custom_device|$custom_firmware|$custom_lang" >> /tmp/custom_configs.txt
