@@ -812,10 +812,12 @@ jobs:
           DEVICE_FINAL="$(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
           FIRMWARE_FINAL="$(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
           
-          # Extract expected values from matrix (already extracted above as DEVICE_MATRIX and FIRMWARE_MATRIX)
+          # Extract expected values from matrix name
+          # Format: "DEVICE - FIRMWARE" or "DEVICE - FIRMWARE (LANG)"
           MATRIX_NAME="${{ matrix.fritz.name }}"
           DEVICE_EXPECTED="$(echo "$MATRIX_NAME" | sed 's/ - .*//')"
-          FIRMWARE_EXPECTED="$(echo "$MATRIX_NAME" | sed 's/.* - \([^ ]*\) .*/\1/')"
+          # Extract firmware: everything after " - " up to optional " (" for language
+          FIRMWARE_EXPECTED="$(echo "$MATRIX_NAME" | sed 's/^[^-]* - //; s/ (.*//')"
           
           # Check for mismatches and report to workflow summary
           CONFIG_MISMATCH=""
