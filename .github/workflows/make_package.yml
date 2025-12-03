@@ -863,7 +863,7 @@ jobs:
             fi
             
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> **Note:** This mismatch may indicate naming errors in the configuration or that \`make olddefconfig\` resolved device/firmware to compatible alternatives. The build will proceed with the final configuration values." >> $GITHUB_STEP_SUMMARY
+            echo "> **Note:** This mismatch may indicate naming errors in the configuration or that \`make olddefconfig\` resolved device/firmware to compatible alternatives. The build proceeded with the final configuration values." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           else
             echo "##########################################################"
