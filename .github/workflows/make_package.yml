@@ -370,7 +370,7 @@ jobs:
               # Default values if not fully specified
               [ -z "$custom_device" ] && custom_device="7530_W6_V1"
               [ -z "$custom_firmware" ] && custom_firmware="08_0X"
-              [ -z "$custom_lang" ] && custom_lang="EN"
+              [ -z "$custom_lang" ] && custom_lang="DE"
               
               echo "  Entry: Device=$custom_device Firmware=$custom_firmware Language=$custom_lang"
               echo "$custom_device|$custom_firmware|$custom_lang" >> /tmp/custom_configs.txt
@@ -806,6 +806,70 @@ jobs:
           echo "  - DevName:  $(grep '^FREETZ_AVM_PROP_NAME=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - Major:    $(grep '^FREETZ_AVM_PROP_MAJOR=' .config | sed 's/.*=//' | tr -d '"')"
           echo "  - HWRev:    $(grep '^FREETZ_AVM_PROP_HWREV=' .config | sed 's/.*=//' | tr -d '"')"
+          echo ""
+          
+          # Validate that device and firmware match expected values from matrix
+          DEVICE_FINAL="$(grep '^FREETZ_TYPE_[0-9A-Z_]*=y' .config | grep -v '_LANG\|_LANGUAGE\|_FIRMWARE\|_DSL\|_PREFIX' | sed 's/FREETZ_TYPE_//;s/=y//' | head -1)"
+          FIRMWARE_FINAL="$(grep '^FREETZ_TYPE_FIRMWARE_.*=y' .config | sed 's/FREETZ_TYPE_FIRMWARE_//;s/=y//' | head -1)"
+          
+          # Extract expected values from matrix name
+          # Format: "DEVICE - FIRMWARE" or "DEVICE - FIRMWARE (LANG)"
+          MATRIX_NAME="${{ matrix.fritz.name }}"
+          DEVICE_EXPECTED="$(echo "$MATRIX_NAME" | sed 's/ - .*//')"
+          # Extract firmware: everything after " - " up to optional " (" for language
+          FIRMWARE_EXPECTED="$(echo "$MATRIX_NAME" | sed 's/^[^-]* - //; s/ (.*//')"
+          
+          # Check for mismatches and report to workflow summary
+          CONFIG_MISMATCH=""
+          if [ "$DEVICE_FINAL" != "$DEVICE_EXPECTED" ]; then
+            CONFIG_MISMATCH="device"
+          fi
+          if [ "$FIRMWARE_FINAL" != "$FIRMWARE_EXPECTED" ]; then
+            if [ -n "$CONFIG_MISMATCH" ]; then
+              CONFIG_MISMATCH="$CONFIG_MISMATCH and firmware"
+            else
+              CONFIG_MISMATCH="firmware"
+            fi
+          fi
+          
+          if [ -n "$CONFIG_MISMATCH" ]; then
+            echo "##########################################################"
+            echo "⚠️  Configuration validation detected mismatch:"
+            echo "  Expected from matrix: $DEVICE_EXPECTED - $FIRMWARE_EXPECTED"
+            echo "  Final in .config:     $DEVICE_FINAL - $FIRMWARE_FINAL"
+            echo "##########################################################"
+            
+            # Add to workflow summary
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ Configuration Validation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The final configuration differs from the expected matrix parameters:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Parameter | Expected (Matrix) | Final (.config) | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|-------------------|-----------------|--------|" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$DEVICE_FINAL" != "$DEVICE_EXPECTED" ]; then
+              echo "| **Device** | \`$DEVICE_EXPECTED\` | \`$DEVICE_FINAL\` | ❌ Changed |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| **Device** | \`$DEVICE_EXPECTED\` | \`$DEVICE_FINAL\` | ✅ Match |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "$FIRMWARE_FINAL" != "$FIRMWARE_EXPECTED" ]; then
+              echo "| **Firmware** | \`$FIRMWARE_EXPECTED\` | \`$FIRMWARE_FINAL\` | ❌ Changed |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| **Firmware** | \`$FIRMWARE_EXPECTED\` | \`$FIRMWARE_FINAL\` | ✅ Match |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Note:** This mismatch may indicate naming errors in the configuration or that \`make olddefconfig\` resolved device/firmware to compatible alternatives. The build proceeded with the final configuration values." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "##########################################################"
+            echo "✅ Configuration validation: Device and firmware match expected values"
+            echo "##########################################################"
+          fi
           echo ""
           
           SYSTEM_PACKAGES="$(grep '^FREETZ_PACKAGE_.*=y' .config | grep 'DROPBEAR\|DTC\|HASERL\|INETD\|JUIS_CHECK\|PACKAGE_MOD\|MODCGI\|AUTHORIZED_KEYS\|SYSLOGD_CGI' | sed 's/FREETZ_PACKAGE_//;s/=y//')"
