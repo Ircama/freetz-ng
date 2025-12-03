@@ -1,6 +1,6 @@
 menuconfig FREETZ_PACKAGE_PHP
 	bool "PHP 8.4.1 (binary only)"
-	depends on !FREETZ_TARGET_GCC_4_6
+	depends on FREETZ_TARGET_GCC_8_MIN
 	default n
 	select FREETZ_LIB_libxml2 if !FREETZ_PACKAGE_PHP_STATIC
 	select FREETZ_LIB_libpcre2 if !FREETZ_PACKAGE_PHP_STATIC
@@ -12,8 +12,9 @@ menuconfig FREETZ_PACKAGE_PHP
 		PHP is a widely-used general-purpose scripting language that is especially
 		suited for Web development and can be embedded into HTML.
 		
-		Note: PHP 8.4+ requires GCC 4.7 or newer for atomic operations support.
-		For older toolchains (GCC 4.6.4), please use PHP 8.3.x instead.
+		Note: PHP 8.4+ requires GCC 8.x or newer due to modern C language features,
+		atomic operations, and compiler intrinsics requirements.
+		For older toolchains (GCC 4.x-7.x), please use PHP 8.3.x or earlier instead.
 
 if FREETZ_PACKAGE_PHP
 
