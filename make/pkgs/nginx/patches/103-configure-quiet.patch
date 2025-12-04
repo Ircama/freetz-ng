@@ -1,0 +1,12 @@
+--- configure
++++ configure
+@@ -15,6 +15,7 @@ while [ $# -gt 0 ]; do
+ 
+     case "$1" in
+ 
++        --quiet)         shift ;;
+         --help)          . auto/help ;;
+ 
+         --prefix=*)      ngx_prefix="$opt" ;;
+
+
