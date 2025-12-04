@@ -14,7 +14,8 @@ $(PKG)_STARTLEVEL=40
 
 # Nginx uses a custom configure script that doesn't support standard autoconf options
 $(PKG)_CONFIGURE_DEFOPTS := n
-$(PKG)_CONFIGURE := conf_cmd() { ./configure "$$@" $(SILENT) || { $(call ERROR,1,Build failed. Please re-run make with verbose level set to 2 to see what's going on.) } };
+# Override CONFIGURE to remove $(QUIET) which nginx's configure doesn't support
+CONFIGURE := conf_cmd() { ./configure "$$$$@" $(SILENT) || { $(call ERROR,1,Build failed. Please re-run make with verbose level set to 2 to see what's going on.) } };
 
 $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_NGINX_WITH_SSL
 $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_NGINX_WITH_HTTP_V2
