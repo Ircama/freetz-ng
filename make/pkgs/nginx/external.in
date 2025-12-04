@@ -1,0 +1,12 @@
+config EXTERNAL_FREETZ_PACKAGE_NGINX
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_NGINX
+	bool "nginx"
+	default n
+	help
+		Externalize nginx web server to USB/external storage.
+		
+		Files externalized:
+		- /usr/sbin/nginx
+		- /etc/nginx/ (configuration directory)
+		- /var/log/nginx/ (log directory)
+		- /var/tmp/nginx/ (temporary files directory)
