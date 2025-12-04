@@ -1,6 +1,12 @@
+# Version selection based on menuconfig
+ifeq ($(strip $(FREETZ_PACKAGE_PHP_VERSION_8_4)),y)
 $(call PKG_INIT_BIN,8.4.1)
-$(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.xz
 $(PKG)_HASH:=94c8a4fd419d45748951fa6d73bd55f6bdf0adaefb8814880a67baa66027311f
+else
+$(call PKG_INIT_BIN,8.5.0)
+$(PKG)_HASH:=39cb6e4acd679b574d3d3276f148213e935fc25f90403eb84fb1b836a806ef1e
+endif
+$(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.xz
 $(PKG)_SITE:=https://www.php.net/distributions
 ### WEBSITE:=https://www.php.net/
 ### MANPAGE:=https://www.php.net/manual/en/
@@ -242,7 +248,7 @@ $(PKG)_CONFIGURE_OPTIONS+=--without-pear
 
 # Apply optional phpinfo patch if enabled
 ifeq ($(strip $(FREETZ_PACKAGE_PHP_OMIT_PHPINFO_CONFIGURE)),y)
-$(PKG)_PATCH_POST_CMDS += patch -d $(abspath $($(PKG)_DIR)) -p0 < $(abspath $($(PKG)_MAKE_DIR)/patches/8.4/optional/150-phpinfo_omit_configure_command.patch);
+$(PKG)_PATCH_POST_CMDS += patch -d $(abspath $($(PKG)_DIR)) -p0 < $(abspath $($(PKG)_MAKE_DIR)/patches/8.5/optional/150-phpinfo_omit_configure_command.patch);
 endif
 
 $(PKG_SOURCE_DOWNLOAD)

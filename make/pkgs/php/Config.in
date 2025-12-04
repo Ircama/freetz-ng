@@ -1,5 +1,5 @@
 menuconfig FREETZ_PACKAGE_PHP
-	bool "PHP 8.4.1 (binary only)"
+	bool "PHP (binary only)"
 	depends on FREETZ_TARGET_GCC_8_MIN
 	default n
 	select FREETZ_LIB_libxml2 if !FREETZ_PACKAGE_PHP_STATIC
@@ -8,15 +8,31 @@ menuconfig FREETZ_PACKAGE_PHP
 	select FREETZ_LIB_libintl if !FREETZ_PACKAGE_PHP_STATIC
 	select FREETZ_LIB_libz if !FREETZ_PACKAGE_PHP_STATIC
 	help
-		PHP: Hypertext Preprocessor (version 8.4.1)
+		PHP: Hypertext Preprocessor
 		PHP is a widely-used general-purpose scripting language that is especially
 		suited for Web development and can be embedded into HTML.
-		
-		Note: PHP 8.4+ requires GCC 8.x or newer due to modern C language features,
+
+		Note: PHP 8.5+ requires GCC 8.x or newer due to modern C language features,
 		atomic operations, and compiler intrinsics requirements.
 		For older toolchains (GCC 4.x-7.x), please use PHP 8.3.x or earlier instead.
 
 if FREETZ_PACKAGE_PHP
+
+choice
+	prompt "PHP Version"
+	default FREETZ_PACKAGE_PHP_VERSION_8_5
+
+	config FREETZ_PACKAGE_PHP_VERSION_8_4
+		bool "PHP 8.4.1"
+		help
+			PHP 8.4.1 - Stable release with all 8.4.x features
+
+	config FREETZ_PACKAGE_PHP_VERSION_8_5
+		bool "PHP 8.5.0"
+		help
+			PHP 8.5.0 - Latest release with new features
+
+endchoice
 
 menu "Binaries"
 
