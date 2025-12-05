@@ -16,9 +16,9 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### C
 
-  * **[ca-bundle 2025-11-04](ca-bundle-host.md)<a id='ca-bundle-host'></a>**<br>
+  * **[ca-bundle 2025-12-02](ca-bundle-host.md)<a id='ca-bundle-host'></a>**<br>
 
-  * **[cmake 4.1.3](cmake-host.md)<a id='cmake-host'></a>**<br>
+  * **[cmake 4.2.0](cmake-host.md)<a id='cmake-host'></a>**<br>
 
   * **[config a2287c3](config-host.md)<a id='config-host'></a>**<br>
 
@@ -54,7 +54,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### K
 
-  * **[kconfig 6.17](kconfig-host.md)<a id='kconfig-host'></a>**<br>
+  * **[kconfig 6.18](kconfig-host.md)<a id='kconfig-host'></a>**<br>
 
 ### L
 
@@ -74,7 +74,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
   * **[make 4.4.1](make-host.md)<a id='make-host'></a>**<br>
 
-  * **[meson 1.9.1](meson-host.md)<a id='meson-host'></a>**<br>
+  * **[meson 1.9.2](meson-host.md)<a id='meson-host'></a>**<br>
 
   * **[mklibs 0.1.45](mklibs-host.md)<a id='mklibs-host'></a>**<br>
 

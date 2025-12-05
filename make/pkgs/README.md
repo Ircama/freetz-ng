@@ -5,10 +5,10 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### A
 
-  * **[ACME.sh 3.1.1](../../docs/make/acme.md)<a id='acme'></a>**<br>
+  * **[ACME.sh 3.1.2](../../docs/make/acme.md)<a id='acme'></a>**<br>
     A pure Unix shell script implementing ACME client protocol.
 
-  * **[Apache2 2.4.65 (binary only)](../../docs/make/apache2.md)<a id='apache2'></a>**<br>
+  * **[Apache2 2.4.66 (binary only)](../../docs/make/apache2.md)<a id='apache2'></a>**<br>
     The Apache httpd server
      - [apache.conf](../../docs/make/apache2.md#apacheconf)
      - [Passwortschutz mit .htaccess](../../docs/make/apache2.md#passwortschutz-mit-htaccess)
@@ -63,7 +63,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>bfusb: AVM BlueFRITZ! USB stick support (binary only)</u><a id='bfusb'></a>**<br>
     This package adds support for the AVM BlueFRITZ! USB stick.
 
-  * **[BIND 9.11.37/9.20.15](../../docs/make/bind.md)<a id='bind'></a>**<br>
+  * **[BIND 9.11.37/9.20.16](../../docs/make/bind.md)<a id='bind'></a>**<br>
     BIND is a suite of software for interacting with the Domain Name System (DNS). The name BIND stands for "Berkeley Internet Name Daemon".
      - [named.conf](../../docs/make/bind.md#namedconf)
 
@@ -104,7 +104,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### C
 
-  * **[CA-bundle 2025-11-04](../../docs/make/ca-bundle.md)<a id='ca-bundle'></a>**<br>
+  * **[CA-bundle 2025-12-02](../../docs/make/ca-bundle.md)<a id='ca-bundle'></a>**<br>
     The Mozilla CA certificate store in PEM format, see https://www.curl.se/docs/caextract.html Size of uncompressed file is about 250 KB.
 
   * **[Callmonitor 1.20.9-git](../../docs/make/callmonitor.md)<a id='callmonitor'></a>**<br>
@@ -380,7 +380,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[IGMPproxy 0.4](../../docs/make/igmpproxy.md)<a id='igmpproxy'></a>**<br>
     IGMPproxy is a simple dynamic Multicast Routing Daemon using only IGMP signalling. It's intended for simple forwarding of Multicast traffic between networks.
 
-  * **[ImageMagick 7.1.0-62/7.1.2-2 (binary only)](../../docs/make/imagemagick.md)<a id='imagemagick'></a>**<br>
+  * **[ImageMagick 7.1.0-62/7.1.2-9 (binary only)](../../docs/make/imagemagick.md)<a id='imagemagick'></a>**<br>
     ImageMagick is a robust collection of tools and libraries to read, write, and manipulate an image in many image formats, including popular formats like TIFF, JPEG, PNG, PDF, PhotoCD, and GIF. With ImageMagick, you can create images dynamically, making it suitable for Web applications. You can also resize, rotate, sharpen, color-reduce, or add special effects to an image and save your completed work in many different image formats. Image processing operations are available from the command line as well as through C, C++, and PERL-based programming interfaces.
 
   * **[Inadyn-mt 02.28.10 - DEPRECATED](../../docs/make/inadyn-mt.md)<a id='inadyn-mt'></a>**<br>
@@ -622,7 +622,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[OpenSSL 0.9.8zh/1.0.2u/1.1.1w/3.0.18/3.5.4 (binary only)](../../docs/make/openssl.md)<a id='openssl'></a>**<br>
     This package contains the OpenSSL command-line utility.
 
-  * **[OpenVPN 2.4.12/2.5.11/2.6.16](../../docs/make/openvpn.md)<a id='openvpn'></a>**<br>
+  * **[OpenVPN 2.4.12/2.5.11/2.6.17](../../docs/make/openvpn.md)<a id='openvpn'></a>**<br>
     VPN Server
      - [Häufige Fragen / Howto](../../docs/make/openvpn.md#häufige-fragen--howto)
      - [Konfigurationsanleitung](../../docs/make/openvpn.md#konfigurationsanleitung)
@@ -963,7 +963,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [URL blocking](../../docs/make/tinyproxy.md#url-blocking)
      - [Memory usage](../../docs/make/tinyproxy.md#memory-usage)
 
-  * **[tmux 3.6 (binary only)](../../docs/make/tmux.md)<a id='tmux'></a>**<br>
+  * **[tmux 3.6a (binary only)](../../docs/make/tmux.md)<a id='tmux'></a>**<br>
     tmux, a BSD-licensed alternative to GNU screen. Uses ncurses.
 
   * **[Tor 0.4.8.21](../../docs/make/tor.md)<a id='tor'></a>**<br>
@@ -1202,6 +1202,10 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[PHP 5.6.40 (binary only) - DEPRECATED](../../docs/make/php.md)<a id='php'></a>**<br>
     PHP: Hypertext Preprocessor PHP is a widely-used general-purpose scripting language that is especially suited for Web development and can be embedded into HTML. Much of its syntax is borrowed from C, Java and Perl with a couple of unique PHP-specific features thrown in. The goal of the language is to allow web developers to write dynamically generated pages quickly.
      - [Memory usage](../../docs/make/php.md#memory-usage)
+
+  * **[PHP5 5.6.40 (binary only) - DEPRECATED](../../docs/make/php5.md)<a id='php5'></a>**<br>
+    PHP: Hypertext Preprocessor PHP is a widely-used general-purpose scripting language that is especially suited for Web development and can be embedded into HTML. Much of its syntax is borrowed from C, Java and Perl with a couple of unique PHP-specific features thrown in. The goal of the language is to allow web developers to write dynamically generated pages quickly.
+     - [Memory usage](../../docs/make/php5.md#memory-usage)
 
   * **[sane-backends: SANE 1.0.27 - DEPRECATED](../../docs/make/sane-backends.md)<a id='sane-backends'></a>**<br>
     SANE - Scanner support (initial Freetz package by Michael Denk, tehron @ http://www.ip-phone-forum.de/)
