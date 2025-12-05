@@ -1,0 +1,9 @@
+--- a/deps/ada/ada.cpp
++++ b/deps/ada/ada.cpp
+@@ -4,6 +4,7 @@
+ /* begin file src/checkers.cpp */
+ 
+ #include <algorithm>
++#include <string_view>
+ 
+ namespace ada::checkers {
