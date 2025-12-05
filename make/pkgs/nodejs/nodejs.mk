@@ -47,7 +47,7 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 	@# Patch gyp-generated makefiles to use libstdc++ instead of uClibc++
 	@for mk in $$(find $(NODEJS_DIR)/out -name "*.target.mk" 2>/dev/null); do \
 		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
-		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g' "$$mk"; \
+		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)|g' "$$mk"; \
 		sed -i "s|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g" "$$mk"; \
 	done
 	@# Remove test target includes from Makefile to avoid building tests
