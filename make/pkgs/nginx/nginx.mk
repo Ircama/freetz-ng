@@ -91,9 +91,6 @@ ifeq ($(strip $(FREETZ_PACKAGE_NGINX_WITH_SSL)),y)
 $(PKG)_CONFIGURE_OPTIONS += --with-http_ssl_module
 $(PKG)_CONFIGURE_OPTIONS += --with-http_v2_module
 $(PKG)_CONFIGURE_OPTIONS += --with-stream_ssl_module
-else
-$(PKG)_CONFIGURE_OPTIONS += --without-http_ssl_module
-$(PKG)_CONFIGURE_OPTIONS += --without-http_v2_module
 endif
 
 # HTTP modules
@@ -110,8 +107,6 @@ $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_NGINX_WITH_SUB),--with-http_su
 ifeq ($(strip $(FREETZ_PACKAGE_NGINX_WITH_STREAM)),y)
 $(PKG)_CONFIGURE_OPTIONS += --with-stream
 $(PKG)_CONFIGURE_OPTIONS += --with-stream_realip_module
-else
-$(PKG)_CONFIGURE_OPTIONS += --without-stream
 endif
 
 # Disable unwanted modules (configurable via menuconfig)
