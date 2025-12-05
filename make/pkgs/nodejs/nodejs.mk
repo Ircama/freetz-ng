@@ -19,18 +19,9 @@ $(PKG)_DEPENDS_ON += python3-host zlib openssl
 $(PKG)_CONFIGURE_ENV += CC="$(TARGET_CC)"
 $(PKG)_CONFIGURE_ENV += CXX="$(TARGET_CXX)"
 $(PKG)_CONFIGURE_ENV += LD="$(TARGET_LD)"
-$(PKG)_CONFIGURE_ENV += CFLAGS="$(TARGET_CFLAGS)"
-$(PKG)_CONFIGURE_ENV += CXXFLAGS="$(TARGET_CXXFLAGS)"
-$(PKG)_CONFIGURE_ENV += LDFLAGS="$(TARGET_LDFLAGS)"
-$(PKG)_CONFIGURE_ENV += CC_host="gcc"
-$(PKG)_CONFIGURE_ENV += CXX_host="g++"
-$(PKG)_CONFIGURE_ENV += CFLAGS_host=""
-$(PKG)_CONFIGURE_ENV += CXXFLAGS_host=""
-
-# Tell gyp to skip building tests and other components that require modern C++ headers
-# `tests=0` disables building googletest and many test targets; `node_no_browser` and
-# `v8_static_library` reduce V8 host-target complexity.
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1"
+$(PKG)_CONFIGURE_ENV += CFLAGS="$(TARGET_CFLAGS) -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)"
+$(PKG)_CONFIGURE_ENV += CXXFLAGS="$(TARGET_CXXFLAGS) -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) -std=c++17"
+$(PKG)_CONFIGURE_ENV += LDFLAGS="$(TARGET_LDFLAGS) -lstdc++ -Wl,--as-needed"
 
 $(PKG)_CONFIGURE_OPTIONS += --prefix=/usr
 $(PKG)_CONFIGURE_OPTIONS += --cross-compiling
@@ -43,24 +34,24 @@ $(PKG)_CONFIGURE_OPTIONS += --shared-openssl
 $(PKG)_CONFIGURE_OPTIONS += --without-node-code-cache
 $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 
+# Tell gyp to skip building tests and other components that require modern C++ headers
+# `tests=0` disables building googletest and many test targets; `node_no_browser` and
+# `v8_static_library` reduce V8 host-target complexity.
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1"
+
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_CONFIGURE)
 
 $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
-	@# Patch gyp-generated makefiles to remove all target include paths for host builds
-	@for mk in $$(find $(NODEJS_DIR)/out -name "*.host.mk" 2>/dev/null); do \
-		sed -i "s|-I$(TARGET_TOOLCHAIN_STAGING_DIR)[^ ]*||g" "$$mk"; \
-		sed -i "s|-I/home/myuser/ircama/freetz-ng/toolchain/build/[^ ]*||g" "$$mk"; \
-	done
-	@# Patch target makefiles to add libstdc++ include paths to C++ flags
+	@# Patch gyp-generated makefiles to use libstdc++ instead of uClibc++
 	@for mk in $$(find $(NODEJS_DIR)/out -name "*.target.mk" 2>/dev/null); do \
-		sed -i "s|I[^ ]*/uClibc++|I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)|g" "$$mk"; \
-		sed -i "/^CFLAGS_CC_Debug :=/a\\        -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) \\\\\n        -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/mips-linux-uclibc \\\\" "$$mk"; \
-		sed -i "/^CFLAGS_CC_Release :=/a\\        -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) \\\\\n        -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/mips-linux-uclibc \\\\" "$$mk"; \
+		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
+		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g' "$$mk"; \
+		sed -i "s|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g" "$$mk"; \
 	done
 	@# Remove test target includes from Makefile to avoid building tests
-	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile
+	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true
 	$(SUBMAKE) -C $(NODEJS_DIR)
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
