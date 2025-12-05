@@ -1,0 +1,8 @@
+config FREETZ_PACKAGE_NODEJS
+	bool "Node.js 25.2.1"
+	select FREETZ_LIB_libz
+	select FREETZ_LIB_libcrypto
+	select FREETZ_LIB_libssl
+	default n
+	help
+		Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.
