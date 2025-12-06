@@ -99,7 +99,7 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i "/'-DFPU_MODE_[A-Z0-9_]*'/d" "$$mk"; \
 		sed -i "/'-D_[A-Z0-9_]*_TARGET_HW'/d" "$$mk"; \
 		sed -i "/'-D_[A-Z0-9_]*_ARCH_[A-Z0-9_]*R[0-9]*'/d" "$$mk"; \
-		sed -i 's|GYP_CXXFLAGS :=.*|& -std=c++17|g' "$$mk"; \
+		sed -i 's|GYP_CXXFLAGS :=.*|& -std=c++17 -fpermissive|g' "$$mk"; \
 	done
 	@# Remove test and gtest related targets from Makefile
 	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true
