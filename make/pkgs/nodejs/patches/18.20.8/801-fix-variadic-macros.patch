@@ -1,0 +1,42 @@
+Fix variadic macro compatibility with modern GCC
+
+The ##__VA_ARGS__ token pasting with empty arguments causes errors
+in GCC 11+. Use __VA_OPT__ for proper handling.
+
+--- deps/v8/src/codegen/interface-descriptors.h
++++ deps/v8/src/codegen/interface-descriptors.h
+@@ -565,7 +565,7 @@
+   static constexpr int kReturnCount = return_count;       \
+   enum ParameterIndices {                                 \
+     __dummy = -1, /* to be able to pass zero arguments */ \
+-    ##__VA_ARGS__,                                        \
++    __VA_OPT__(__VA_ARGS__,)                              \
+                                                           \
+     kParameterCount,                                      \
+     kContext = kParameterCount /* implicit parameter */   \
+@@ -581,7 +581,7 @@
+   static constexpr int kReturnCount = 1;                    \
+   enum ParameterIndices {                                   \
+     __dummy = -1, /* to be able to pass zero arguments */   \
+-    ##__VA_ARGS__,                                          \
++    __VA_OPT__(__VA_ARGS__,)                               \
+                                                             \
+     kParameterCount                                         \
+   };
+@@ -632,7 +632,7 @@
+     kTarget,                                                \
+     kNewTarget,                                             \
+     kActualArgumentsCount,                                  \
+-    ##__VA_ARGS__,                                          \
++    __VA_OPT__(__VA_ARGS__,)                                \
+     kParameterCount,                                        \
+     kContext = kParameterCount /* implicit parameter */     \
+   };
+@@ -647,7 +647,7 @@
+     kTarget,                                                \
+     kNewTarget,                                             \
+     kActualArgumentsCount,                                  \
+-    ##__VA_ARGS__,                                          \
++    __VA_OPT__(__VA_ARGS__,)                                \
+     kParameterCount,                                        \
+   };
