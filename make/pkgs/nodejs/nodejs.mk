@@ -64,7 +64,7 @@ $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 # `tests=0` disables building googletest and many test targets; `node_no_browser` and
 # `v8_static_library` reduce V8 host-target complexity.
 # For soft-float MIPS: disable FPU instructions and set appropriate flags
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_can_use_fpu_instructions=0 v8_use_mips_abi_hardfloat=0"
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_can_use_fpu_instructions=0 v8_use_mips_abi_hardfloat=0 openssl_fips=''"
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)

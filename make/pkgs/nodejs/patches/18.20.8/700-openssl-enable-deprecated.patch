@@ -1,11 +1,24 @@
---- src/crypto/crypto_util.h
-+++ src/crypto/crypto_util.h
-@@ -13,6 +13,9 @@
- #include "util.h"
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -13,6 +13,20 @@
  #include "v8.h"
  
-+#ifndef OPENSSL_API_COMPAT
-+#define OPENSSL_API_COMPAT 0x00908000L
-+#endif
  #include <openssl/dsa.h>
++
++// Force inclusion of deprecated EC types for OpenSSL 3.x compatibility
++#ifndef OPENSSL_NO_DEPRECATED_3_0
++#define OPENSSL_SUPPRESS_DEPRECATED
++#endif
++#include <openssl/types.h>
++typedef struct ec_key_st EC_KEY;
++typedef struct ec_group_st EC_GROUP;
++typedef struct ec_point_st EC_POINT;
++typedef struct ECDSA_SIG_st ECDSA_SIG;
++void EC_KEY_free(EC_KEY *key);
++void EC_GROUP_free(EC_GROUP *group);
++void EC_POINT_free(EC_POINT *point);
++void ECDSA_SIG_free(ECDSA_SIG *sig);
  #include <openssl/ec.h>
+ #include <openssl/err.h>
+ #include <openssl/evp.h>
+ 
