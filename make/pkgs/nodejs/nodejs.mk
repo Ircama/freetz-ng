@@ -64,7 +64,7 @@ $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 # `tests=0` disables building googletest and many test targets; `node_no_browser` and
 # `v8_static_library` reduce V8 host-target complexity.
 # For target-specific flags (FPU, etc.), these are applied only to target builds
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 openssl_fips='' host_os=linux"
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 openssl_fips='' host_os=linux host_arch=x64 target_arch=$(NODEJS_DEST_CPU) v8_target_arch=$(NODEJS_DEST_CPU) cc_host=gcc cxx_host=g++ ld_host=g++ ar_host=ar cxxflags_host='-std=gnu++17'"
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
@@ -99,7 +99,16 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i "/'-DFPU_MODE_[A-Z0-9_]*'/d" "$$mk"; \
 		sed -i "/'-D_[A-Z0-9_]*_TARGET_HW'/d" "$$mk"; \
 		sed -i "/'-D_[A-Z0-9_]*_ARCH_[A-Z0-9_]*R[0-9]*'/d" "$$mk"; \
-		sed -i 's|GYP_CXXFLAGS :=.*|& -std=c++17 -fpermissive|g' "$$mk"; \
+		sed -i 's|GYP_CXXFLAGS :=.*|& -std=c++17 -fpermissive -DV8_TARGET_ARCH_X64=1|g' "$$mk"; \
+		sed -i '/deps\/v8\/src\/codegen\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/compiler\/backend\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/deoptimizer\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/diagnostics\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/execution\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/regexp\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/baseline\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/wasm\/baseline\/mips\//d' "$$mk"; \
+		sed -i '/deps\/v8\/src\/heap\/base\/asm\/mips\//d' "$$mk"; \
 	done
 	@# Remove test and gtest related targets from Makefile
 	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true
