@@ -1,6 +1,6 @@
---- src/crypto/crypto_util.h
-+++ src/crypto/crypto_util.h
-@@ -14,6 +14,19 @@
+--- /tmp/node-v18.20.8/src/crypto/crypto_util.h	2025-03-27 01:56:44.000000000 +0100
++++ src/crypto/crypto_util.h	2025-12-06 07:19:31.801253173 +0100
+@@ -13,7 +13,29 @@
  #include "v8.h"
  
  #include <openssl/dsa.h>
@@ -18,6 +18,29 @@
 +void EC_POINT_free(EC_POINT *point);
 +void ECDSA_SIG_free(ECDSA_SIG *sig);
  #include <openssl/ec.h>
++#ifndef EC_GROUP
++typedef struct ec_group_st EC_GROUP;
++#endif
++#ifndef EC_POINT
++typedef struct ec_point_st EC_POINT;
++#endif
++#ifndef ECDSA_SIG
++typedef struct ECDSA_SIG_st ECDSA_SIG;
++#endif
  #include <openssl/err.h>
  #include <openssl/evp.h>
+ #include <openssl/hmac.h>
+@@ -53,6 +75,13 @@
+ constexpr size_t kSizeOf_EVP_PKEY_CTX = 80;
+ constexpr size_t kSizeOf_HMAC_CTX = 32;
  
++extern "C" {
++void EC_KEY_free(EC_KEY* key);
++void EC_GROUP_free(EC_GROUP* group);
++void EC_POINT_free(EC_POINT* point);
++void ECDSA_SIG_free(ECDSA_SIG* sig);
++}
++
+ // Define smart pointers for the most commonly used OpenSSL types:
+ using X509Pointer = DeleteFnPtr<X509, X509_free>;
+ using BIOPointer = DeleteFnPtr<BIO, BIO_free_all>;
