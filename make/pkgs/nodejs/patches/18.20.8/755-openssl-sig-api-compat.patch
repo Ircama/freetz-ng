@@ -1,0 +1,43 @@
+--- /tmp/node-v18.20.8/src/crypto/crypto_sig.cc	2025-03-27 01:56:44.000000000 +0100
++++ /tmp/save/crypto_sig.cc	2025-12-06 06:48:50.441342138 +0100
+@@ -9,6 +9,40 @@
+ #include "threadpoolwork-inl.h"
+ #include "v8.h"
+ 
++#include <openssl/evp.h>
++
++extern "C" {
++int EVP_PKEY_id(const EVP_PKEY* pkey);
++int EVP_PKEY_base_id(const EVP_PKEY* pkey);
++const DSA* EVP_PKEY_get0_DSA(const EVP_PKEY* pkey);
++const BIGNUM* DSA_get0_q(const DSA* dsa);
++int BN_num_bits(const BIGNUM* a);
++const EC_KEY* EVP_PKEY_get0_EC_KEY(const EVP_PKEY* pkey);
++const EC_GROUP* EC_KEY_get0_group(const EC_KEY* key);
++int EC_GROUP_order_bits(const EC_GROUP* group);
++int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad);
++int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int len);
++ECDSA_SIG* d2i_ECDSA_SIG(ECDSA_SIG** sig, const unsigned char** pp, long len);
++void ECDSA_SIG_get0(const ECDSA_SIG* sig, const BIGNUM** pr, const BIGNUM** ps);
++int BN_bn2binpad(const BIGNUM* a, unsigned char* to, int tolen);
++ECDSA_SIG* ECDSA_SIG_new();
++int ECDSA_SIG_set0(ECDSA_SIG* sig, BIGNUM* r, BIGNUM* s);
++const BIGNUM* ECDSA_SIG_get0_r(const ECDSA_SIG* sig);
++const BIGNUM* ECDSA_SIG_get0_s(const ECDSA_SIG* sig);
++int i2d_ECDSA_SIG(const ECDSA_SIG* sig, unsigned char** pout);
++}
++
++#define EVP_PKEY_RSA 6
++#define EVP_PKEY_RSA2 19
++#define EVP_PKEY_RSA_PSS 912
++#define EVP_PKEY_DSA 116
++#define EVP_PKEY_EC 408
++#define EVP_PKEY_ED25519 1087
++#define EVP_PKEY_ED448 1088
++#define RSA_PKCS1_PSS_PADDING 6
++#define kNoDsaSignature 0
++#define kSigEncP1363 1
++
+ namespace node {
+ 
+ using v8::ArrayBuffer;

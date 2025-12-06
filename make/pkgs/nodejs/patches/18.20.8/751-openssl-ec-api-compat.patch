@@ -1,0 +1,68 @@
+--- node-v18.20.8/src/crypto/crypto_ec.cc	2025-03-27 01:56:44.000000000 +0100
++++ /home/myuser/ircama/freetz-ng/source/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/nodejs-18.20.8/src/crypto/crypto_ec.cc	2025-12-06 06:38:56.924878073 +0100
+@@ -14,6 +14,65 @@
+ #include <openssl/ec.h>
+ #include <openssl/ecdh.h>
+ 
++#include <openssl/evp.h>
++
++extern "C" {
++int EVP_PKEY_id(const EVP_PKEY* pkey);
++int EVP_PKEY_base_id(const EVP_PKEY* pkey);
++const DSA* EVP_PKEY_get0_DSA(const EVP_PKEY* pkey);
++const BIGNUM* DSA_get0_q(const DSA* dsa);
++int BN_num_bits(const BIGNUM* a);
++const EC_KEY* EVP_PKEY_get0_EC_KEY(const EVP_PKEY* pkey);
++const EC_GROUP* EC_KEY_get0_group(const EC_KEY* key);
++int EC_GROUP_order_bits(const EC_GROUP* group);
++int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad);
++int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int len);
++const ECDSA_SIG* d2i_ECDSA_SIG(ECDSA_SIG** sig, const unsigned char** pp, long len);
++void ECDSA_SIG_get0(const ECDSA_SIG* sig, const BIGNUM** pr, const BIGNUM** ps);
++int BN_bn2binpad(const BIGNUM* a, unsigned char* to, int tolen);
++typedef struct ec_builtin_curve_st EC_builtin_curve;
++struct ec_builtin_curve_st {
++    int nid;
++    const char* comment;
++};
++int EC_curve_nist2nid(const char* name);
++size_t EC_get_builtin_curves(EC_builtin_curve* r, size_t nitems);
++EC_KEY* EC_KEY_new_by_curve_name(int nid);
++int EC_KEY_generate_key(EC_KEY* key);
++EC_POINT* EC_POINT_new(const EC_GROUP* group);
++int EC_POINT_oct2point(const EC_GROUP* group, EC_POINT* p, const unsigned char* buf, size_t len, BN_CTX* ctx);
++int EC_GROUP_get_degree(const EC_GROUP* group);
++int ECDH_compute_key(void* out, size_t outlen, const EC_POINT* pub_key, const EC_KEY* ecdh, void* (*KDF)(const void* in, size_t inlen, void* out, size_t* outlen));
++const EC_POINT* EC_KEY_get0_public_key(const EC_KEY* key);
++const BIGNUM* EC_KEY_get0_private_key(const EC_KEY* key);
++EC_KEY* EC_KEY_dup(const EC_KEY* key);
++int EC_KEY_set_private_key(EC_KEY* key, const BIGNUM* priv_key);
++int EC_POINT_mul(const EC_GROUP* group, EC_POINT* r, const BIGNUM* n, const EC_POINT* q, const BIGNUM* m, BN_CTX* ctx);
++int EC_KEY_set_public_key(EC_KEY* key, const EC_POINT* pub);
++int EC_GROUP_get_order(const EC_GROUP* group, BIGNUM* order, BN_CTX* ctx);
++int EC_KEY_check_key(const EC_KEY* key);
++EC_GROUP* EC_GROUP_new_by_curve_name(int nid);
++size_t EC_POINT_point2oct(const EC_GROUP* group, const EC_POINT* p, point_conversion_form_t form, unsigned char* buf, size_t len, BN_CTX* ctx);
++EC_KEY* EC_KEY_new();
++int EC_KEY_set_group(EC_KEY* key, const EC_GROUP* group);
++int EVP_PKEY_set1_EC_KEY(EVP_PKEY* pkey, EC_KEY* key);
++int EC_POINT_get_affine_coordinates(const EC_GROUP* group, const EC_POINT* p, BIGNUM* x, BIGNUM* y, BN_CTX* ctx);
++int EC_GROUP_get_curve_name(const EC_GROUP* group);
++int EC_KEY_set_public_key_affine_coordinates(EC_KEY* key, BIGNUM* x, BIGNUM* y);
++int EC_KEY_set_private_key(EC_KEY* key, const BIGNUM* priv_key);
++}
++
++#define EVP_PKEY_RSA 6
++#define EVP_PKEY_RSA2 19
++#define EVP_PKEY_RSA_PSS 912
++#define EVP_PKEY_DSA 116
++#define EVP_PKEY_EC 408
++#define EVP_PKEY_ED25519 1087
++#define EVP_PKEY_ED448 1088
++#define RSA_PKCS1_PSS_PADDING 6
++#define kNoDsaSignature 0
++#define kSigEncP1363 1
++
+ #include <algorithm>
+ 
+ namespace node {

@@ -1,0 +1,19 @@
+--- node-v18.20.8/src/crypto/crypto_keys.cc	2025-03-27 01:56:44.000000000 +0100
++++ /home/myuser/ircama/freetz-ng/source/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/nodejs-18.20.8/src/crypto/crypto_keys.cc	2025-12-06 06:40:59.316055113 +0100
+@@ -38,6 +38,16 @@
+ using v8::Undefined;
+ using v8::Value;
+ 
++extern "C" {
++EC_KEY* EVP_PKEY_get1_EC_KEY(EVP_PKEY* pkey);
++int PEM_write_bio_ECPrivateKey(BIO* bp, EC_KEY* x, const EVP_CIPHER* enc, unsigned char* kstr, int klen, pem_password_cb* cb, void* u);
++int i2d_ECPrivateKey_bio(BIO* bp, EC_KEY* x);
++EC_KEY* EC_KEY_new_by_curve_name(int nid);
++const EC_GROUP* EC_KEY_get0_group(const EC_KEY* key);
++int EC_KEY_set_public_key(EC_KEY* key, const EC_POINT* pub);
++int EVP_PKEY_assign_EC_KEY(EVP_PKEY* pkey, EC_KEY* key);
++}
++
+ namespace crypto {
+ namespace {
+ void GetKeyFormatAndTypeFromJs(
