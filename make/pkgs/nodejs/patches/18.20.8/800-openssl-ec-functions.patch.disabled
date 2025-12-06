@@ -1,0 +1,14 @@
+--- src/crypto/crypto_ec.cc
++++ src/crypto/crypto_ec.cc
+@@ -12,6 +12,11 @@
+ #include <openssl/bn.h>
+ #include <openssl/ec.h>
+ #include <openssl/ecdh.h>
++
++// Force inclusion of deprecated EC functions for OpenSSL 3.x compatibility
++#ifndef OPENSSL_NO_DEPRECATED_3_0
++#define OPENSSL_SUPPRESS_DEPRECATED
++#endif
++typedef struct ec_builtin_curve EC_builtin_curve;
++int EC_curve_nist2nid(const char *name);
++size_t EC_get_builtin_curves(EC_builtin_curve *r, size_t nitems);
