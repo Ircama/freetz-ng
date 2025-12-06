@@ -1,5 +1,5 @@
---- node-v18.20.8/src/crypto/crypto_tls.cc	2025-03-27 01:56:44.000000000 +0100
-+++ /home/myuser/ircama/freetz-ng/source/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/nodejs-18.20.8/src/crypto/crypto_tls.cc	2025-12-06 06:43:47.149868206 +0100
+--- src/crypto/crypto_tls.cc	2025-03-27 01:56:44.000000000 +0100
++++ src/crypto/crypto_tls.cc	2025-12-06 06:43:47.149868206 +0100
 @@ -33,6 +33,35 @@
  #include "stream_base-inl.h"
  #include "util-inl.h"

@@ -85,12 +85,21 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i 's|GYP_CXXFLAGS :=.*|& -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/$(TARGET_ARCH)-linux-uclibc -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) -DOPENSSL_API_COMPAT=0x10100000L|g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
 	done
-	@# Patch host makefiles to avoid MIPS flags
+	@# Patch host makefiles to avoid target architecture flags for host tools
 	@for mk in $$(find $(NODEJS_DIR)/out -name "*.host.mk" 2>/dev/null); do \
 		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
-		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g' "$$mk"; \
-		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/uClibc++||g' "$$mk"; \
+		sed -i 's| -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)[^ ]*||g' "$$mk"; \
+		sed -i 's| -I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include[^ ]*||g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
+		sed -i 's| -DV8_TARGET_ARCH_[A-Z0-9_]*||g' "$$mk"; \
+		sed -i 's| -DCAN_USE_FPU_INSTRUCTIONS||g' "$$mk"; \
+		sed -i 's| -D__[a-z0-9_]*_hard_float[^ ]*||g' "$$mk"; \
+		sed -i 's| -D_[A-Z0-9_]*_TARGET_[A-Z0-9_]*||g' "$$mk"; \
+		sed -i 's| -D_[A-Z0-9_]*_ARCH_[A-Z0-9_]*||g' "$$mk"; \
+		sed -i 's| -DFPU_MODE_[A-Z0-9_]*||g' "$$mk"; \
+		sed -i 's|CXX :=.*|CXX := g++|g' "$$mk"; \
+		sed -i 's|CC :=.*|CC := gcc|g' "$$mk"; \
+		sed -i 's|GYP_CXXFLAGS :=.*|& -std=c++17|g' "$$mk"; \
 	done
 	@# Remove test and gtest related targets from Makefile
 	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true

@@ -1,5 +1,5 @@
---- node-v18.20.8/src/crypto/crypto_ec.cc	2025-03-27 01:56:44.000000000 +0100
-+++ /home/myuser/ircama/freetz-ng/source/target-mips_gcc-13.4.0_uClibc-1.0.55-nptl_kernel-4.9/nodejs-18.20.8/src/crypto/crypto_ec.cc	2025-12-06 06:38:56.924878073 +0100
+--- src/crypto/crypto_ec.cc	2025-03-27 01:56:44.000000000 +0100
++++ src/crypto/crypto_ec.cc	2025-12-06 06:38:56.924878073 +0100
 @@ -14,6 +14,65 @@
  #include <openssl/ec.h>
  #include <openssl/ecdh.h>
