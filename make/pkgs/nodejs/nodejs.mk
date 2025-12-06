@@ -63,8 +63,8 @@ $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 # Tell gyp to skip building tests and other components that require modern C++ headers
 # `tests=0` disables building googletest and many test targets; `node_no_browser` and
 # `v8_static_library` reduce V8 host-target complexity.
-# For soft-float MIPS: disable FPU instructions and set appropriate flags
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_can_use_fpu_instructions=0 v8_use_mips_abi_hardfloat=0 openssl_fips='' host_os=linux"
+# For target-specific flags (FPU, etc.), these are applied only to target builds
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 openssl_fips='' host_os=linux"
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
@@ -85,26 +85,26 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i 's|GYP_CXXFLAGS :=.*|& -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/$(TARGET_ARCH)-linux-uclibc -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) -DOPENSSL_API_COMPAT=0x10100000L|g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
 	done
-	@# Patch host makefiles to avoid target architecture flags for host tools
+	@# Patch host makefiles to avoid target architecture flags
 	@for mk in $$(find $(NODEJS_DIR)/out -name "*.host.mk" 2>/dev/null); do \
 		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
 		sed -i 's| -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)[^ ]*||g' "$$mk"; \
 		sed -i 's| -I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include[^ ]*||g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
-		sed -i 's| -DV8_TARGET_ARCH_[A-Z0-9_]*||g' "$$mk"; \
-		sed -i 's| -DCAN_USE_FPU_INSTRUCTIONS||g' "$$mk"; \
-		sed -i 's| -D__[a-z0-9_]*_hard_float[^ ]*||g' "$$mk"; \
-		sed -i 's| -D_[A-Z0-9_]*_TARGET_[A-Z0-9_]*||g' "$$mk"; \
-		sed -i 's| -D_[A-Z0-9_]*_ARCH_[A-Z0-9_]*||g' "$$mk"; \
-		sed -i 's| -DFPU_MODE_[A-Z0-9_]*||g' "$$mk"; \
-		sed -i 's|CXX :=.*|CXX := g++|g' "$$mk"; \
-		sed -i 's|CC :=.*|CC := gcc|g' "$$mk"; \
+		sed -i "/'-DV8_TARGET_ARCH_[A-Z0-9_]*'/d" "$$mk"; \
+		sed -i "/'-DCAN_USE_FPU_INSTRUCTIONS'/d" "$$mk"; \
+		sed -i "/'-D__[a-z0-9_]*_hard_float[^']*'/d" "$$mk"; \
+		sed -i "/'-D_[A-Z0-9_]*_TARGET_[A-Z0-9_]*'/d" "$$mk"; \
+		sed -i "/'-D_[A-Z0-9_]*_ARCH_[A-Z0-9_]*'/d" "$$mk"; \
+		sed -i "/'-DFPU_MODE_[A-Z0-9_]*'/d" "$$mk"; \
+		sed -i "/'-D_[A-Z0-9_]*_TARGET_HW'/d" "$$mk"; \
+		sed -i "/'-D_[A-Z0-9_]*_ARCH_[A-Z0-9_]*R[0-9]*'/d" "$$mk"; \
 		sed -i 's|GYP_CXXFLAGS :=.*|& -std=c++17|g' "$$mk"; \
 	done
 	@# Remove test and gtest related targets from Makefile
 	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true
 	@sed -i '/include.*deps\/googletest.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true
-	$(SUBMAKE) -C $(NODEJS_DIR)
+	$(SUBMAKE) CC.host=gcc CXX.host=g++ LINK.host=g++ AR.host=ar -C $(NODEJS_DIR)
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 	$(INSTALL_BINARY_STRIP)
