@@ -23,7 +23,7 @@ $(PKG)_CONFIGURE_ENV += CXX="$(TARGET_TOOLCHAIN_STAGING_DIR)/bin/$(TARGET_ARCH)-
 $(PKG)_CONFIGURE_ENV += LD="$(TARGET_LD)"
 $(PKG)_CONFIGURE_ENV += PATH="$(TARGET_TOOLCHAIN_PATH):$(PATH)"
 $(PKG)_CONFIGURE_ENV += CFLAGS="$(TARGET_CFLAGS)"
-$(PKG)_CONFIGURE_ENV += CXXFLAGS="$(TARGET_CXXFLAGS) -DOPENSSL_API_COMPAT=0x10100000L"
+$(PKG)_CONFIGURE_ENV += CXXFLAGS="$(TARGET_CXXFLAGS)"
 $(PKG)_CONFIGURE_ENV += LDFLAGS="$(TARGET_LDFLAGS) -lstdc++ -Wl,--as-needed"
 
 # Map Freetz TARGET_ARCH to Node.js dest-cpu values
@@ -64,7 +64,7 @@ $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 # `tests=0` disables building googletest and many test targets; `node_no_browser` and
 # `v8_static_library` reduce V8 host-target complexity.
 # For soft-float MIPS: disable FPU instructions and set appropriate flags
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_can_use_fpu_instructions=0 v8_use_mips_abi_hardfloat=0 openssl_fips=''"
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_can_use_fpu_instructions=0 v8_use_mips_abi_hardfloat=0 openssl_fips='' host_os=linux"
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
@@ -78,11 +78,18 @@ $($(PKG)_DIR)/.configured: $($(PKG)_DIR)/.unpacked
 
 $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 	@# Patch gyp-generated makefiles to use libstdc++ instead of uClibc++
-	@for mk in $$(find $(NODEJS_DIR)/out -name "*.target.mk" -o -name "*.host.mk" 2>/dev/null); do \
+	@for mk in $$(find $(NODEJS_DIR)/out -name "*.target.mk" 2>/dev/null); do \
 		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
 		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g' "$$mk"; \
 		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/uClibc++||g' "$$mk"; \
-		sed -i 's|GYP_CXXFLAGS :=.*|& -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/$(TARGET_ARCH)-linux-uclibc -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)|g' "$$mk"; \
+		sed -i 's|GYP_CXXFLAGS :=.*|& -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/$(TARGET_ARCH)-linux-uclibc -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) -DOPENSSL_API_COMPAT=0x10100000L|g' "$$mk"; \
+		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
+	done
+	@# Patch host makefiles to avoid MIPS flags
+	@for mk in $$(find $(NODEJS_DIR)/out -name "*.host.mk" 2>/dev/null); do \
+		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
+		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g' "$$mk"; \
+		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/uClibc++||g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
 	done
 	@# Remove test and gtest related targets from Makefile
