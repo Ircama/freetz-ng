@@ -89,8 +89,9 @@ $(PKG)_CONFIGURE_OPTIONS += --with-ld-opt="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr
 # SSL support
 ifeq ($(strip $(FREETZ_PACKAGE_NGINX_WITH_SSL)),y)
 $(PKG)_CONFIGURE_OPTIONS += --with-http_ssl_module
-$(PKG)_CONFIGURE_OPTIONS += --with-http_v2_module
+$(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_NGINX_WITH_HTTP_V2),--with-http_v2_module,)
 $(PKG)_CONFIGURE_OPTIONS += --with-stream_ssl_module
+else
 endif
 
 # HTTP modules
@@ -138,9 +139,7 @@ ifeq ($(strip $(FREETZ_PACKAGE_NGINX_WITH_MAIL)),y)
 $(PKG)_CONFIGURE_OPTIONS += --with-mail
 $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_NGINX_WITH_MAIL_SSL),--with-mail_ssl_module,)
 else
-$(PKG)_CONFIGURE_OPTIONS += --without-mail_pop3_module
-$(PKG)_CONFIGURE_OPTIONS += --without-mail_imap_module
-$(PKG)_CONFIGURE_OPTIONS += --without-mail_smtp_module
+# no --without-mail nor --without-mail_ssl_module
 endif
 
 
