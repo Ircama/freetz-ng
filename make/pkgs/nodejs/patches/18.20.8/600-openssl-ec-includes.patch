@@ -1,0 +1,10 @@
+--- src/crypto/crypto_ec.h
++++ src/crypto/crypto_ec.h
+@@ -12,6 +12,7 @@
+ #include "memory_tracker.h"
+ #include "node_internals.h"
+ #include "v8.h"
++#include <openssl/ec.h>
+
+ namespace node {
+ namespace crypto {

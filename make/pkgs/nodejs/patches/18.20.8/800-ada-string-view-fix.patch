@@ -1,0 +1,31 @@
+--- deps/ada/ada.h
++++ deps/ada/ada.h
+@@ -1087,6 +1087,7 @@
+ #ifndef ADA_LOG_H
+ #define ADA_LOG_H
+
+ #include <iostream>
++#include <type_traits>
+ // To enable logging, set ADA_LOGGING to 1:
+ #ifndef ADA_LOGGING
+ #define ADA_LOGGING 0
+@@ -1790,6 +1791,16 @@
+ template <typename T, typename... Args>
+ inline void inner_concat(std::string& buffer, T t, Args... args) {
+   buffer.append(t);
+   return inner_concat(buffer, args...);
+ }
+ 
++template <>
++inline void inner_concat<std::string>(std::string& buffer, std::string t) {
++  buffer.append(t.data(), t.size());
++}
++
++template <>
++inline void inner_concat<std::string_view>(std::string& buffer, std::string_view t) {
++  buffer.append(t.data(), t.size());
++}
++
+ /**
+  * @private
+  * Concatenate the arguments and return a string.

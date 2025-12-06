@@ -4,8 +4,8 @@ When compiling with -nostdinc++, we need to explicitly include all required
 standard library headers. Add <cstdlib> for getenv() and ensure <type_traits>
 is available at the top level for std::is_same and std::is_trivially_destructible.
 
---- a/deps/simdutf/simdutf.cpp
-+++ b/deps/simdutf/simdutf.cpp
+--- deps/simdutf/simdutf.cpp
++++ deps/simdutf/simdutf.cpp
 @@ -9964,6 +9964,8 @@
  
  #include <cstddef>

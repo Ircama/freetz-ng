@@ -1,0 +1,9 @@
+--- deps/v8/src/base/strings.h
++++ deps/v8/src/base/strings.h
+@@ -1,5 +1,6 @@
+ #ifndef V8_BASE_STRINGS_H_
+ #define V8_BASE_STRINGS_H_
++#include <cstdarg>
+
+ #include <string>
+ #include <vector>

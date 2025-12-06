@@ -1,0 +1,9 @@
+--- src/crypto/crypto_util.h
++++ src/crypto/crypto_util.h
+@@ -14,2 +14,5 @@
+
+ #include <openssl/dsa.h>
++#ifndef OPENSSL_API_COMPAT
++#define OPENSSL_API_COMPAT 0x10101000L
++#endif
+ #include <openssl/ec.h>

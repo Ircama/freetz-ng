@@ -1,0 +1,20 @@
+--- deps/v8/src/base/cpu.cc
++++ deps/v8/src/base/cpu.cc
+@@ -198,6 +198,9 @@ static int __detect_fp64_mode() {
+
+ #elif V8_TARGET_ARCH_MIPS
+ int __detect_fp64_mode(void) {
++#if defined(__mips_soft_float)
++  return 0;
++#else
+   double result = 0;
+   // Bit representation of (double)1 is 0x3FF0000000000000.
+   __asm__ volatile(
+@@ -219,6 +222,7 @@ int __detect_fp64_mode(void) {
+
+   return !(result == 1);
++#endif
+ }
+
+
+ int __detect_mips_arch_revision(void) {

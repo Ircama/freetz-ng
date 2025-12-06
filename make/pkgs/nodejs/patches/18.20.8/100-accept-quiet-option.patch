@@ -4,8 +4,8 @@ The Freetz-NG build system passes --quiet to configure scripts,
 but Node.js's GYP build system doesn't understand this option.
 Filter it out from unknown arguments before passing to run_gyp().
 
---- a/configure.py
-+++ b/configure.py
+--- configure.py
++++ configure.py
 @@ -2176,7 +2176,7 @@ if bin_override is not None:
    gyp_args += ['-Dpython=' + sys.executable]
  
@@ -14,4 +14,3 @@ Filter it out from unknown arguments before passing to run_gyp().
 +gyp_args += [arg for arg in args if not str.isspace(arg) and arg != '--quiet']
  
  if warn.warned and not options.verbose:
-   warn('warnings were emitted in the configure phase')
