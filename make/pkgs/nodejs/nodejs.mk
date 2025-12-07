@@ -64,7 +64,7 @@ $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 # `tests=0` disables building googletest and many test targets; `node_no_browser` and
 # `v8_static_library` reduce V8 host-target complexity.
 # Disable coverage to avoid BitField issues on 32-bit MIPS
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_enable_coverage=0 openssl_fips='' host_os=linux host_arch=x64 target_arch=$(NODEJS_DEST_CPU) v8_target_arch=$(NODEJS_DEST_CPU) cc_host=gcc cxx_host=g++ ld_host=g++ ar_host=ar cxxflags_host='-std=gnu++17'"
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_enable_coverage=0 v8_enable_internal_coverage=0 openssl_fips='' host_os=linux host_arch=x64 target_arch=$(NODEJS_DEST_CPU) v8_target_arch=$(NODEJS_DEST_CPU) cc_host=gcc cxx_host=g++ ld_host=g++ ar_host=ar cxxflags_host='-std=gnu++17'"
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
@@ -82,6 +82,8 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
 		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/uClibc++||g' "$$mk"; \
 		sed -i 's|-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/uClibc++||g' "$$mk"; \
+		sed -i 's|-I../deps/v8|-Ideps/v8|g' "$$mk"; \
+		sed -i 's|-I../deps/v8/include|-Ideps/v8/include|g' "$$mk"; \
 		sed -i 's|GYP_CXXFLAGS :=.*|& -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)/$(TARGET_ARCH)-linux-uclibc -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION) -DOPENSSL_API_COMPAT=0x10100000L|g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
 	done
@@ -90,6 +92,8 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i 's/-luClibc++/ -lstdc++/g' "$$mk"; \
 		sed -i 's| -I$(TARGET_TOOLCHAIN_STAGING_DIR)/include/c++/$(TARGET_TOOLCHAIN_GCC_VERSION)[^ ]*||g' "$$mk"; \
 		sed -i 's| -I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include[^ ]*||g' "$$mk"; \
+		sed -i 's|-I../deps/v8|-Ideps/v8|g' "$$mk"; \
+		sed -i 's|-I../deps/v8/include|-Ideps/v8/include|g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
 		sed -i "/'-DV8_TARGET_ARCH_[A-Z0-9_]*'/d" "$$mk"; \
 		sed -i "/'-DCAN_USE_FPU_INSTRUCTIONS'/d" "$$mk"; \
