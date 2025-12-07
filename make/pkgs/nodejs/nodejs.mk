@@ -63,8 +63,8 @@ $(PKG)_CONFIGURE_OPTIONS += --without-node-snapshot
 # Tell gyp to skip building tests and other components that require modern C++ headers
 # `tests=0` disables building googletest and many test targets; `node_no_browser` and
 # `v8_static_library` reduce V8 host-target complexity.
-# For target-specific flags (FPU, etc.), these are applied only to target builds
-$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 openssl_fips='' host_os=linux host_arch=x64 target_arch=$(NODEJS_DEST_CPU) v8_target_arch=$(NODEJS_DEST_CPU) cc_host=gcc cxx_host=g++ ld_host=g++ ar_host=ar cxxflags_host='-std=gnu++17'"
+# Disable coverage to avoid BitField issues on 32-bit MIPS
+$(PKG)_CONFIGURE_ENV += GYP_DEFINES="node_no_browser=1 tests=0 v8_no_strict_aliasing=1 v8_static_library=1 v8_enable_coverage=0 openssl_fips='' host_os=linux host_arch=x64 target_arch=$(NODEJS_DEST_CPU) v8_target_arch=$(NODEJS_DEST_CPU) cc_host=gcc cxx_host=g++ ld_host=g++ ar_host=ar cxxflags_host='-std=gnu++17'"
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
