@@ -1,0 +1,6 @@
+config EXTERNAL_FREETZ_PACKAGE_NODEJS
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_NODEJS
+	bool "nodejs"
+	default n
+	help
+		Externalize nodejs binary (/usr/bin/node) to USB/external storage.
