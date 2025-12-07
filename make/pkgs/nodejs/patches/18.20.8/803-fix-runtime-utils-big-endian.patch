@@ -1,5 +1,5 @@
---- a/deps/v8/src/runtime/runtime-utils.h
-+++ b/deps/v8/src/runtime/runtime-utils.h
+--- deps/v8/src/runtime/runtime-utils.h
++++ deps/v8/src/runtime/runtime-utils.h
 @@ -40,7 +40,7 @@ V8_INLINE ObjectPair MakePair(Object x, Object y) {
    return x.ptr() | (static_cast<ObjectPair>(y.ptr()) << 32);
  #elif defined(V8_TARGET_BIG_ENDIAN)
