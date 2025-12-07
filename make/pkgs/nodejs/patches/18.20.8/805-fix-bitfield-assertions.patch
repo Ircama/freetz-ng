@@ -1,0 +1,12 @@
+--- a/deps/v8/src/base/bit-field.h
++++ b/deps/v8/src/base/bit-field.h
+@@ -22,8 +22,8 @@ template <class T, int shift, int size, class U = uint32_t>
+ class BitField final {
+  public:
+   STATIC_ASSERT(std::is_unsigned<U>::value);
+-  STATIC_ASSERT(shift < 8 * sizeof(U));  // Otherwise shifts by {shift} are UB.
++  STATIC_ASSERT(shift < 64);  // Relaxed for 32-bit targets with large shifts.
+   STATIC_ASSERT(size < 8 * sizeof(U));   // Otherwise shifts by {size} are UB.
+-  STATIC_ASSERT(shift + size <= 8 * sizeof(U));
++  STATIC_ASSERT(shift + size <= 64);  // Relaxed.
+   STATIC_ASSERT(size > 0);
