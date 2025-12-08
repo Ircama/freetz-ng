@@ -1,11 +1,13 @@
 --- a/deps/v8/src/wasm/baseline/mips/liftoff-assembler-mips.h
 +++ b/deps/v8/src/wasm/baseline/mips/liftoff-assembler-mips.h
-@@ -662,7 +662,7 @@ LiftoffAssembler::Store(Register dst, Register src, uint32_t offset,
+@@ -660,7 +660,7 @@
    if (is_store_mem) {
      pinned = pinned | LiftoffRegList{dst_op.rm(), src};
      LiftoffRegister tmp = GetUnusedRegister(src.reg_class(), pinned);
+     // Save original value.
 -    Move(tmp, src, type.value_type());
 +    Move(tmp, src, type.value_type().kind());
+ 
      src = tmp;
      pinned.set(tmp);
      liftoff::ChangeEndiannessStore(this, src, type, pinned);

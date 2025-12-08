@@ -1,6 +1,6 @@
---- a/deps/v8/src/base/bit-field.h
-+++ b/deps/v8/src/base/bit-field.h
-@@ -22,8 +22,8 @@ template <class T, int shift, int size, class U = uint32_t>
+--- deps/v8/src/base/bit-field.h	2025-12-07 17:40:52.093791109 +0100
++++ deps/v8/src/base/bit-field.h	2025-12-07 17:41:09.200181365 +0100
+@@ -23,9 +23,9 @@
  class BitField final {
   public:
    STATIC_ASSERT(std::is_unsigned<U>::value);
@@ -10,3 +10,14 @@
 -  STATIC_ASSERT(shift + size <= 8 * sizeof(U));
 +  STATIC_ASSERT(shift + size <= 64);  // Relaxed.
    STATIC_ASSERT(size > 0);
+ 
+   using FieldType = T;
+@@ -35,7 +35,7 @@
+   // without using a shift count of x in the computation.
+   static constexpr int kShift = shift;
+   static constexpr int kSize = size;
+-  static constexpr U kMask = ((U{1} << kShift) << kSize) - (U{1} << kShift);
++  static constexpr U kMask = (kShift >= 8 * sizeof(U)) ? 0 : (((U{1} << kShift) << kSize) - (U{1} << kShift));
+   static constexpr int kLastUsedBit = kShift + kSize - 1;
+   static constexpr U kNumValues = U{1} << kSize;
+ 

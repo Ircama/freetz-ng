@@ -95,7 +95,7 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i 's|-I../deps/v8|-Ideps/v8|g' "$$mk"; \
 		sed -i 's|-I../deps/v8/include|-Ideps/v8/include|g' "$$mk"; \
 		sed -i 's|$$(obj)\.target/deps/googletest/gtest_prod\.stamp||g' "$$mk"; \
-		sed -i "/'-DV8_TARGET_ARCH_[A-Z0-9_]*'/d" "$$mk"; \
+		sed -i "/'-DV8_TARGET_ARCH_MIPS'/d" "$$mk"; \
 		sed -i "/'-DCAN_USE_FPU_INSTRUCTIONS'/d" "$$mk"; \
 		sed -i "/'-D__[a-z0-9_]*_hard_float[^']*'/d" "$$mk"; \
 		sed -i "/'-D_[A-Z0-9_]*_TARGET_[A-Z0-9_]*'/d" "$$mk"; \
@@ -113,6 +113,9 @@ $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
 		sed -i '/deps\/v8\/src\/baseline\/mips\//d' "$$mk"; \
 		sed -i '/deps\/v8\/src\/wasm\/baseline\/mips\//d' "$$mk"; \
 		sed -i '/deps\/v8\/src\/heap\/base\/asm\/mips\//d' "$$mk"; \
+		sed -i '/builtins-interpreter-gen\.cc/d' "$$mk"; \
+		sed -i '/builtins-regexp-gen\.cc/d' "$$mk"; \
+		sed -i '/code-assembler\.cc/d' "$$mk"; \
 	done
 	@# Remove test and gtest related targets from Makefile
 	@sed -i '/include.*test.*\.mk/d' $(NODEJS_DIR)/out/Makefile 2>/dev/null || true
