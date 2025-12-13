@@ -33,7 +33,7 @@ $($(PKG)_TARGET_BINARY): $(GCC_TOOLCHAIN_BINARY)
 	
 	# Copy GCC compiler binaries (gcc, g++, cpp)
 	@echo "  - Copying GCC binaries..."
-	for bin in gcc g++ cpp gcov gcov-tool gcov-dump; do \
+	for bin in gcc g++ cpp; do \
 		if [ -f "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" ]; then \
 			cp -a "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" \
 			      "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/$$bin"; \
@@ -45,8 +45,8 @@ $($(PKG)_TARGET_BINARY): $(GCC_TOOLCHAIN_BINARY)
 	[ -f "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/g++" ] && \
 		ln -sf g++ "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/c++" || true
 	
-	# Copy binutils if not minimal
-ifneq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_MINIMAL)),y)
+	# Copy binutils and profiling tools if full mode is enabled
+ifeq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_FULL_BINUTILS)),y)
 	@echo "  - Copying binutils..."
 	for bin in as ld ar ranlib nm objdump objcopy strip strings readelf addr2line; do \
 		if [ -f "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" ]; then \
@@ -54,14 +54,17 @@ ifneq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_MINIMAL)),y)
 			      "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/$$bin"; \
 		fi; \
 	done
-else
-	@echo "  - Copying essential binutils (minimal mode)..."
-	for bin in as ld ar ranlib; do \
+	
+	# Copy profiling/coverage tools (full mode only)
+	@echo "  - Copying profiling and coverage tools..."
+	for bin in gcov gcov-tool gcov-dump gprof; do \
 		if [ -f "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" ]; then \
 			cp -a "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" \
 			      "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/$$bin"; \
 		fi; \
 	done
+else
+	@echo "  - Skipping full binutils and profiling tools (base installation)..."
 endif
 	
 	# Copy all libraries (GCC, runtime, static, CRT files, etc.)
