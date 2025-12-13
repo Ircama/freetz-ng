@@ -123,11 +123,6 @@ jobs:
             [ "${{ github.event.inputs.use_queue }}" = "false" ] && echo "  -f use_queue=false"
           fi
           
-          echo "##########################################################"
-
-      - name: Add command-line to Summary
-        run: |
-          # Add command-line to GitHub Step Summary
           echo "### 📋 Command-line" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
