@@ -251,6 +251,9 @@ $(GCC_BUILD_DIR2)/.installed: $(GCC_BUILD_DIR2)/.compiled
 	-(cd $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib && $(TARGET_STRIP) libstdc++.so.*.*.* libgcc_s.so.1 libatomic.so.*.*.* >/dev/null 2>&1)
 	# remove broken *.la* files (invalid checkout directory with dl-toolchains)
 	$(RM) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/*.la*
+	# Remove libiberty.a which may be in wrong format (host instead of target) for old GCC versions
+	# This prevents libtool relink errors in packages like binutils-tools with armeb gcc-4.7.4
+	$(RM) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib{,64}/libiberty*
 	# set up the symlinks to enable lying about target name
 	ln -snf $(REAL_GNU_TARGET_NAME) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/$(GNU_TARGET_NAME)
 	$(call CREATE_TARGET_NAME_SYMLINKS,$(TARGET_TOOLCHAIN_STAGING_DIR)/usr,$(GCC_BINARIES_BIN),$(REAL_GNU_TARGET_NAME),$(GNU_TARGET_NAME))
