@@ -204,7 +204,7 @@ jobs:
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "### 📥 Configuration Source" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "Using configuration from URL: \`$URL\`" >> $GITHUB_STEP_SUMMARY
+              echo "Using configuration from URL: [\`$URL\`]($URL)" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ URL download failed"
