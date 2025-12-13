@@ -30,10 +30,6 @@ ifeq ($(strip $(FREETZ_KERNEL_GCC_3_4)),y)
 KERNEL_TOOLCHAIN_NO_MPFR:=y
 endif
 
-# Define MAKE_ENV for toolchain builds (similar to make/pkgs/Makefile.in)
-# This is needed for target binutils/gcc compilation
-MAKE_ENV=PATH=$(TARGET_PATH) $(FREETZ_LD_RUN_PATH)
-
 TARGET_TOOLCHAIN_GCC_VERSION:=$(call qstrip,$(FREETZ_TARGET_GCC_VERSION))
 TARGET_TOOLCHAIN_UCLIBC_VERSION:=$(call qstrip,$(FREETZ_TARGET_UCLIBC_VERSION))
 TARGET_TOOLCHAIN_UCLIBC_MAJOR_VERSION:=$(call qstrip,$(FREETZ_TARGET_UCLIBC_MAJOR_VERSION))
