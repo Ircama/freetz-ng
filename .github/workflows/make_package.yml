@@ -123,7 +123,40 @@ jobs:
             [ "${{ github.event.inputs.use_queue }}" = "false" ] && echo "  -f use_queue=false"
           fi
           
-          echo "##########################################################"
+          echo "### 📋 Command-line" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          
+          # Build single-line command
+          HAS_PARAMS=""
+          [ -n "${{ github.event.inputs.make_target }}" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.url }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.verbosity }}" != "0" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && HAS_PARAMS="yes"
+          [ -n "${{ github.event.inputs.custom_config }}" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.add_or_override }}" != "add" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.create_artifacts }}" = "true" ] && HAS_PARAMS="yes"
+          [ "${{ github.event.inputs.use_queue }}" = "false" ] && HAS_PARAMS="yes"
+          
+          if [ -z "$HAS_PARAMS" ]; then
+            echo "gh workflow run ${{ github.workflow }}.yml -r ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          else
+            CMD="gh workflow run ${{ github.workflow }}.yml -r ${{ github.ref_name }}"
+            [ -n "${{ github.event.inputs.make_target }}" ] && CMD="$CMD -f make_target='${{ github.event.inputs.make_target }}'"
+            [ -n "${{ github.event.inputs.url }}" ] && CMD="$CMD -f url='${{ github.event.inputs.url }}'"
+            [ "${{ github.event.inputs.verbosity }}" != "0" ] && CMD="$CMD -f verbosity='${{ github.event.inputs.verbosity }}'"
+            [ "${{ github.event.inputs.download_toolchain }}" = "true" ] && CMD="$CMD -f download_toolchain=true"
+            [ "${{ github.event.inputs.cancel_previous }}" = "false" ] && CMD="$CMD -f cancel_previous=false"
+            [ -n "${{ github.event.inputs.custom_config }}" ] && CMD="$CMD -f custom_config='${{ github.event.inputs.custom_config }}'"
+            [ "${{ github.event.inputs.add_or_override }}" != "add" ] && CMD="$CMD -f add_or_override='${{ github.event.inputs.add_or_override }}'"
+            [ "${{ github.event.inputs.create_artifacts }}" = "true" ] && CMD="$CMD -f create_artifacts=true"
+            [ "${{ github.event.inputs.use_queue }}" = "false" ] && CMD="$CMD -f use_queue=false"
+            echo "$CMD" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
       - uses: ahmadnassri/action-workflow-queue@v1
         if: github.event.inputs.use_queue != 'false'
@@ -157,6 +190,45 @@ jobs:
           else
             echo "label=" >> $GITHUB_OUTPUT
             echo "No label found in make_target"
+          fi
+          
+          # Verify URL download if specified
+          URL="$(echo '${{ github.event.inputs.url }}' | sed 's/^ *//;s/ *$//')"
+          [ -z "$URL" ] && URL="${{ secrets.ACTIONS_TESTER }}"
+          
+          if [ -n "$URL" ]; then
+            echo ""
+            echo "Verifying URL accessibility: $URL"
+            if wget -q --spider --timeout=10 "$URL" 2>/dev/null; then
+              echo "✅ URL is accessible"
+            else
+              echo "❌ URL download failed"
+              
+              # Check if myconfig exists as fallback
+              if [ -f .github/workflows/myconfig ]; then
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### ⚠️ Configuration Source Warning" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**URL download failed:** \`$URL\`" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "The workflow will use [\`.github/workflows/myconfig\`](.github/workflows/myconfig) instead." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "> **Note:** If you intended to use the URL configuration, verify the URL is correct and accessible. Otherwise, you should not specify a URL parameter when using the local myconfig file." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### ⚠️ Configuration Source Warning" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**URL download failed:** \`$URL\`" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**Fallback file not found:** \`.github/workflows/myconfig\` does not exist." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "The workflow will generate a **default configuration** using \`make olddefconfig\`." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "> **Warning:** Building with default configuration may not produce the expected results. Consider providing a valid URL or creating a \`.github/workflows/myconfig\` file." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
           fi
 
       - name: Check branch status against upstream
