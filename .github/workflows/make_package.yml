@@ -199,7 +199,7 @@ jobs:
           if [ -n "$URL" ]; then
             echo ""
             echo "Verifying URL accessibility: $URL"
-            if wget -q "$URL" -O - 2>/dev/null | head -c 1 > /dev/null; then
+            if wget -q --spider --timeout=10 "$URL" 2>/dev/null; then
               echo "✅ URL is accessible"
             else
               echo "❌ URL download failed"
