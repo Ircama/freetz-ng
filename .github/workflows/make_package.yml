@@ -191,6 +191,45 @@ jobs:
             echo "label=" >> $GITHUB_OUTPUT
             echo "No label found in make_target"
           fi
+          
+          # Verify URL download if specified
+          URL="$(echo '${{ github.event.inputs.url }}' | sed 's/^ *//;s/ *$//')"
+          [ -z "$URL" ] && URL="${{ secrets.ACTIONS_TESTER }}"
+          
+          if [ -n "$URL" ]; then
+            echo ""
+            echo "Verifying URL accessibility: $URL"
+            if wget -q "$URL" -O - 2>/dev/null | head -c 1 > /dev/null; then
+              echo "✅ URL is accessible"
+            else
+              echo "❌ URL download failed"
+              
+              # Check if myconfig exists as fallback
+              if [ -f .github/workflows/myconfig ]; then
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### ⚠️ Configuration Source Warning" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**URL download failed:** \`$URL\`" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "The workflow will use [\`.github/workflows/myconfig\`](.github/workflows/myconfig) instead." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "> **Note:** If you intended to use the URL configuration, verify the URL is correct and accessible. Otherwise, you should not specify a URL parameter when using the local myconfig file." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### ⚠️ Configuration Source Warning" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**URL download failed:** \`$URL\`" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**Fallback file not found:** \`.github/workflows/myconfig\` does not exist." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "The workflow will generate a **default configuration** using \`make olddefconfig\`." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "> **Warning:** Building with default configuration may not produce the expected results. Consider providing a valid URL or creating a \`.github/workflows/myconfig\` file." >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          fi
 
       - name: Check branch status against upstream
         run: |
