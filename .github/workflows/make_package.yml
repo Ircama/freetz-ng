@@ -201,6 +201,11 @@ jobs:
             echo "Verifying URL accessibility: $URL"
             if wget -q --spider --timeout=10 "$URL" 2>/dev/null; then
               echo "✅ URL is accessible"
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 📥 Configuration Source" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "Using configuration from URL: [\`$URL\`]($URL)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ URL download failed"
               
