@@ -108,7 +108,7 @@ if echo "$EXTERNAL_FILES" | grep -q "/GCC_TOOLCHAIN_ARCHIVE"; then
 		# 1. Symlink binaries in /usr/bin
 		if [ -d "${EXTERNAL_MOD_DIR}/usr/bin" ]; then
 			mkdir -p "${FILESYSTEM_MOD_DIR}/usr/bin"
-			for gcc_bin in "${EXTERNAL_MOD_DIR}/usr/bin"/{gcc,g++,cpp,cc,c++,gcov,gcov-tool,gcov-dump,as,ld,ar,ranlib,nm,objdump,objcopy,strip,strings,readelf,addr2line}; do
+			for gcc_bin in "${EXTERNAL_MOD_DIR}/usr/bin"/{gcc,g++,cpp,cc,c++,gcov,gcov-tool,gcov-dump,gprof,as,ld,ar,ranlib,gcc-ar,gcc-ranlib,nm,objdump,objcopy,strip,strings,readelf,addr2line,c++filt,lto-dump}; do
 				if [ -e "$gcc_bin" ]; then
 					bin_name=$(basename "$gcc_bin")
 					ln -sf "/mod/external/usr/bin/$bin_name" "${FILESYSTEM_MOD_DIR}/usr/bin/$bin_name"

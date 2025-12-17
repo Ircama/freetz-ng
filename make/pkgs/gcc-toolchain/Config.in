@@ -27,6 +27,8 @@ if FREETZ_PACKAGE_GCC_TOOLCHAIN
 		select FREETZ_PACKAGE_BINUTILS_TOOLS_STRINGS
 		select FREETZ_PACKAGE_BINUTILS_TOOLS_STRIP
 		select FREETZ_PACKAGE_BINUTILS_TOOLS_READELF
+		select FREETZ_PACKAGE_BINUTILS_TOOLS_CXXFILT
+		select FREETZ_PACKAGE_BINUTILS_TOOLS_ELFEDIT
 		default y
 		help
 			Include complete binutils and profiling toolset.
@@ -34,7 +36,8 @@ if FREETZ_PACKAGE_GCC_TOOLCHAIN
 			Adds to base GCC installation:
 			- Profiling/coverage: gcov, gprof
 			- Binutils: addr2line, ar, nm, objcopy, objdump, 
-			  ranlib, size, strings, strip, readelf, as, ld
+			  ranlib, size, strings, strip, readelf, as, ld,
+			  c++filt, elfedit
 			
 	config FREETZ_PACKAGE_GCC_TOOLCHAIN_HEADERS
 		bool "Include development headers"

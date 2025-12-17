@@ -1,6 +1,7 @@
 $(call PKG_INIT_BIN, $(if $(FREETZ_AVM_GCC_13),13.4.0,$(if $(FREETZ_AVM_GCC_14),14.3.0,15.2.0)))
 $(PKG)_CONDITIONAL:=y
 $(PKG)_CATEGORY:=Debug helpers
+$(PKG)_DEPENDS_ON += patchelf-target-host
 ### SUPPORT:=Ircama
 
 # Package definition for GCC toolchain on target device
@@ -9,6 +10,7 @@ $(PKG)_CATEGORY:=Debug helpers
 GCC_TOOLCHAIN_SOURCE_DIR:=$(TARGET_UTILS_DIR)
 GCC_TOOLCHAIN_BINARY:=$(TARGET_UTILS_DIR)/usr/bin/gcc
 GCC_TOOLCHAIN_DEST_DIR:=$(PACKAGES_DIR)/gcc-toolchain-$($(PKG)_VERSION)/root
+PATCHELF:=$(TOOLS_DIR)/patchelf-target
 
 # Use a special marker directory that tools/external will recognize and unpack
 GCC_TOOLCHAIN_ARCHIVE_MARKER:=GCC_TOOLCHAIN_ARCHIVE
@@ -45,26 +47,17 @@ $($(PKG)_TARGET_BINARY): $(GCC_TOOLCHAIN_BINARY)
 	[ -f "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/g++" ] && \
 		ln -sf g++ "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/c++" || true
 	
-	# Copy binutils and profiling tools if full mode is enabled
+	# Copy additional tools if full mode is enabled (as, ld, gcov, gprof, gcov-tool, gcov-dump, gcc-ar, gcc-ranlib, lto-dump, c++filt)
 ifeq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_FULL_BINUTILS)),y)
-	@echo "  - Copying binutils..."
-	for bin in as ld ar ranlib nm objdump objcopy strip strings readelf addr2line; do \
-		if [ -f "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" ]; then \
-			cp -a "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" \
-			      "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/$$bin"; \
-		fi; \
-	done
-	
-	# Copy profiling/coverage tools (full mode only)
-	@echo "  - Copying profiling and coverage tools..."
-	for bin in gcov gcov-tool gcov-dump gprof; do \
+	@echo "  - Copying additional tools..."
+	for bin in as ld gcov gcov-tool gcov-dump gprof gcc-ar gcc-ranlib lto-dump c++filt; do \
 		if [ -f "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" ]; then \
 			cp -a "$(GCC_TOOLCHAIN_SOURCE_DIR)/usr/bin/$$bin" \
 			      "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/$$bin"; \
 		fi; \
 	done
 else
-	@echo "  - Skipping full binutils and profiling tools (base installation)..."
+	@echo "  - Skipping additional tools (base installation)..."
 endif
 	
 	# Copy all libraries (GCC, runtime, static, CRT files, etc.)
@@ -104,7 +97,7 @@ endif
 		      "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/libexec/"; \
 	fi
 	
-	# Generate specs using cross-compiler and patch dynamic linker (always)
+	# Generate specs using cross-compiler and patch dynamic linker
 	@echo "  - Generating patched specs for target..."
 	@VER=$$(basename $$(ls -d $(GCC_TOOLCHAIN_SOURCE_DIR)/usr/lib/gcc/$(REAL_GNU_TARGET_NAME)/*/ | head -1) || echo "13.4.0"); \
 	DEST_SPEC="$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/lib/gcc/$(REAL_GNU_TARGET_NAME)/$$VER/specs"; \
@@ -118,9 +111,8 @@ endif
 	  > "$$DEST_SPEC"; \
 	echo "    Specs written to $$DEST_SPEC (patched for /usr/lib/freetz and native compile)"
 	
-	# Fix dynamic linker path for all binaries (only if SEPARATE_AVM_UCLIBC is enabled)
+	# Fix dynamic linker path for all binaries
 	@echo "  - Fixing dynamic linker paths..."
-ifeq ($(strip $(FREETZ_SEPARATE_AVM_UCLIBC)),y)
 	# Patch binaries in gcc-toolchain/bin
 	if [ -d "$(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin" ]; then \
 		for bin in $(GCC_TOOLCHAIN_DEST_DIR)/$(GCC_TOOLCHAIN_ARCHIVE_MARKER)/usr/bin/*; do \
@@ -139,9 +131,6 @@ ifeq ($(strip $(FREETZ_SEPARATE_AVM_UCLIBC)),y)
 			$(PATCHELF) --set-interpreter $(FREETZ_LIBRARY_DIR)/ld-uClibc.so.1 "$$bin" 2>/dev/null || true; \
 		done; \
 	fi
-else
-	@echo "    Skipped (FREETZ_SEPARATE_AVM_UCLIBC not enabled)"
-endif
 	
 	# Copy headers (only if FREETZ_PACKAGE_GCC_TOOLCHAIN_HEADERS is enabled)
 ifeq ($(strip $(FREETZ_PACKAGE_GCC_TOOLCHAIN_HEADERS)),y)
