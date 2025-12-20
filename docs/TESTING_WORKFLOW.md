@@ -1,42 +1,410 @@
 # Freetz-NG Testing Workflows Guide
 
-This document provides guidance for testing packages and firmware builds using the GitHub Actions workflow in Freetz-NG: .github/workflows/make_package.yml.
+This comprehensive guide covers both local and automated testing approaches for Freetz-NG packages and firmware builds.
 
 ## Overview
 
-Freetz-NG uses GitHub Actions workflows for testing and for building firmwares; the related workflow is:
+Freetz-NG provides a comprehensive testing framework that combines local development capabilities with automated validation across multiple platforms. Understanding both approaches is crucial for effective package and firmware development.
 
-- **`make_package.yml`** - Comprehensive package and firmware testing matrix (multiple toolchains and configurations)
+### Local Testing
+When developing packages or modifying firmware configurations, you'll first work directly on your development machine. This local testing phase allows you to compile packages, build firmware images, and test them on devices you physically own. It's the foundation of the development process, where you can quickly iterate, debug issues, and verify that your changes work as expected. Local testing gives you full control over the build environment and immediate access to debugging tools.
 
-The workflow supports manual triggering via `workflow_dispatch`.
+### Automated Workflow Testing
+While local testing ensures your changes work on your specific setup, Freetz-NG's ecosystem spans approximately tens of different device models, each with unique hardware characteristics, firmware versions, and toolchain requirements. To ensure compatibility across this diverse ecosystem, Freetz-NG uses GitHub Actions workflows that automatically test your changes across all supported platforms. This automated testing catches platform-specific issues that might not appear in your local environment and provides confidence that your modifications work consistently across the entire Freetz-NG user base.
 
-## Workflows Description
+This guide first explains the local build system, then covers automated workflow testing to provide a complete testing strategy.
 
-### Come usare make
+------------------
 
-Esempio per `bzip2`:
+## Understanding Freetz-NG Build System
 
-`bzip2-clean`
+We will now understand the main parameters offered by Freetz-NG's `make` command.
 
-- Cosa fa: Rimuove solo i file compilati e gli artefatti di build, mantenendo il codice sorgente scaricato e spacchettato.
-- Uso: Quando vuoi ricompilare senza riscaricare tutto, mantenendo le modifiche locali ai sorgenti.
+The simplest way to use `make` is through the following commands:
 
-`bzip2-dirclean`
+```bash
+make menuconfig
+make
+```
 
-- Cosa fa: Rimuove completamente la directory di build del pacchetto `($(BZIP2_DIR))` e la directory target del pacchetto. `bzip2-dirclean` è un superset di `bzip2-clean` e quindi comprende tutto quello che fa `bzip2-clean`, più altro.
-- Uso: Quando vuoi ricominciare da zero la compilazione, forzando il riscaricamento e la ricompilazione completa.
+### make menuconfig
 
-`bzip2-precompiled`
+This is Freetz-NG's implementation of the Kconfig system (derived from Linux kernel configuration tools). It provides an interactive menu-driven interface for configuring the firmware build options. It generates the `.config` file that serves as the authoritative configuration for the subsequent `make`.
 
-- Cosa fa: Compila e installa il pacchetto nella directory target, rendendolo pronto per l'inclusione nel firmware.
-- Uso: Target principale per compilare il pacchetto. Include dipendenze automatiche basate sulla configurazione (es. libreria se `FREETZ_LIB_libbz2=y`).
+**What it does:**
+- Launches the `tools/kconfig/mconf` binary (built automatically via `make tools` or `make kconfig-host`)
+- Displays a hierarchical menu structure based on `Config.in` files
+- Allows users to select/deselect packages, libraries, kernel options, and device-specific features
+- Generates the `.config` file that serves as the authoritative configuration for subsequent builds
+- The `.config` file contains all user selections in `FREETZ_PACKAGE_*=y/n` format
 
-`bzip2-recompile`
+**Key files involved:**
+- `Config.in` - Main configuration skeleton written in Kconfig language
+- `.config` - User-generated configuration file (should not be edited manually)
+- `tools/kconfig/mconf` - The menu interface binary
+- `tools/kconfig/conf` - Command-line version with more features
 
-- Cosa fa: Combinazione di dirclean + precompiled - rimuove tutto e ricompila da zero.
-- Uso: Quando vuoi essere sicuro di una compilazione completamente pulita, utile dopo modifiche significative alla configurazione o al codice.
+**Alternative menuconfig targets:**
+- `make menuconfig-single` - Shows configuration as a flat tree structure without subpages
+- `make config` - Text-based configuration using `tools/kconfig/conf`
 
-### make_package.yml
+### make (without arguments)
+
+This is the main build command that compiles the complete firmware image based on the configuration in `.config`.
+
+**What it does:**
+- Downloads required source packages and firmware files
+- Builds the cross-compilation toolchain (GCC, binutils, etc.)
+- Compiles selected packages and libraries
+- Creates the final firmware image (`.image` file)
+- Generates build artifacts in the `images/` directory
+
+**Build process overview:**
+1. **Preparation**: Downloads and extracts source packages
+2. **Toolchain**: Builds cross-compilation tools for target architecture
+3. **Kernel**: Compiles kernel modules and headers
+4. **Packages**: Builds user-space applications and libraries
+5. **Image creation**: Assembles final firmware using `fwmod`
+
+### tools/genin
+
+This is a validation tool that checks the consistency of package configurations.
+
+**What it does:**
+- Parses all `Config.in` files in the package directories
+- Validates menu structure and dependencies
+- Should return no errors if package configurations are properly set up
+- Helps catch configuration issues before attempting builds
+
+**Usage:**
+```bash
+tools/genin
+```
+
+If `tools/genin` returns errors, it indicates problems with package configuration files that need to be fixed before building.
+
+### make olddefconfig
+
+This target updates an existing `.config` file to match the current menu structure, setting any new options to their default values.
+
+**What it does:**
+- Takes an existing `.config` file as input
+- Adds any new configuration options that have been added to `Config.in` files
+- Sets new options to their default values (usually 'n' for packages)
+- Maintains existing user selections
+- Updates dependencies and selects based on current menu logic
+
+**When to use:**
+- After pulling updates that add new configuration options
+- When switching between different branches with different menu structures
+- To ensure `.config` is compatible with current codebase
+
+**Related targets:**
+- `make oldconfig` - Interactive version that prompts for new options
+- `make silentoldconfig` - Non-interactive version (same as olddefconfig)
+- `make defconfig` - Creates new config with all defaults
+
+### make help
+
+This target displays a summary of all available make targets and their descriptions.
+
+**What it shows:**
+- Package-specific targets (compile, clean, dirclean, etc.)
+- Global build targets (menuconfig, firmware, etc.)
+- Development and debugging targets
+- Tool-related targets
+
+**Usage:**
+```bash
+make help
+```
+
+This is useful for discovering available build options and understanding the build system capabilities.
+
+## Make Clean Targets
+
+When you want to restart the build process from scratch, you need to use `make dirclean`. However, Freetz-NG provides several cleaning options with different scopes:
+
+### make cacheclean
+
+**What it does:**
+- Removes small cached files and directories
+- Cleans temporary configuration files (`.config.*.tmp`, `.config.old`, `.config.compressed`)
+- Removes generated Config.in files (`make/pkgs/Config.in.generated`, `make/pkgs/external.in.generated`)
+- Cleans build directory (`$(BUILD_DIR)`)
+- Removes fakeroot cache directory
+- Removes detected firmware images in download directory
+- Runs custom fwmod cleanup scripts
+
+**Scope:** Minimal cleanup, preserves source code and compiled packages
+**Use when:** You want to refresh caches and temporary files without rebuilding everything
+
+### make clean
+
+**What it does:**
+- Everything that `cacheclean` does
+- Additionally cleans tools (host tools, cross-compilation tools)
+
+**Scope:** Cache cleanup + tools cleanup
+**Relationship:** `clean` ⊃ `cacheclean` (clean is a superset of cacheclean)
+**Use when:** You want to recompile tools but keep source code and packages
+
+### make dirclean
+
+**What it does:**
+- Everything that `clean` does
+- Additionally removes:
+  - Package build directories (`$(PACKAGES_DIR)`)
+  - Source code directories (`$(SOURCE_DIR)`)
+  - Target toolchain directory (`$(TARGET_TOOLCHAIN_DIR)`)
+  - Kernel build directory (if `.config` exists)
+
+**Scope:** Complete source cleanup except tools and configuration
+**Relationship:** `dirclean` ⊃ `clean` ⊃ `cacheclean`
+**Use when:** You want to restart compilation from scratch, forcing re-download and re-extraction of sources
+
+### make distclean
+
+**What it does:**
+- Everything that `dirclean` does
+- Additionally removes:
+  - Configuration files (`.config.cmd`, `.tmpconfig.h`)
+  - Include config directory (`$(INCLUDE_DIR)/config`)
+  - Firmware images directory (`$(FW_IMAGES_DIR)`)
+  - Kernel target directory (`$(KERNEL_TARGET_DIR)`)
+  - All package and source directories
+  - Toolchain directory (`$(TOOLCHAIN_DIR)`)
+  - Tools build directory (`$(TOOLS_BUILD_DIR)`)
+
+**Scope:** Complete cleanup except download directory
+**Relationship:** `distclean` ⊃ `dirclean` ⊃ `clean` ⊃ `cacheclean`
+**Use when:** You want a completely fresh environment, equivalent to a fresh checkout
+**Note:** Preserves `.config`, `config/custom.in`, `.fwmod_custom`, and download directory (`~/.freetz-dl/`)
+
+### Quick Reference
+
+| Target | Removes Sources | Removes Tools | Removes Config | Preserves |
+|--------|----------------|---------------|----------------|-----------|
+| `cacheclean` | ❌ | ❌ | Temp files only | Sources, packages, tools |
+| `clean` | ❌ | ✅ | Temp files only | Sources, packages |
+| `dirclean` | ✅ | ✅ | Temp files only | `.config`, downloads |
+| `distclean` | ✅ | ✅ | ✅ | Downloads only |
+
+**Recommendation:** Use `dirclean` for most rebuild scenarios. Use `distclean` only when you want to start completely fresh.
+
+## Menuconfig Maintenance - Technical Notes
+
+### Configuration File Properties
+- `.config` serves as the authoritative configuration file for all build processes
+- Manual editing is not recommended; always use `make menuconfig`
+- File is copied to `/etc/.config` in final firmware (unless disabled in menuconfig)
+- Primary debugging resource for configuration-related user issues
+
+### Dependency Warning Analysis
+Configuration save operations may produce warnings such as:
+```
+warning: (FREETZ_PACKAGE_AUTOFS_NFS && FREETZ_PACKAGE_NFSROOT) selects FREETZ_MODULE_nfs which has unmet direct dependencies (FREETZ_KERNEL_VERSION_2_6_13_1 || FREETZ_KERNEL_VERSION_2_6_28 || FREETZ_KERNEL_VERSION_2_6_32)
+```
+
+**Interpretation:**
+- Package selection requires kernel module support unavailable in current kernel version
+- Resolution options: update kernel dependencies or disable package for incompatible kernels
+
+### Remove-Patch Configuration Pattern
+For remove-patches (AVM feature removal), implement this dependency structure:
+
+```
+FREETZ_PACKAGE_FOO
+    select FREETZ_REMOVE_MY_FEATURE if FREETZ_HAS_AVM_MY_FEATURE
+
+FREETZ_REMOVE_MY_FEATURE
+    depends on FREETZ_HAS_AVM_MY_FEATURE
+
+FREETZ_HAS_AVM_MY_FEATURE
+    depends on FREETZ_TYPE_A || FREETZ_TYPE_B || ...
+```
+
+**Purpose:** Ensures remove-patches are selectable only when AVM feature exists on target device.
+
+### Syntax Error Diagnostics
+When `make menuconfig` reports syntax errors:
+
+**Cache-enabled diagnosis:**
+- Examine line number in `Config.in.cache`
+- Search backwards for `INCLUDE_BEGIN` to identify source file
+
+**Cache-disabled diagnosis:**
+- Execute `make menuconfig-nocache` for precise file and line error location
+
+### Configuration Maintenance Procedures
+- Execute `tools/genin` after `Config.in` file modifications to validate syntax
+- Run `make olddefconfig` post-update to process new configuration options
+- Validate configurations across multiple device types to detect dependency conflicts
+- Document hardware/firmware-specific features with appropriate dependency declarations
+
+## Package-Specific Make Targets
+
+Freetz-NG provides specific make targets for individual packages. Each package supports several build operations with convenient shortcuts that combine multiple steps.
+
+For example, the `-recompile` target is equivalent to running `-dirclean` followed by `-precompiled` - both achieve a complete clean rebuild.
+
+Throughout this section, we use the `bzip2` package as an example. To work with other packages, simply replace `bzip2` with the desired package name (which corresponds to the package's `.mk` filename in `make/pkgs/`).
+
+For example, to work with the PHP package, you would use `php` (from `make/pkgs/php/php.mk`), or for OpenSSL you would use `openssl` (from `make/pkgs/openssl/openssl.mk`).
+
+Here are the main target patterns:
+
+### bzip2-clean
+
+**What it does:**
+- Removes only compiled files and build artifacts
+- Preserves downloaded and extracted source code
+- Keeps local source code modifications
+
+**Use when:** You want to recompile without re-downloading everything, maintaining local source changes
+
+### bzip2-dirclean
+
+**What it does:**
+- Completely removes the package build directory (`$(BZIP2_DIR)`) and target directory
+- `bzip2-dirclean` is a superset of `bzip2-clean` - it includes everything `bzip2-clean` does plus more
+- Forces complete re-download and re-extraction of sources
+
+**Use when:** You want to restart compilation from scratch, forcing re-download and complete recompilation
+
+**Relationship:** `bzip2-dirclean` ⊃ `bzip2-clean`
+
+### bzip2-precompiled
+
+**What it does:**
+- Compiles and installs the package in the target directory, making it ready for firmware inclusion
+- Main target for compiling the package
+- Includes automatic dependencies based on configuration (e.g., library if `FREETZ_LIB_libbz2=y`)
+
+**Use when:** Standard package compilation with dependency resolution
+
+### bzip2-recompile
+
+**What it does:**
+- Combination of `dirclean` + `precompiled` - removes everything and recompiles from scratch
+- Ensures completely clean compilation
+
+**Use when:** You want to be sure of a completely clean build, useful after significant configuration changes or code modifications
+
+### General Package Target Patterns
+
+All packages support these target suffixes:
+
+| Suffix | Description | Use Case |
+|--------|-------------|----------|
+| `-clean` | Remove build artifacts, keep sources | Quick rebuild |
+| `-dirclean` | Remove build directory and sources | Full rebuild |
+| `-precompiled` | Standard compilation with dependencies | Normal build |
+| `-recompile` | Clean + recompile from scratch | Clean build |
+
+**Examples:**
+```bash
+# Clean rebuild of bzip2
+make bzip2-clean bzip2-precompiled
+
+# Full rebuild of bzip2
+make bzip2-dirclean bzip2-precompiled
+
+# Or simply:
+make bzip2-recompile
+
+# Multiple packages
+make bzip2-recompile patchelf-recompile
+```
+
+------------------
+
+## Local vs. Workflow-Based Testing
+
+Freetz-NG supports two main approaches for testing packages and firmware builds:
+
+### Local Testing (Understanding Freetz-NG Build System)
+The previous section explains how to compile the system or individual packages directly on your local machine. This approach is essential for:
+- Initial development and debugging
+- Testing on devices you physically own
+- Quick iteration during package development
+- Understanding the build process in detail
+
+### Workflow-Based Testing (make_package.yml)
+The following section describes automated testing using GitHub Actions workflows. This approach is crucial for:
+- Testing across multiple device/toolchain combinations simultaneously
+- Ensuring compatibility across the entire Freetz-NG ecosystem
+- Automated regression testing
+- CI/CD integration
+
+## make_package.yml
+
+This section explains how to use GitHub Actions workflows for comprehensive automated testing. Workflows provide significant advantages over local testing alone:
+
+### Why Use GitHub Actions Workflows?
+
+GitHub Actions workflows automate the build process in isolated environments, allowing you to:
+
+1. **Test Multiple Configurations Simultaneously**: Instead of testing on just one device, workflows can test across dozens of device/firmware/toolchain combinations in parallel
+2. **Ensure Ecosystem Compatibility**: Freetz-NG supports approximately 30 pre-configured devices with different hardware capabilities and firmware versions
+3. **Catch Platform-Specific Issues**: Different devices may have unique kernel versions, toolchain requirements, or hardware-specific code that needs validation
+4. **Automate Regression Testing**: Workflows can run automatically on code changes, catching issues before they reach users
+
+### The Testing Workflow
+
+A typical testing process follows this progression:
+
+1. **Local Testing**: Start by testing on devices you physically own and can access for debugging
+2. **Device-Specific Testing**: Test on specific device configurations you're targeting
+3. **Comprehensive Workflow Testing**: Use GitHub Actions to verify compilation across all supported devices and toolchains
+
+This multi-stage approach ensures both thorough testing and efficient development workflows.
+
+### Workflow Architecture
+
+The `make_package.yml` workflow uses a matrix strategy to test packages across multiple dimensions:
+
+#### What are GitHub Actions Workflows?
+
+GitHub Actions workflows are automated processes that run on GitHub's infrastructure. For Freetz-NG, they provide:
+
+- **Isolated Build Environments**: Each test runs in a clean Ubuntu environment with no interference from local machine state
+- **Parallel Execution**: Multiple device/toolchain combinations can be tested simultaneously
+- **Version Control Integration**: Workflows can trigger automatically on pull requests, pushes, or scheduled intervals
+- **Artifact Storage**: Build outputs can be stored and downloaded for further analysis
+
+#### Pre-configured Devices and Toolchains
+
+Freetz-NG comes with approximately 30 pre-configured device profiles, each representing different:
+
+- **Hardware Platforms**: Different router models (7590, 7530, 7490, etc.)
+- **Firmware Versions**: Various AVM firmware releases (08.0X, 08.2X, 08.3X, etc.)
+- **Kernel Versions**: Different Linux kernel versions with varying feature sets
+- **Toolchain Configurations**: GCC versions, optimization flags, and architecture-specific settings
+
+Additional device configurations can be added manually by modifying the workflow matrix or using the `custom_config` parameter.
+
+#### The Complete Testing Process
+
+A comprehensive testing approach follows this sequence:
+
+1. **Local Development Testing**:
+   - Test on devices you physically own
+   - Use local build system for quick iteration
+   - Debug issues directly on target hardware
+
+2. **Device-Specific Testing**:
+   - Test on specific device models you're targeting
+   - Verify functionality on particular firmware versions
+   - Check hardware-specific features
+
+3. **Workflow-Based Comprehensive Testing**:
+   - Use GitHub Actions to test across all supported devices
+   - Catch platform-specific compilation issues
+   - Ensure compatibility across the entire ecosystem
+   - Generate reports for all device combinations
+
+This multi-layered approach ensures both development efficiency and ecosystem-wide compatibility.
 
 **Purpose**: Comprehensive testing of packages and firmware builds across multiple toolchain configurations using a matrix build strategy. Supports both individual package testing and full firmware builds.
 

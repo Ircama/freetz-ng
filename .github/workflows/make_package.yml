@@ -87,6 +87,7 @@ jobs:
 
     outputs:
       matrix: ${{ steps.parse.outputs.matrix }}
+      matrix_order: ${{ steps.parse.outputs.matrix_order }}
 
     steps:
 
@@ -245,7 +246,7 @@ jobs:
           
           # Fetch upstream repository
           git remote add upstream https://github.com/Freetz-NG/freetz-ng 2>/dev/null || true
-          git fetch upstream master 2>/dev/null || true
+          git fetch upstream master
           
           # Check if branch is even with upstream/master
           COMMITS_AHEAD=$(git rev-list --count upstream/master..HEAD 2>/dev/null || echo "0")
@@ -277,14 +278,14 @@ jobs:
             if [ "$COMMITS_AHEAD" != "0" ]; then
               echo "#### 📝 Commits in this branch (not in upstream)" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              git log --oneline --no-decorate upstream/master..HEAD | head -20 | while read -r line; do
+              git log --oneline --no-decorate upstream/master..HEAD | head -100 | while read -r line; do
                 COMMIT_HASH=$(echo "$line" | awk '{print $1}')
                 COMMIT_MSG=$(echo "$line" | cut -d' ' -f2-)
                 echo "- [\`$COMMIT_HASH\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$COMMIT_HASH) $COMMIT_MSG" >> $GITHUB_STEP_SUMMARY
               done
               
-              if [ "$COMMITS_AHEAD" -gt 20 ]; then
-                echo "- _... and $((COMMITS_AHEAD - 20)) more commits_" >> $GITHUB_STEP_SUMMARY
+              if [ "$COMMITS_AHEAD" -gt 100 ]; then
+                echo "- _... and $((COMMITS_AHEAD - 100)) more commits_" >> $GITHUB_STEP_SUMMARY
               fi
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
@@ -304,7 +305,9 @@ jobs:
               echo "| Status | File | Link |" >> $GITHUB_STEP_SUMMARY
               echo "|--------|------|------|" >> $GITHUB_STEP_SUMMARY
               
-              echo "$MODIFIED_FILES" | head -50 | while IFS=$'\t' read -r status filepath; do
+              echo "$MODIFIED_FILES" | head -100 | while read -r line; do
+                status=$(echo "$line" | cut -f1)
+                filepath=$(echo "$line" | cut -f2)
                 case "$status" in
                   A*) STATUS_ICON="✨ Added" ;;
                   M*) STATUS_ICON="📝 Modified" ;;
@@ -325,9 +328,9 @@ jobs:
                 echo "| $STATUS_ICON | $FILE_LINK | $DIFF_LINK |" >> $GITHUB_STEP_SUMMARY
               done
               
-              if [ "$FILE_COUNT" -gt 50 ]; then
+              if [ "$FILE_COUNT" -gt 100 ]; then
                 echo "" >> $GITHUB_STEP_SUMMARY
-                echo "_... and $((FILE_COUNT - 50)) more files_" >> $GITHUB_STEP_SUMMARY
+                echo "_... and $((FILE_COUNT - 100)) more files_" >> $GITHUB_STEP_SUMMARY
               fi
               
               echo "" >> $GITHUB_STEP_SUMMARY
@@ -526,6 +529,7 @@ jobs:
                   tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g') _LANG_DE"
                 fi
                 echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",skip_libs:\"$skip_libs\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
+                echo "$name" >> /tmp/matrix_order.txt
               done
             done
           fi
@@ -584,6 +588,7 @@ jobs:
                 echo "  Custom entry: $override_pkg_name on $custom_name"
               fi
               echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",skip_libs:\"$override_skip_libs\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
+              echo "$custom_name" >> /tmp/matrix_order.txt
             done < /tmp/custom_configs.txt
             
             rm -f /tmp/custom_configs.txt
@@ -593,10 +598,18 @@ jobs:
           if [ -f /tmp/matrix_entries.txt ] && [ -s /tmp/matrix_entries.txt ]; then
             matrix_json="$(cat /tmp/matrix_entries.txt | tr -d '\n' | sed 's/,$//')"
             echo "matrix=[$matrix_json]" >> $GITHUB_OUTPUT
-            rm -f /tmp/matrix_entries.txt
+            
+            # Output matrix order as JSON array
+            if [ -f /tmp/matrix_order.txt ]; then
+              matrix_order_json="$(cat /tmp/matrix_order.txt | jq -R . | jq -s . | tr -d '\n')"
+              echo "matrix_order=$matrix_order_json" >> $GITHUB_OUTPUT
+            fi
+            
+            rm -f /tmp/matrix_entries.txt /tmp/matrix_order.txt
           else
             echo "No packages to build"
             echo 'matrix=["skip"]' >> $GITHUB_OUTPUT
+            echo 'matrix_order=[]' >> $GITHUB_OUTPUT
           fi
 
       - name: vars
@@ -1096,6 +1109,49 @@ jobs:
             echo "Fake firmware placeholder" > "$FIRMWARE_PATH"
             echo "✅ Created fake firmware: $FIRMWARE_PATH ($(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || echo 0) bytes)"            
 
+            # Create a wrapper script for bin2asm that will be called by modified kernel.mk
+            # This wrapper handles fake firmware by generating dummy .S assembly
+            echo '#!/bin/bash'                                                                           > tools/avm_kernel_config.bin2asm.wrapper
+            echo '# Wrapper for avm_kernel_config.bin2asm that handles fake firmware'                   >> tools/avm_kernel_config.bin2asm.wrapper
+            echo 'INPUT_FILE="$1"'                                                                      >> tools/avm_kernel_config.bin2asm.wrapper
+            echo 'OUTPUT_FILE="$2"'                                                                     >> tools/avm_kernel_config.bin2asm.wrapper
+            echo 'SCRIPT_DIR="$(dirname "$0")"'                                                         >> tools/avm_kernel_config.bin2asm.wrapper
+            echo ''                                                                                     >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '# Check if input file is small (fake firmware case)'                                  >> tools/avm_kernel_config.bin2asm.wrapper
+            echo 'if [ ! -f "$INPUT_FILE" ] || [ $(stat -c%s "$INPUT_FILE" 2>/dev/null || echo 0) -lt 1000 ]; then' >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '    echo >&2 "DEBUG: Detected fake/small input, generating dummy .S assembly"'        >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '    {'                                                                                >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "#include \"avm_kernel_config_macros.h\""'                               >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo ""'                                                                      >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "        AVM_KERNEL_CONFIG_START"'                                       >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo ""'                                                                      >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "        AVM_KERNEL_CONFIG_PTR"'                                         >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo ""'                                                                      >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo ".L_avm_kernel_config_entries:"'                                         >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "        AVM_KERNEL_CONFIG_ENTRY 2, \"version_info\""'                   >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "        AVM_KERNEL_CONFIG_ENTRY 263, NULL"'                             >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo ""'                                                                      >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "        AVM_VERSION_INFO \"00000\", \"00000\", \"freetz-ng-fake\""'     >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo ""'                                                                      >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '        echo "        AVM_KERNEL_CONFIG_END"'                                         >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '    } > "$OUTPUT_FILE"'                                                               >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '    exit 0'                                                                           >> tools/avm_kernel_config.bin2asm.wrapper
+            echo 'fi'                                                                                   >> tools/avm_kernel_config.bin2asm.wrapper
+            echo ''                                                                                     >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '# Real input - use the real bin2asm'                                                  >> tools/avm_kernel_config.bin2asm.wrapper
+            echo '"$SCRIPT_DIR/avm_kernel_config.bin2asm" "$INPUT_FILE" > "$OUTPUT_FILE"'               >> tools/avm_kernel_config.bin2asm.wrapper
+            chmod +x tools/avm_kernel_config.bin2asm.wrapper
+            echo "✅ Created bin2asm wrapper script"
+            
+            # Patch kernel.mk to use the wrapper script instead of bin2asm directly
+            # The wrapper handles both fake and real firmware cases
+            sed -i 's|@\$(TOOLS_DIR)/avm_kernel_config.bin2asm "\$<" >"\$@"|@$(TOOLS_DIR)/avm_kernel_config.bin2asm.wrapper "$<" "$@"|' make/kernel/kernel.mk
+            echo "✅ Patched kernel.mk to use wrapper script"
+            
+            # Also patch extract script to output minimal binary for fake firmware
+            sed -i '/^fw_image="\$1"/a # Check if this is fake firmware (absent or small file size indicates fake)\nif [ ! -f "$fw_image" ] || [ $(stat -c%s "$fw_image" 2>/dev/null || echo 999999) -lt 100000 ]; then\n    echo >&2 "DEBUG: Detected fake/absent firmware, outputting minimal binary"\n    printf "\\x00\\x00\\x00\\x00"\n    exit 0\nfi' tools/avm_kernel_config.extract.sh
+            sed -i 's/ --wildcards "\.\/\${d}\/\*\.image"//' tools/avm_kernel_config.extract.sh
+
             # Create simplified fwmod replacement inline
             echo 'set -e'                                                                    > fwmod
             echo 'DOT_CONFIG=".config"'                                                     >> fwmod
@@ -1167,7 +1223,7 @@ jobs:
             echo 'IMAGE_SIZE=$(stat -c%s "$OUTPUT_IMAGE" 2>/dev/null || echo 0)'            >> fwmod
             echo 'IMAGE_SIZE_KB=$((IMAGE_SIZE / 1024))'                                     >> fwmod
             echo 'echo "Image size of $OUTPUT_IMAGE_REL: $IMAGE_SIZE_KB KB ($IMAGE_SIZE bytes)."' >> fwmod
-            echo ''                                                                         >> fwmod
+            echo 'echo ""'                                                                  >> fwmod
             echo 'printf "\033[1mFINISHED\033[0m\n"'                                        >> fwmod
             echo ''                                                                         >> fwmod
             
@@ -1551,3 +1607,325 @@ jobs:
 #           !dl/linux-*.tar.xz
 #           !dl/fw/*.zip
 #         key: ${{ env.CACHE_KEY }}
+
+  config_summary:
+    runs-on: ubuntu-latest
+    needs: [build, parse_matrix]
+    if: always()
+    name: "Configuration Analysis"
+    
+    steps:
+      - name: Analyze build configurations from logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Analyze configuration differences by reading job logs via GitHub API
+          echo "📊 Analyzing configuration differences across all builds..."
+          echo ""
+          
+          # Get all jobs for this workflow run
+          JOBS_JSON=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs --paginate 2>&1 | cat)
+          
+          # Extract build job IDs and names (matrix jobs with " - " pattern, exclude config_summary)
+          echo "$JOBS_JSON" | jq -r '.jobs[] | select(.name | contains(" - ")) | "\(.id)|\(.name)|\(.conclusion)"' > /tmp/build_jobs.txt
+          
+          echo "Found build jobs:"
+          cat /tmp/build_jobs.txt
+          echo ""
+          
+          # Initialize arrays for tracking
+          mkdir -p /tmp/configs
+          
+          # Process each build job
+          while IFS='|' read -r JOB_ID JOB_NAME JOB_STATUS; do
+            [ -z "$JOB_ID" ] && continue
+            
+            echo "Processing job: $JOB_NAME (ID: $JOB_ID, Status: $JOB_STATUS)"
+            
+            # Extract device and firmware from job name (format: "pkg - DEVICE - FIRMWARE (LANG)")
+            # Example: "fake-firmware - 7490 - 07_2X (DE)" -> DEVICE=7490, FIRMWARE=07_2X
+            
+            # Remove pkg part: get everything after "pkg - "
+            JOB_NAME_NO_PKG=$(echo "$JOB_NAME" | sed 's/^[^ ]* - //')
+            
+            # Extract DEVICE: everything before " - "
+            DEVICE=$(echo "$JOB_NAME_NO_PKG" | sed 's/ - .*//' | sed 's/^ *//;s/ *$//')
+            
+            # Extract FIRMWARE: everything after "device - " until " ("
+            FIRMWARE=$(echo "$JOB_NAME_NO_PKG" | sed 's/^[^ ]* - //' | sed 's/ (.*//' | sed 's/^ *//;s/ *$//')
+            
+            # Create config file for this job
+            CONFIG_FILE="/tmp/configs/${JOB_ID}.conf"
+            echo "DEVICE=\"$DEVICE\"" > "$CONFIG_FILE"
+            echo "FIRMWARE=\"$FIRMWARE\"" >> "$CONFIG_FILE"
+            echo "JOB_NAME=\"$JOB_NAME\"" >> "$CONFIG_FILE"
+            echo "JOB_STATUS=\"$JOB_STATUS\"" >> "$CONFIG_FILE"
+            
+            # Try to download job log (even for cancelled/failed jobs - they may have partial output)
+            if ! gh api repos/${{ github.repository }}/actions/jobs/$JOB_ID/logs 2>&1 | cat > /tmp/job_${JOB_ID}.log; then
+              echo "  Failed to download log for job $JOB_ID"
+              echo "BASE_PACKAGES=\"\"" >> "$CONFIG_FILE"
+              echo "USER_PACKAGES=\"\"" >> "$CONFIG_FILE"
+              echo "BASE_LIBS=\"\"" >> "$CONFIG_FILE"
+              echo "USER_LIBS=\"\"" >> "$CONFIG_FILE"
+              continue
+            fi
+            
+            # Check if log file has content
+            if [ ! -s /tmp/job_${JOB_ID}.log ]; then
+              echo "  Empty log for job $JOB_ID"
+              echo "BASE_PACKAGES=\"\"" >> "$CONFIG_FILE"
+              echo "USER_PACKAGES=\"\"" >> "$CONFIG_FILE"
+              echo "BASE_LIBS=\"\"" >> "$CONFIG_FILE"
+              echo "USER_LIBS=\"\"" >> "$CONFIG_FILE"
+              continue
+            fi
+            
+            # Extract configuration from log
+            LOG_FILE="/tmp/job_${JOB_ID}.log"
+            
+            # Extract Base packages (lines containing "  - " after "👉 Base packages:")
+            # Note: GitHub logs have timestamps like "2024-12-19T12:34:56.1234567Z   - ITEM"
+            BASE_PKGS=$(sed -n '/👉 Base packages:/,/👉\|##########/p' "$LOG_FILE" 2>/dev/null | grep "  - " | sed 's/.*  - //' | tr '\n' ' ' || echo "")
+            echo "BASE_PACKAGES=\"$BASE_PKGS\"" >> "$CONFIG_FILE"
+            
+            # Extract User packages
+            USER_PKGS=$(sed -n '/👉 User packages:/,/👉\|##########/p' "$LOG_FILE" 2>/dev/null | grep "  - " | sed 's/.*  - //' | tr '\n' ' ' || echo "")
+            echo "USER_PACKAGES=\"$USER_PKGS\"" >> "$CONFIG_FILE"
+            
+            # Extract Base libraries
+            BASE_LIBS=$(sed -n '/👉 Base libraries/,/👉\|##########/p' "$LOG_FILE" 2>/dev/null | grep "  - " | sed 's/.*  - //' | tr '\n' ' ' || echo "")
+            echo "BASE_LIBS=\"$BASE_LIBS\"" >> "$CONFIG_FILE"
+            
+            # Extract User libraries
+            USER_LIBS=$(sed -n '/👉 User libraries:/,/👉\|##########/p' "$LOG_FILE" 2>/dev/null | grep "  - " | sed 's/.*  - //' | tr '\n' ' ' || echo "")
+            echo "USER_LIBS=\"$USER_LIBS\"" >> "$CONFIG_FILE"
+            
+            # Debug output
+            echo "  Base packages: $(echo "$BASE_PKGS" | wc -w)"
+            echo "  User packages: $(echo "$USER_PKGS" | wc -w)"
+            echo "  Base libraries: $(echo "$BASE_LIBS" | wc -w)"
+            echo "  User libraries: $(echo "$USER_LIBS" | wc -w)"
+            
+            # Cleanup log file
+            rm -f "$LOG_FILE"
+            
+          done < /tmp/build_jobs.txt
+          
+          echo ""
+          echo "Configuration extraction complete. Generating summary..."
+          echo ""
+          
+          # Check if we have any config files
+          CONFIG_COUNT=$(ls -1 /tmp/configs/*.conf 2>/dev/null | wc -l)
+          if [ "$CONFIG_COUNT" -eq 0 ]; then
+            echo "No configuration files found to analyze"
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## 📊 Configuration Analysis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "_No build jobs found to analyze._" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          # Collect all unique packages and libraries from ALL builds (including cancelled with data)
+          ALL_BASE_PKGS=""
+          ALL_USER_PKGS=""
+          ALL_BASE_LIBS=""
+          ALL_USER_LIBS=""
+          
+          for config_file in /tmp/configs/*.conf; do
+            source "$config_file"
+            # Include data from ANY job that has config data, not just successful ones
+            ALL_BASE_PKGS="$ALL_BASE_PKGS $BASE_PACKAGES"
+            ALL_USER_PKGS="$ALL_USER_PKGS $USER_PACKAGES"
+            ALL_BASE_LIBS="$ALL_BASE_LIBS $BASE_LIBS"
+            ALL_USER_LIBS="$ALL_USER_LIBS $USER_LIBS"
+          done
+          
+          # Get unique lists (reference/full configuration = union of all)
+          REF_BASE_PKGS=$(echo "$ALL_BASE_PKGS" | tr ' ' '\n' | sort -u | grep -v '^$' || true)
+          REF_USER_PKGS=$(echo "$ALL_USER_PKGS" | tr ' ' '\n' | sort -u | grep -v '^$' || true)
+          REF_BASE_LIBS=$(echo "$ALL_BASE_LIBS" | tr ' ' '\n' | sort -u | grep -v '^$' || true)
+          REF_USER_LIBS=$(echo "$ALL_USER_LIBS" | tr ' ' '\n' | sort -u | grep -v '^$' || true)
+          
+          REF_BASE_PKGS_COUNT=$(echo "$REF_BASE_PKGS" | grep -c . || echo 0)
+          REF_USER_PKGS_COUNT=$(echo "$REF_USER_PKGS" | grep -c . || echo 0)
+          REF_BASE_LIBS_COUNT=$(echo "$REF_BASE_LIBS" | grep -c . || echo 0)
+          REF_USER_LIBS_COUNT=$(echo "$REF_USER_LIBS" | grep -c . || echo 0)
+          
+          echo "📦 Reference configuration (union of all builds):"
+          echo "  Base packages: $REF_BASE_PKGS_COUNT"
+          echo "  User packages: $REF_USER_PKGS_COUNT"
+          echo "  Base libraries: $REF_BASE_LIBS_COUNT"
+          echo "  User libraries: $REF_USER_LIBS_COUNT"
+          echo ""
+          
+          # Start building summary (only the comparison table)
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "### 📋 Build Configurations Comparison"
+            echo ""
+            echo "> Click on count cells to see missing items (if any)"
+            echo ""
+            echo "| Device | Firmware | Base Pkgs | User Pkgs | Base Libs | User Libs | Status |"
+            echo "|--------|----------|-----------|-----------|-----------|-----------|--------|"
+          } >> $GITHUB_STEP_SUMMARY
+          
+          FULL_CONFIG_COUNT=0
+          REDUCED_CONFIG_COUNT=0
+          FAILED_COUNT=0
+          
+          # Analyze each configuration in matrix order
+          MATRIX_ORDER='${{ needs.parse_matrix.outputs.matrix_order }}'
+          for job_name in $(echo "$MATRIX_ORDER" | jq -r '.[]'); do
+            # Find the config file for this job name
+            config_file=$(find /tmp/configs -name "*.conf" -exec grep -l "JOB_NAME=\"$job_name\"" {} \; 2>/dev/null | head -1)
+            if [ -z "$config_file" ]; then
+              echo "Warning: No config file found for job '$job_name'"
+              continue
+            fi
+            source "$config_file"
+            
+            # Determine status icon
+            if [ "$JOB_STATUS" = "success" ]; then
+              STATUS_ICON="✅"
+            elif [ "$JOB_STATUS" = "failure" ]; then
+              STATUS_ICON="❌ Failed"
+            elif [ "$JOB_STATUS" = "cancelled" ]; then
+              STATUS_ICON="⏹️ Cancelled"
+            else
+              STATUS_ICON="⚠️ $JOB_STATUS"
+            fi
+            
+            # Check if this job has any config data (even if cancelled/failed)
+            HAS_DATA="n"
+            if [ -n "$BASE_PACKAGES" ] || [ -n "$USER_PACKAGES" ] || [ -n "$BASE_LIBS" ] || [ -n "$USER_LIBS" ]; then
+              HAS_DATA="y"
+            fi
+            
+            # Handle jobs without data
+            if [ "$HAS_DATA" = "n" ]; then
+              FAILED_COUNT=$((FAILED_COUNT + 1))
+              echo "| \`$DEVICE\` | \`$FIRMWARE\` | - | - | - | - | $STATUS_ICON |" >> $GITHUB_STEP_SUMMARY
+              continue
+            fi
+            
+            # Get this config's items as sorted lists
+            THIS_BASE_PKGS=$(echo "$BASE_PACKAGES" | tr ' ' '\n' | grep -v '^$' | sort -u || true)
+            THIS_USER_PKGS=$(echo "$USER_PACKAGES" | tr ' ' '\n' | grep -v '^$' | sort -u || true)
+            THIS_BASE_LIBS=$(echo "$BASE_LIBS" | tr ' ' '\n' | grep -v '^$' | sort -u || true)
+            THIS_USER_LIBS=$(echo "$USER_LIBS" | tr ' ' '\n' | grep -v '^$' | sort -u || true)
+            
+            THIS_BASE_PKGS_COUNT=$(echo "$THIS_BASE_PKGS" | grep -c . || echo 0)
+            THIS_USER_PKGS_COUNT=$(echo "$THIS_USER_PKGS" | grep -c . || echo 0)
+            THIS_BASE_LIBS_COUNT=$(echo "$THIS_BASE_LIBS" | grep -c . || echo 0)
+            THIS_USER_LIBS_COUNT=$(echo "$THIS_USER_LIBS" | grep -c . || echo 0)
+            
+            # Find missing items (what's in REF but not in THIS)
+            # Use grep -Fxq for fixed string exact matching (handles special chars like [ ])
+            MISSING_BASE_PKGS=""
+            MISSING_USER_PKGS=""
+            MISSING_BASE_LIBS=""
+            MISSING_USER_LIBS=""
+            
+            for pkg in $REF_BASE_PKGS; do
+              echo "$THIS_BASE_PKGS" | grep -Fxq "$pkg" || MISSING_BASE_PKGS="$MISSING_BASE_PKGS $pkg"
+            done
+            for pkg in $REF_USER_PKGS; do
+              echo "$THIS_USER_PKGS" | grep -Fxq "$pkg" || MISSING_USER_PKGS="$MISSING_USER_PKGS $pkg"
+            done
+            for lib in $REF_BASE_LIBS; do
+              echo "$THIS_BASE_LIBS" | grep -Fxq "$lib" || MISSING_BASE_LIBS="$MISSING_BASE_LIBS $lib"
+            done
+            for lib in $REF_USER_LIBS; do
+              echo "$THIS_USER_LIBS" | grep -Fxq "$lib" || MISSING_USER_LIBS="$MISSING_USER_LIBS $lib"
+            done
+            
+            # Trim whitespace (use sed instead of xargs to avoid quote issues)
+            MISSING_BASE_PKGS=$(echo "$MISSING_BASE_PKGS" | sed 's/^ *//;s/ *$//')
+            MISSING_USER_PKGS=$(echo "$MISSING_USER_PKGS" | sed 's/^ *//;s/ *$//')
+            MISSING_BASE_LIBS=$(echo "$MISSING_BASE_LIBS" | sed 's/^ *//;s/ *$//')
+            MISSING_USER_LIBS=$(echo "$MISSING_USER_LIBS" | sed 's/^ *//;s/ *$//')
+            
+            # Convert spaces to comma-separated list
+            MISSING_BASE_PKGS=$(echo "$MISSING_BASE_PKGS" | sed 's/ /, /g')
+            MISSING_USER_PKGS=$(echo "$MISSING_USER_PKGS" | sed 's/ /, /g')
+            MISSING_BASE_LIBS=$(echo "$MISSING_BASE_LIBS" | sed 's/ /, /g')
+            MISSING_USER_LIBS=$(echo "$MISSING_USER_LIBS" | sed 's/ /, /g')
+            
+            # Determine if this is full or reduced
+            IS_FULL=true
+            [ -n "$MISSING_BASE_PKGS" ] && IS_FULL=false
+            [ -n "$MISSING_USER_PKGS" ] && IS_FULL=false
+            [ -n "$MISSING_BASE_LIBS" ] && IS_FULL=false
+            [ -n "$MISSING_USER_LIBS" ] && IS_FULL=false
+            
+            if [ "$IS_FULL" = "true" ]; then
+              STATUS="$STATUS_ICON"
+              FULL_CONFIG_COUNT=$((FULL_CONFIG_COUNT + 1))
+            else
+              STATUS="$STATUS_ICON"
+            fi
+            
+            # Build clickable count cells - show missing items on click if any
+            MISSING_BASE_PKGS_COUNT=$(echo "$MISSING_BASE_PKGS" | wc -w)
+            MISSING_USER_PKGS_COUNT=$(echo "$MISSING_USER_PKGS" | wc -w)
+            MISSING_BASE_LIBS_COUNT=$(echo "$MISSING_BASE_LIBS" | wc -w)
+            MISSING_USER_LIBS_COUNT=$(echo "$MISSING_USER_LIBS" | wc -w)
+            
+            # Base Pkgs cell
+            if [ "$MISSING_BASE_PKGS_COUNT" -gt 0 ]; then
+              BASE_PKGS_CELL="<details><summary>$THIS_BASE_PKGS_COUNT/$REF_BASE_PKGS_COUNT</summary><sub>$MISSING_BASE_PKGS_COUNT missing: $MISSING_BASE_PKGS</sub></details>"
+            else
+              BASE_PKGS_CELL="$THIS_BASE_PKGS_COUNT/$REF_BASE_PKGS_COUNT"
+            fi
+            
+            # User Pkgs cell
+            if [ "$MISSING_USER_PKGS_COUNT" -gt 0 ]; then
+              USER_PKGS_CELL="<details><summary>$THIS_USER_PKGS_COUNT/$REF_USER_PKGS_COUNT</summary><sub>$MISSING_USER_PKGS_COUNT missing: $MISSING_USER_PKGS</sub></details>"
+            else
+              USER_PKGS_CELL="$THIS_USER_PKGS_COUNT/$REF_USER_PKGS_COUNT"
+            fi
+            
+            # Base Libs cell
+            if [ "$MISSING_BASE_LIBS_COUNT" -gt 0 ]; then
+              BASE_LIBS_CELL="<details><summary>$THIS_BASE_LIBS_COUNT/$REF_BASE_LIBS_COUNT</summary><sub>$MISSING_BASE_LIBS_COUNT missing: $MISSING_BASE_LIBS</sub></details>"
+            else
+              BASE_LIBS_CELL="$THIS_BASE_LIBS_COUNT/$REF_BASE_LIBS_COUNT"
+            fi
+            
+            # User Libs cell
+            if [ "$MISSING_USER_LIBS_COUNT" -gt 0 ]; then
+              USER_LIBS_CELL="<details><summary>$THIS_USER_LIBS_COUNT/$REF_USER_LIBS_COUNT</summary><sub>$MISSING_USER_LIBS_COUNT missing: $MISSING_USER_LIBS</sub></details>"
+            else
+              USER_LIBS_CELL="$THIS_USER_LIBS_COUNT/$REF_USER_LIBS_COUNT"
+            fi
+            
+            echo "| \`$DEVICE\` | \`$FIRMWARE\` | $BASE_PKGS_CELL | $USER_PKGS_CELL | $BASE_LIBS_CELL | $USER_LIBS_CELL | $STATUS |" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          # Add statistics only if there are failed jobs
+          if [ "$FAILED_COUNT" -gt 0 ]; then
+            {
+              echo ""
+              echo "### 📈 Statistics"
+              echo ""
+              echo "| Status | Count |"
+              echo "|--------|-------|"
+              echo "| ❌ No data (Failed/Cancelled early) | $FAILED_COUNT |"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "> **Note**: The reference is the **union** of all packages/libraries found across all builds. Differences are normal for older firmware versions where \`make olddefconfig\` selects different components based on toolchain capabilities and kernel version compatibility."
+          } >> $GITHUB_STEP_SUMMARY
+          
+          echo ""
+          echo "✅ Configuration analysis complete"

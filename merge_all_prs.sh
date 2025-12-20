@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to merge all open PRs from upstream into local master
+# Script to merge all open PRs from upstream into local integration-test
 # This will merge all your PR branches that are currently open on Freetz-NG/freetz-ng
 # 
 # Usage:
@@ -15,20 +15,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}=== Merging all open PRs into master ===${NC}"
+echo -e "${GREEN}=== Merging all open PRs into integration-test ===${NC}"
 echo ""
-
-# Ensure we're on master
-current_branch=$(git branch --show-current)
-if [ "$current_branch" != "master" ]; then
-    echo -e "${YELLOW}Currently on branch: $current_branch${NC}"
-    echo -e "${YELLOW}Switching to master...${NC}"
-    git checkout master
-fi
-
-# Update master
-echo -e "${GREEN}Updating master...${NC}"
-git pull origin master
 
 # Check if specific PRs were provided as arguments
 if [ $# -gt 0 ]; then
@@ -78,11 +66,28 @@ echo "$prs" | jq -r '.[] | "  PR #\(.number): \(.headRefName) - \(.title)"'
 echo ""
 
 # Ask for confirmation
-read -p "Do you want to merge all these branches into master? (y/n) " -n 1 -r
+read -p "Do you want to merge all these branches into integration-test? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Merge cancelled.${NC}"
     exit 0
+fi
+
+# Delete existing integration-test branch if it exists
+if git show-ref --verify --quiet "refs/heads/integration-test"; then
+    echo -e "${YELLOW}Deleting existing integration-test branch...${NC}"
+    git branch -D integration-test
+fi
+
+# Create new integration-test branch from upstream/master
+echo -e "${GREEN}Creating new integration-test branch from upstream/master...${NC}"
+git checkout -b integration-test upstream/master
+
+# Ensure we're on integration-test
+current_branch=$(git branch --show-current)
+if [ "$current_branch" != "integration-test" ]; then
+    echo -e "${RED}Error: Not on integration-test branch!${NC}"
+    exit 1
 fi
 
 # Merge each branch
@@ -106,7 +111,7 @@ while IFS= read -r branch; do
         git checkout "$branch"
         git pull origin "$branch" || {
             echo -e "${RED}Failed to update branch $branch${NC}"
-            git checkout master
+            git checkout integration-test
             failed_merges+=("$branch (update failed)")
             continue
         }
@@ -119,8 +124,8 @@ while IFS= read -r branch; do
         }
     fi
     
-    # Switch back to master
-    git checkout master
+    # Switch back to integration-test
+    git checkout integration-test
     
     # Attempt merge
     if git merge --no-ff "$branch" -m "Merge branch '$branch'"; then
@@ -161,9 +166,9 @@ fi
 
 echo ""
 if [ ${#successful_merges[@]} -gt 0 ]; then
-    echo -e "${GREEN}Master has been updated with ${#successful_merges[@]} PR branches.${NC}"
+    echo -e "${GREEN}Integration-test has been updated with ${#successful_merges[@]} PR branches.${NC}"
     echo -e "${YELLOW}Don't forget to push to origin if you want to update the remote:${NC}"
-    echo -e "  ${YELLOW}git push origin master${NC}"
+    echo -e "  ${YELLOW}git push origin integration-test${NC}"
 fi
 
 exit 0
