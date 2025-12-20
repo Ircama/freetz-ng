@@ -87,7 +87,6 @@ jobs:
 
     outputs:
       matrix: ${{ steps.parse.outputs.matrix }}
-      matrix_order: ${{ steps.parse.outputs.matrix_order }}
 
     steps:
 
@@ -529,7 +528,6 @@ jobs:
                   tcs="$(echo "$line" | sed 's/^FREETZ_TYPE_\([^ ]*\) *FREETZ_TYPE_FIRMWARE_\([^ ]*\)\(.*\)/_\1 _FIRMWARE_\2\3/g') _LANG_DE"
                 fi
                 echo "{pkg:\"$pkg_name\",target:\"$pkg_target\",skip_libs:\"$skip_libs\",name:\"$name\",tcs:\"$tcs\"}," >> /tmp/matrix_entries.txt
-                echo "$name" >> /tmp/matrix_order.txt
               done
             done
           fi
@@ -588,7 +586,6 @@ jobs:
                 echo "  Custom entry: $override_pkg_name on $custom_name"
               fi
               echo "{pkg:\"$override_pkg_name\",target:\"$override_pkg_target\",skip_libs:\"$override_skip_libs\",name:\"$custom_name\",tcs:\"$custom_tcs\"}," >> /tmp/matrix_entries.txt
-              echo "$custom_name" >> /tmp/matrix_order.txt
             done < /tmp/custom_configs.txt
             
             rm -f /tmp/custom_configs.txt
@@ -598,18 +595,10 @@ jobs:
           if [ -f /tmp/matrix_entries.txt ] && [ -s /tmp/matrix_entries.txt ]; then
             matrix_json="$(cat /tmp/matrix_entries.txt | tr -d '\n' | sed 's/,$//')"
             echo "matrix=[$matrix_json]" >> $GITHUB_OUTPUT
-            
-            # Output matrix order as JSON array
-            if [ -f /tmp/matrix_order.txt ]; then
-              matrix_order_json="$(cat /tmp/matrix_order.txt | jq -R . | jq -s . | tr -d '\n')"
-              echo "matrix_order=$matrix_order_json" >> $GITHUB_OUTPUT
-            fi
-            
-            rm -f /tmp/matrix_entries.txt /tmp/matrix_order.txt
+            rm -f /tmp/matrix_entries.txt
           else
             echo "No packages to build"
             echo 'matrix=["skip"]' >> $GITHUB_OUTPUT
-            echo 'matrix_order=[]' >> $GITHUB_OUTPUT
           fi
 
       - name: vars
@@ -1627,11 +1616,26 @@ jobs:
           JOBS_JSON=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs --paginate 2>&1 | cat)
           
           # Extract build job IDs and names (matrix jobs with " - " pattern, exclude config_summary)
-          echo "$JOBS_JSON" | jq -r '.jobs[] | select(.name | contains(" - ")) | "\(.id)|\(.name)|\(.conclusion)"' > /tmp/build_jobs.txt
+          echo "$JOBS_JSON" | jq -r '.jobs[] | select(.name | contains(" - ")) | "\(.id)|\(.name)|\(.conclusion)"' > /tmp/build_jobs_unsorted.txt
           
-          echo "Found build jobs:"
-          cat /tmp/build_jobs.txt
-          echo ""
+          # Get matrix order to sort jobs
+          # Convert non-standard JSON format {pkg:"..."} to standard {"pkg":"..."} for jq
+          MATRIX='${{ needs.parse_matrix.outputs.matrix }}'
+          MATRIX_JSON=$(echo "$MATRIX" | sed 's/{pkg:/{\"pkg\":/g; s/,target:/,\"target\":/g; s/,skip_libs:/,\"skip_libs\":/g; s/,name:/,\"name\":/g; s/,tcs:/,\"tcs\":/g')
+          
+          # Extract job names in matrix order (pkg - name format)
+          echo "$MATRIX_JSON" | jq -r '.[] | (.pkg + " - " + .name)' > /tmp/matrix_order.txt 2>/dev/null || true
+          
+          # Sort build_jobs.txt according to matrix order
+          > /tmp/build_jobs.txt
+          if [ -s /tmp/matrix_order.txt ]; then
+            while IFS= read -r matrix_job_name; do
+              grep -F "|$matrix_job_name|" /tmp/build_jobs_unsorted.txt >> /tmp/build_jobs.txt || true
+            done < /tmp/matrix_order.txt
+          else
+            # Fallback: use unsorted if matrix parsing failed
+            cp /tmp/build_jobs_unsorted.txt /tmp/build_jobs.txt
+          fi
           
           # Initialize arrays for tracking
           mkdir -p /tmp/configs
@@ -1639,8 +1643,6 @@ jobs:
           # Process each build job
           while IFS='|' read -r JOB_ID JOB_NAME JOB_STATUS; do
             [ -z "$JOB_ID" ] && continue
-            
-            echo "Processing job: $JOB_NAME (ID: $JOB_ID, Status: $JOB_STATUS)"
             
             # Extract device and firmware from job name (format: "pkg - DEVICE - FIRMWARE (LANG)")
             # Example: "fake-firmware - 7490 - 07_2X (DE)" -> DEVICE=7490, FIRMWARE=07_2X
@@ -1701,25 +1703,14 @@ jobs:
             USER_LIBS=$(sed -n '/👉 User libraries:/,/👉\|##########/p' "$LOG_FILE" 2>/dev/null | grep "  - " | sed 's/.*  - //' | tr '\n' ' ' || echo "")
             echo "USER_LIBS=\"$USER_LIBS\"" >> "$CONFIG_FILE"
             
-            # Debug output
-            echo "  Base packages: $(echo "$BASE_PKGS" | wc -w)"
-            echo "  User packages: $(echo "$USER_PKGS" | wc -w)"
-            echo "  Base libraries: $(echo "$BASE_LIBS" | wc -w)"
-            echo "  User libraries: $(echo "$USER_LIBS" | wc -w)"
-            
             # Cleanup log file
             rm -f "$LOG_FILE"
             
           done < /tmp/build_jobs.txt
           
-          echo ""
-          echo "Configuration extraction complete. Generating summary..."
-          echo ""
-          
           # Check if we have any config files
           CONFIG_COUNT=$(ls -1 /tmp/configs/*.conf 2>/dev/null | wc -l)
           if [ "$CONFIG_COUNT" -eq 0 ]; then
-            echo "No configuration files found to analyze"
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "---" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -1779,15 +1770,11 @@ jobs:
           REDUCED_CONFIG_COUNT=0
           FAILED_COUNT=0
           
-          # Analyze each configuration in matrix order
-          MATRIX_ORDER='${{ needs.parse_matrix.outputs.matrix_order }}'
-          for job_name in $(echo "$MATRIX_ORDER" | jq -r '.[]'); do
-            # Find the config file for this job name
-            config_file=$(find /tmp/configs -name "*.conf" -exec grep -l "JOB_NAME=\"$job_name\"" {} \; 2>/dev/null | head -1)
-            if [ -z "$config_file" ]; then
-              echo "Warning: No config file found for job '$job_name'"
-              continue
-            fi
+          # Analyze each configuration in order from build_jobs.txt
+          while IFS='|' read -r JOB_ID JOB_NAME JOB_STATUS_UNUSED; do
+            [ -z "$JOB_ID" ] && continue
+            config_file="/tmp/configs/${JOB_ID}.conf"
+            [ -f "$config_file" ] || continue
             source "$config_file"
             
             # Determine status icon
@@ -1906,7 +1893,7 @@ jobs:
             fi
             
             echo "| \`$DEVICE\` | \`$FIRMWARE\` | $BASE_PKGS_CELL | $USER_PKGS_CELL | $BASE_LIBS_CELL | $USER_LIBS_CELL | $STATUS |" >> $GITHUB_STEP_SUMMARY
-          done
+          done < /tmp/build_jobs.txt
           
           # Add statistics only if there are failed jobs
           if [ "$FAILED_COUNT" -gt 0 ]; then
@@ -1924,7 +1911,7 @@ jobs:
             echo ""
             echo "---"
             echo ""
-            echo "> **Note**: The reference is the **union** of all packages/libraries found across all builds. Differences are normal for older firmware versions where \`make olddefconfig\` selects different components based on toolchain capabilities and kernel version compatibility."
+            echo "> **Note**: The reference is the **union** of all packages/libraries found across all builds. Differences are normal and are produced by \`make olddefconfig\`, that selects different components based on toolchain capabilities and kernel version compatibility."
           } >> $GITHUB_STEP_SUMMARY
           
           echo ""

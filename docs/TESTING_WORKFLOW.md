@@ -1,15 +1,11 @@
 # Freetz-NG Testing Workflows Guide
 
-This comprehensive guide covers both local and automated testing approaches for Freetz-NG packages and firmware builds.
+Freetz-NG provides a comprehensive testing framework that combines local development capabilities with automated validation across multiple platforms. Understanding both approaches is crucial for effective package and firmware development.
 
 ## Overview
 
-Freetz-NG provides a comprehensive testing framework that combines local development capabilities with automated validation across multiple platforms. Understanding both approaches is crucial for effective package and firmware development.
-
-### Local Testing
 When developing packages or modifying firmware configurations, you'll first work directly on your development machine. This local testing phase allows you to compile packages, build firmware images, and test them on devices you physically own. It's the foundation of the development process, where you can quickly iterate, debug issues, and verify that your changes work as expected. Local testing gives you full control over the build environment and immediate access to debugging tools.
 
-### Automated Workflow Testing
 While local testing ensures your changes work on your specific setup, Freetz-NG's ecosystem spans approximately tens of different device models, each with unique hardware characteristics, firmware versions, and toolchain requirements. To ensure compatibility across this diverse ecosystem, Freetz-NG uses GitHub Actions workflows that automatically test your changes across all supported platforms. This automated testing catches platform-specific issues that might not appear in your local environment and provides confidence that your modifications work consistently across the entire Freetz-NG user base.
 
 This guide first explains the local build system, then covers automated workflow testing to provide a complete testing strategy.
@@ -23,13 +19,15 @@ We will now understand the main parameters offered by Freetz-NG's `make` command
 The simplest way to use `make` is through the following commands:
 
 ```bash
-make menuconfig
-make
+make menuconfig  # configure your Freetz-NG firmware build options (device, packages, toolchain, etc.)
+make  # build the firmware
 ```
+
+The following two paragraphs better explain the above commands.
 
 ### make menuconfig
 
-This is Freetz-NG's implementation of the Kconfig system (derived from Linux kernel configuration tools). It provides an interactive menu-driven interface for configuring the firmware build options. It generates the `.config` file that serves as the authoritative configuration for the subsequent `make`.
+This is Freetz-NG's implementation of the [Kconfig](https://docs.kernel.org/kbuild/kconfig-language.html) system (derived from Linux kernel configuration tools). It provides an interactive menu-driven [Ncurses](https://en.wikipedia.org/wiki/Ncurses) textual user interface for configuring the firmware build options. It generates the `.config` file that serves as the authoritative configuration for the subsequent `make`.
 
 **What it does:**
 - Launches the `tools/kconfig/mconf` binary (built automatically via `make tools` or `make kconfig-host`)
