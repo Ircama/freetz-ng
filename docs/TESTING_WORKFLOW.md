@@ -46,6 +46,36 @@ This is Freetz-NG's implementation of the [Kconfig](https://docs.kernel.org/kbui
 - `make menuconfig-single` - Shows configuration as a flat tree structure without subpages
 - `make config` - Text-based configuration using `tools/kconfig/conf`
 
+#### User Competence Levels
+
+Freetz-NG's menuconfig introduces a progressive disclosure model through user competence levels, which controls the visibility of configuration options based on the user's expertise. This design philosophy keeps the interface manageable for newcomers while providing full access to advanced features for experienced users.
+
+The **Beginner** level is the default setting, offering a curated selection of well-tested packages and straightforward configuration options. At this level, the menu structure remains clean and focused on the most commonly needed features, reducing the risk of misconfiguration for users who are new to firmware modification.
+
+The **Expert** level unlocks several advanced configuration categories. Users at this level gain access to the BusyBox applets menu, allowing fine-grained control over which shell utilities are included in the firmware. The shared libraries menu becomes visible, enabling selection of additional runtime libraries that packages may depend upon. Toolchain configuration options appear, providing the ability to override firmware source locations and compiler settings. Kernel modules selection is exposed, allowing addition of extra kernel functionality. Additionally, various firmware-specific options and hardware-level configuration become accessible.
+
+The **Developer** level is intended for Freetz-NG contributors and advanced users who need access to unstable or experimental features. This level exposes packages that are still under development or not yet thoroughly tested across all device models. The Developer level for instance reveals BusyBox utilities for UBI filesystem management (ubiattach, ubidetach, ubimkvol, and similar tools) as well as low-level NAND flash utilities. A prominent warning is displayed when selecting this level to remind users that Developer features may be unstable or cause issues.
+
+When writing test configurations or creating packages, understanding these levels is important for setting appropriate visibility. Packages and options that require advanced knowledge or may cause issues if misconfigured should be gated behind `FREETZ_SHOW_EXPERT` or `FREETZ_SHOW_DEVELOPER` dependencies in their `Config.in` files.
+
+#### Externalization
+
+FRITZ!Box devices have limited internal flash storage, and as you add more packages to your firmware, you may encounter the "Filesystem image too big" error during the build process. Freetz-NG addresses this constraint through a feature called externalization, which allows you to move selected packages, libraries, and files from the internal flash to external storage media.
+
+For devices with USB host capability, the solution is using a USB storage device (flash drive, external hard drive, or SSD). The externalized components are stored on this device and loaded into the system at boot time.
+
+The externalization system works by creating two output files during the build process instead of one. The standard `.image` file contains the core firmware with essential components, while a companion `.external` file (a compressed tar archive) contains all the externalized packages and libraries. Both files are placed in the `images/` directory and share the same base filename.
+
+For deployment, several methods are available depending on your situation. The most common approach is using the Freetz web interface: flash the `.image` file through the standard firmware update process, then upload the `.external` file under System → Firmware-Update using the "external file upload" option. The web interface automatically extracts the archive to the designated external storage location.
+
+For initial installations or recovery scenarios, the `tools/push_firmware` script can flash the `.image` file directly through the bootloader via FTP. However, this method only installs the core firmware. It cannot upload the `.external` file since the Freetz-NG system is not yet running.
+
+Once the device boots with Freetz-NG installed, you can deploy the external components through the web interface under System → Firmware-Update using the "external file upload" option. Alternatively, the `tools/ssh_firmware_update.py` script provides a more powerful solution: running it with `--host <ip> --password <password> --batch` performs a complete unattended update of both the firmware image and the external file, making it ideal for interactive or unattended updates, or automated deployment workflows.
+
+When selecting components for externalization in menuconfig (under Advanced Options → External), you can choose from two categories: packages (binary programs and their associated files) and libraries (shared runtime libraries). Libraries require careful consideration of dependencies: any program linked against an externalized library won't function until that library is loaded from external storage.
+
+For systems that will run database applications or services with heavy disk I/O, using an SSD or traditional hard drive is strongly recommended over SD cards or low-quality USB flash drives, which may fail under sustained write operations.
+
 ### make (without arguments)
 
 This is the main build command that compiles the complete firmware image based on the configuration in `.config`.
@@ -64,7 +94,9 @@ This is the main build command that compiles the complete firmware image based o
 4. **Packages**: Builds user-space applications and libraries
 5. **Image creation**: Assembles final firmware using `fwmod`
 
-### tools/genin
+Since `make` is the primary build tool that downloads, compiles everything, and creates the firmware (potentially taking many hours), several complementary tools and targets are available for development and testing workflows. The `tools/genin` utility validates package configurations, while `make olddefconfig` updates existing configurations to match current menu structures. The `make help` target provides a comprehensive list of available make arguments. The following sections explore this options, as well as cleaning targets for managing previous compilations and package-specific targets for testing individual components.
+
+#### tools/genin
 
 This is a validation tool that checks the consistency of package configurations.
 
@@ -81,7 +113,7 @@ tools/genin
 
 If `tools/genin` returns errors, it indicates problems with package configuration files that need to be fixed before building.
 
-### make olddefconfig
+#### make olddefconfig
 
 This target updates an existing `.config` file to match the current menu structure, setting any new options to their default values.
 
@@ -102,7 +134,7 @@ This target updates an existing `.config` file to match the current menu structu
 - `make silentoldconfig` - Non-interactive version (same as olddefconfig)
 - `make defconfig` - Creates new config with all defaults
 
-### make help
+#### make help
 
 This target displays a summary of all available make targets and their descriptions.
 
@@ -119,11 +151,11 @@ make help
 
 This is useful for discovering available build options and understanding the build system capabilities.
 
-## Make Clean Targets
+### Make Clean Targets
 
 When you want to restart the build process from scratch, you need to use `make dirclean`. However, Freetz-NG provides several cleaning options with different scopes:
 
-### make cacheclean
+#### make cacheclean
 
 **What it does:**
 - Removes small cached files and directories
@@ -137,7 +169,7 @@ When you want to restart the build process from scratch, you need to use `make d
 **Scope:** Minimal cleanup, preserves source code and compiled packages
 **Use when:** You want to refresh caches and temporary files without rebuilding everything
 
-### make clean
+#### make clean
 
 **What it does:**
 - Everything that `cacheclean` does
@@ -147,7 +179,7 @@ When you want to restart the build process from scratch, you need to use `make d
 **Relationship:** `clean` ⊃ `cacheclean` (clean is a superset of cacheclean)
 **Use when:** You want to recompile tools but keep source code and packages
 
-### make dirclean
+#### make dirclean
 
 **What it does:**
 - Everything that `clean` does
@@ -161,7 +193,7 @@ When you want to restart the build process from scratch, you need to use `make d
 **Relationship:** `dirclean` ⊃ `clean` ⊃ `cacheclean`
 **Use when:** You want to restart compilation from scratch, forcing re-download and re-extraction of sources
 
-### make distclean
+#### make distclean
 
 **What it does:**
 - Everything that `dirclean` does
@@ -179,7 +211,7 @@ When you want to restart the build process from scratch, you need to use `make d
 **Use when:** You want a completely fresh environment, equivalent to a fresh checkout
 **Note:** Preserves `.config`, `config/custom.in`, `.fwmod_custom`, and download directory (`~/.freetz-dl/`)
 
-### Quick Reference
+#### Quick Reference
 
 | Target | Removes Sources | Removes Tools | Removes Config | Preserves |
 |--------|----------------|---------------|----------------|-----------|
@@ -190,15 +222,15 @@ When you want to restart the build process from scratch, you need to use `make d
 
 **Recommendation:** Use `dirclean` for most rebuild scenarios. Use `distclean` only when you want to start completely fresh.
 
-## Menuconfig Maintenance - Technical Notes
+### Menuconfig Maintenance - Technical Notes
 
-### Configuration File Properties
+#### Configuration File Properties
 - `.config` serves as the authoritative configuration file for all build processes
 - Manual editing is not recommended; always use `make menuconfig`
 - File is copied to `/etc/.config` in final firmware (unless disabled in menuconfig)
 - Primary debugging resource for configuration-related user issues
 
-### Dependency Warning Analysis
+#### Dependency Warning Analysis
 Configuration save operations may produce warnings such as:
 ```
 warning: (FREETZ_PACKAGE_AUTOFS_NFS && FREETZ_PACKAGE_NFSROOT) selects FREETZ_MODULE_nfs which has unmet direct dependencies (FREETZ_KERNEL_VERSION_2_6_13_1 || FREETZ_KERNEL_VERSION_2_6_28 || FREETZ_KERNEL_VERSION_2_6_32)
@@ -208,7 +240,7 @@ warning: (FREETZ_PACKAGE_AUTOFS_NFS && FREETZ_PACKAGE_NFSROOT) selects FREETZ_MO
 - Package selection requires kernel module support unavailable in current kernel version
 - Resolution options: update kernel dependencies or disable package for incompatible kernels
 
-### Remove-Patch Configuration Pattern
+#### Remove-Patch Configuration Pattern
 For remove-patches (AVM feature removal), implement this dependency structure:
 
 ```
@@ -224,7 +256,7 @@ FREETZ_HAS_AVM_MY_FEATURE
 
 **Purpose:** Ensures remove-patches are selectable only when AVM feature exists on target device.
 
-### Syntax Error Diagnostics
+#### Syntax Error Diagnostics
 When `make menuconfig` reports syntax errors:
 
 **Cache-enabled diagnosis:**
@@ -242,7 +274,7 @@ When `make menuconfig` reports syntax errors:
 
 ## Package-Specific Make Targets
 
-Freetz-NG provides specific make targets for individual packages. Each package supports several build operations with convenient shortcuts that combine multiple steps.
+As mentioned in a previous paragraph, Freetz-NG provides specific make targets for individual packages in order to speed-up verification on a specific development. Each package supports several build operations with convenient shortcuts that combine multiple steps.
 
 For example, the `-recompile` target is equivalent to running `-dirclean` followed by `-precompiled` - both achieve a complete clean rebuild.
 
@@ -671,11 +703,7 @@ The workflow interprets different `make_target` inputs as follows:
   - CI/CD testing of exact configuration files
   - Validating firmware builds with precise configuration control
   - Executing custom pre-build commands via `custom_config` parameter (e.g., for rebuilding host tools)
-- `fake-firmware` generates a realistic fake firmware structure for testing device configuration without requiring real firmware download. This is useful for:
-  - Testing device configurations when firmware is unavailable or obsolete
-  - Validating build system configuration without full firmware build
-  - Testing toolchain compatibility across multiple devices quickly
-  - CI/CD testing without large firmware downloads
+- `fake-firmware` creates a complete firmware build without requiring actual AVM firmware downloads, addressing the challenge of testing Freetz-NG across multiple device models and firmware versions. This workflow mode executes the generic `make` build process using a generic firmware stub instead of downloading real firmware from AVM, enabling full build pipeline testing including toolchain compilation and package building. It produces a tar archive containing all compiled packages rather than an installable firmware image, and includes alternative build finalization that provides statistics about compiled packages. This is particularly valuable for testing device configurations when firmware is unavailable or obsolete, validating build system configuration without full firmware builds, testing toolchain compatibility across multiple devices quickly, and CI/CD testing without large firmware downloads.
 - Package-only targets build individual packages without full firmware
 - Default behavior for packages without suffix is `-precompiled`
 - All builds run across the configured device/toolchain matrix
@@ -730,6 +758,19 @@ gh workflow run make_package.yml -f make_target="-firmware" -f url="$URL" -f cus
 
 # Test package with custom label for workflow run name
 gh workflow run make_package.yml -f make_target="php#Test PHP 8.4 with libxml2"
+
+# Fake-firmware build example with detailed option breakdown
+# This creates a complete build without downloading real AVM firmware
+gh workflow run make_package.yml -r integration-test -f make_target='fake-firmware # Full build' -f url='https://github.com/<name>/freetz-ng/releases/download/<release name>/default.config' -f verbosity="0" -f cancel_previous="false" -f use_queue=false -f custom_config='7590_W6 08_2X DE,7530_W5 08_0X EN'
+
+# Option breakdown for the fake-firmware example:
+# -r integration-test: Specifies the Git branch or reference to run the workflow against
+# -f make_target='fake-firmware # Full build': Defines the workflow mode as fake-firmware with a custom label
+# -f url='...': Points to a .config file in GitHub Releases for pre-configured build settings
+# -f verbosity="0": Sets minimal output verbosity (quiet mode)
+# -f cancel_previous="false": Prevents automatic cancellation of previous runs
+# -f use_queue=false: Disables workflow queuing for immediate execution
+# -f custom_config='7590_W6 08_2X DE,7530_W5 08_0X EN': Tests specific device/firmware combinations
 
 # Test multiple packages with custom label
 gh workflow run make_package.yml -f make_target="php,openssl,libxml2#Test PHP dependencies"
