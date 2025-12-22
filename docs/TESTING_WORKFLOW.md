@@ -25,7 +25,7 @@ make  # build the firmware
 
 The following two paragraphs better explain the above commands.
 
-### make menuconfig
+### `make menuconfig`
 
 This is Freetz-NG's implementation of the [Kconfig](https://docs.kernel.org/kbuild/kconfig-language.html) system (derived from Linux kernel configuration tools). It provides an interactive menu-driven [Ncurses](https://en.wikipedia.org/wiki/Ncurses) textual user interface for configuring the firmware build options. It generates the `.config` file that serves as the authoritative configuration for the subsequent `make`.
 
@@ -76,7 +76,7 @@ When selecting components for externalization in menuconfig (under Advanced Opti
 
 For systems that will run database applications or services with heavy disk I/O, using an SSD or traditional hard drive is strongly recommended over SD cards or low-quality USB flash drives, which may fail under sustained write operations.
 
-### make (without arguments)
+### `make` (without arguments)
 
 This is the main build command that compiles the complete firmware image based on the configuration in `.config`.
 
@@ -272,6 +272,70 @@ When `make menuconfig` reports syntax errors:
 - Validate configurations across multiple device types to detect dependency conflicts
 - Document hardware/firmware-specific features with appropriate dependency declarations
 
+### Troubleshooting Build Failures
+
+Build processes can fail due to various reasons, including network issues, resource constraints, or configuration errors. Here are best practices for handling common failures:
+
+#### Network and Download Errors
+If `make` fails during the download phase (e.g., "curl: (56) Failure when receiving data" or "wget: unable to resolve host"), it may be a temporary network issue:
+- **Check connectivity**: Ensure stable internet access and retry `make`.
+- **Retry the build**: Most download failures are transient; relaunching `make` often succeeds on the second attempt.
+- **Inspect logs**: Look for messages like "Download failed" in the output. If persistent, check firewall settings or proxy configurations.
+
+#### Resource Constraints
+Builds require significant CPU, memory, and disk space. Errors like "No space left on device" or out-of-memory kills indicate resource issues:
+- **Free disk space**: Ensure at least 20-50 GB free space. Use `df -h` to check and clean up if needed.
+- **Monitor resources**: Use `top` or `htop` during build to watch for memory/CPU bottlenecks.
+- **Reduce parallelism**: If using `-j` flag, lower the job count (e.g., `make -j4` instead of `-j8`).
+
+#### Workflow Job Failures
+In automated GitHub Actions workflows, jobs may fail due to temporary issues:
+- **Rerun failed jobs**: Use the "Re-run failed jobs" button in GitHub Actions if failures are due to download timeouts or "No space left on device" in cloud runners.
+- **Check logs**: Review job logs for patterns like network errors or resource exhaustion. Persistent failures may indicate code issues.
+
+**General Tips**:
+- Always run `make dirclean` before retrying major failures to ensure a clean state.
+- For complex issues, check the Freetz-NG GitHub issues or discussions for similar problems.
+- If builds consistently fail, verify your environment matches the prerequisites in `docs/PREREQUISITES`.
+
+## Host Tools
+
+Freetz-NG uses host tools to support the cross-compilation process. These are essential because some commands need to be executed on the host during the firmware build for embedded targets. The list of host tools is available at [https://freetz-ng.github.io/freetz-ng/host-tools](https://freetz-ng.github.io/freetz-ng/host-tools).
+
+Host tools are utilities compiled for the host system (your development machine) that assist in building firmware for embedded targets. They include build tools, compression utilities, file system tools, and other binaries required during the compilation process. Each host tool has its own documentation page with version information, homepage, repository, and maintainer details.
+
+Host tools are independent of the target firmware versions; they are designed to run on the host and do not interact directly with the embedded system's software stack. This ensures that host tools can be reused across different firmware builds without version conflicts related to the target.
+
+They are built with:
+
+- `make tools` - Builds the tools required by current selection
+- `make tools-all` - Builds all available tools of Freetz
+- `make tools-allexcept-local` - Builds all non-local tools of Freetz (dl-tools)
+- `make tools-push_firmware` - Builds the tools required by push_firmware
+- `make tools-dirclean` - Cleans everything of all Freetz tools
+- `make tools-distclean-local` - Cleans everything of local tools (dl-tools)
+- `make <tool>-host-precompiled` - Builds a specific tool using precompiled binaries if available
+
+To reduce the build time of host tools, Freetz-NG uses a shared cache hosted on GitHub at [https://github.com/Freetz-NG/dl-mirror/releases/](https://github.com/Freetz-NG/dl-mirror/releases/).
+
+The cache is updated by the Freetz-NG team, who periodically release precompiled archives of host tools (e.g., `tools-VERSION.tar.xz`) for common architectures.
+
+During the build process, if the configuration option `FREETZ_HOSTTOOLS_DOWNLOAD` is enabled (which is the default), the system checks if the required host tools archive is available in the cache based on its version and the related SHA256 hash. If the archive is present and matches the expected hash, it is downloaded and extracted for use; otherwise, the tools are compiled locally from source. If `FREETZ_HOSTTOOLS_DOWNLOAD` is disabled, the build always compiles the tools locally, which is useful for incompatible systems or custom modifications.
+
+### Download Directory (dl)
+
+The `dl` directory (defined as `DL_DIR` in the Makefile) is the local cache for downloaded files during the build process. It stores source packages, kernel patches, and precompiled host tool archives to avoid redundant downloads.
+
+- **Contents**:
+  - Source tarballs for packages (e.g., `busybox-1.37.0.tar.bz2`, `openssl-3.5.4.tar.gz`).
+  - Host tool sources (e.g., `Python-3.14.0.tar.xz`, `gcc-13.4.0.tar.xz`).
+  - Precompiled host tool archives (e.g., `tools-2025-11-05.tar.xz`) from the dl-mirror cache.
+  - Kernel patches (e.g., `kernel_4.19.183-7539_08.20-ADv1.patch.xz`).
+  - Other files like CA certificates and firmware images in subdirectories (e.g., `fw/`).
+
+- **Usage**: Files are downloaded automatically if missing. The directory persists across builds for reuse, reducing network traffic.
+- **Cleanup**: The `dl` directory is preserved by `make dirclean` and `make distclean`. To remove its contents manually if needed, use `rm -rf dl/*`.
+
 ## Package-Specific Make Targets
 
 As mentioned in a previous paragraph, Freetz-NG provides specific make targets for individual packages in order to speed-up verification on a specific development. Each package supports several build operations with convenient shortcuts that combine multiple steps.
@@ -367,7 +431,43 @@ The following section describes automated testing using GitHub Actions workflows
 - Automated regression testing
 - CI/CD integration
 
-## make_package.yml
+Freetz-NG uses GitHub Actions workflows to automate testing across the entire device and firmware matrix, referring to a predefined list of supported combinations of device models (e.g., 7270_V1, 7390) and firmware versions (e.g., 04_XX, 06_0X). Freetz-NG supports a wide range of AVM Fritz!Box devices and firmware versions. This matrix ensures that Freetz-NG can be built and tested across diverse hardware and software configurations, covering tens of different device models with unique characteristics.
+
+The matrix is embedded in the build system and can be manually extracted using the following command:
+
+```bash
+sed -n 's/FREETZ_TYPE_//; s/FREETZ_TYPE_FIRMWARE_//; s/.* && dltc "\(.*\)".*/\1/p' tools/dl-toolchains_make
+```
+
+This command parses the `tools/dl-toolchains_make` script and outputs pairs like:
+
+```
+WLAN        04_XX
+7270_V1     04_XX  FREETZ_TARGET_IPV6_SUPPORT
+7270_V3     06_0X
+...
+```
+
+Each line represents a supported combination, where the first column is the device model, the second is the firmware version, and additional flags (like `FREETZ_TARGET_IPV6_SUPPORT`) indicate special features or requirements.
+
+The workflow follows a structured process:
+
+1. **Parse-Matrix**: The first job parses the matrix from the build scripts to generate a list of all device-firmware combinations to test.
+
+2. **Parallel Jobs**: For each combination in the matrix, a separate job runs in parallel. Each job:
+   - Configures the build environment for the specific device and firmware.
+   - Downloads and compiles the necessary components.
+   - Builds the firmware image.
+   - Performs basic validation (e.g., checks for build errors, image size).
+
+3. **Configuration Analysis**: After all parallel jobs complete, a final analysis job reviews the results across all combinations. This includes:
+   - Aggregating build logs and errors.
+   - Checking for configuration conflicts or missing dependencies.
+   - Generating reports on compatibility and potential issues.
+
+This automated workflow ensures that changes to Freetz-NG are validated across the full ecosystem, catching platform-specific issues that local testing might miss.
+
+## `make_package.yml` workflow
 
 This section explains how to use GitHub Actions workflows for comprehensive automated testing. Workflows provide significant advantages over local testing alone:
 
@@ -992,4 +1092,117 @@ git commit -m "test: make fake-firmware"
 git commit -m "test: make libs"
 
 git commit -m "test: make =php-precompiled"
+```
+
+---
+
+## Advanced Workflow Features
+
+### Fake-Firmware Mode: Comprehensive Build Testing
+
+The `fake-firmware` workflow mode provides a sophisticated solution for testing Freetz-NG builds across multiple device configurations without requiring actual firmware downloads. This mode is particularly valuable for comprehensive testing scenarios where real firmware availability is limited or when you need to validate build system behavior across the entire device matrix.
+
+#### How Fake-Firmware Works
+
+Unlike standard package compilation that focuses on individual components, `fake-firmware` executes the complete `make` build process - the same process used for creating actual firmware images. However, instead of downloading real firmware files from AVM, it uses a generic firmware stub that satisfies the build system's requirements.
+
+```mermaid
+flowchart TD
+    A[Workflow Trigger] --> B{Target Type?}
+    B -->|fake-firmware| C[Load Device Matrix]
+    B -->|package| D[Load Package Config]
+    B -->|firmware| E[Load Firmware Config]
+
+    C --> F[For Each Device in Matrix]
+    F --> G[Generate Generic Firmware Stub]
+    G --> H[Execute Complete 'make' Build]
+    H --> I[Toolchain Compilation]
+    I --> J[Package Compilation]
+    J --> K[Library Building]
+    K --> L[Alternative Finalization]
+    L --> M[Generate .tar Archive]
+    M --> N[Package Statistics Report]
+    N --> O[Next Device / Complete]
+
+    D --> P[Single Package Build]
+    E --> Q[Real Firmware Download]
+```
+
+#### Key Characteristics
+
+**Complete Build Pipeline**: Unlike targeted package builds, `fake-firmware` runs the entire build sequence:
+- Cross-compilation toolchain setup
+- Host tools compilation
+- Package dependency resolution and compilation
+- Library building and linking
+
+**Generic Firmware Stub**: Instead of downloading device-specific firmware from AVM, the system creates a minimal stub that provides the necessary filesystem structure and configuration files required for the build process to complete successfully.
+
+**Alternative Output**: Rather than producing an installable `.image` file, `fake-firmware` generates:
+- A compressed `.tar` archive containing all compiled packages
+- Detailed statistics about package compilation results
+- Build artifacts for analysis
+
+#### Firmware Availability Challenges
+
+Freetz-NG supports testing across approximately 30 different device models, but AVM's firmware repository presents significant limitations:
+
+**Recent Firmware Only**: AVM typically maintains only the latest firmware versions on their public FTP servers. Older firmware releases are removed over time, creating gaps in testing coverage.
+
+**Version-Specific Dependencies**: Each firmware version contains device-specific kernel modules, filesystem layouts, and configuration files that may differ between versions.
+
+**Repository Management**: Maintaining a complete archive of all historical firmware files would require significant storage and maintenance overhead.
+
+#### Fake-Firmware Solution
+
+The `fake-firmware` mode elegantly addresses these challenges by:
+
+1. **Bypassing Firmware Downloads**: Using a generic stub eliminates dependency on external firmware availability
+2. **Preserving Build Logic**: All compilation steps, dependency resolution, and toolchain operations remain identical to real builds
+3. **Enabling Matrix Testing**: Allows comprehensive testing across all supported device configurations simultaneously
+4. **Providing Build Validation**: Ensures packages compile correctly and dependencies are properly resolved
+
+#### Workflow Variables and Secrets
+
+GitHub Actions workflows support encrypted secrets that can be used to customize build behavior and access external resources. The `make_package.yml` workflow leverages several secret variables:
+
+**`ACTIONS_TESTER`**: Default configuration URL used when no explicit `url` parameter is provided. Typically points to a GitHub Release containing a base `.config` file for testing.
+
+**`FTP_USER`** and **`FTP_PASS`**: Credentials for accessing external FTP servers that may host firmware files or additional resources.
+
+**`CUSTOM_FIRMWARE_URL`**: Alternative firmware download location when AVM's official servers are unavailable or when testing custom firmware builds.
+
+**`GITHUB_TOKEN`**: Automatically provided by GitHub Actions, used for API access, artifact uploads, and repository operations.
+
+**Secret Usage Examples**:
+
+```yaml
+# Accessing default test configuration
+- name: Download config
+  run: curl -s "${{ secrets.ACTIONS_TESTER }}" -o .config
+
+# Custom firmware download with authentication
+- name: Download firmware
+  run: wget --user="${{ secrets.FTP_USER }}" --password="${{ secrets.FTP_PASS }}" "${{ secrets.CUSTOM_FIRMWARE_URL }}/firmware.image"
+
+# API operations
+- name: Create release
+  run: gh release create v1.0 --generate-notes
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+These secrets enable flexible deployment scenarios while maintaining security by keeping sensitive information encrypted and separate from the codebase.
+
+#### Practical Applications
+
+**Continuous Integration**: Automated testing of package compatibility across all supported devices without external dependencies.
+
+**Development Validation**: Ensuring new packages build correctly across the entire device matrix before release.
+
+**Legacy Testing**: Testing device configurations for older hardware models where original firmware is no longer available.
+
+**Build System Validation**: Verifying that toolchain configurations, package dependencies, and compilation flags work correctly across different architectures.
+
+The `fake-firmware` mode represents a sophisticated approach to comprehensive build testing, enabling robust validation of Freetz-NG packages across diverse device configurations while maintaining efficiency and eliminating external dependencies.
 ```
