@@ -210,7 +210,7 @@
 </tbody></table>
 </details>
 
-<details><summary>383 verschiedene Images</summary>
+<details><summary>385 verschiedene Images</summary>
 
 <table>
 <caption style='background-color:gray'>&nbsp;</caption>
@@ -532,9 +532,11 @@
 <tr><td>FRITZ.Box_7520-07.29.image</td><td>FREETZ_TYPE_7520_V1 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_2X</td></tr>
 <tr><td>FRITZ.Box_7520-07.59.image</td><td>FREETZ_TYPE_7520_V1 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_5X</td></tr>
 <tr><td>FRITZ.Box_7520-08.02.image</td><td>FREETZ_TYPE_7520_V1 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_0X</td></tr>
+<tr><td>FRITZ.Box_7520-08.21.image</td><td>FREETZ_TYPE_7520_V1 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
 <tr><td>FRITZ.Box_7520_B-07.31.image</td><td>FREETZ_TYPE_7520_V2 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_2X</td></tr>
 <tr><td>FRITZ.Box_7520_B-07.59.image</td><td>FREETZ_TYPE_7520_V2 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_5X</td></tr>
 <tr><td>FRITZ.Box_7520_B-08.02.image</td><td>FREETZ_TYPE_7520_V2 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_0X</td></tr>
+<tr><td>FRITZ.Box_7520_B-08.21.image</td><td>FREETZ_TYPE_7520_V2 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
 <tr><td>FRITZ.Box_7530.en-de-es-it-fr-pl-nl.164.07.02.image</td><td>(FREETZ_TYPE_7530_W5 &vert;&vert;<br> FREETZ_TYPE_7520_V1_7530_W5) &amp;&amp;<br> FREETZ_TYPE_LANG_EN &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_0X</td></tr>
 <tr><td>FRITZ.Box_7530.07.13.int.image/FRITZ.Box_7530-07.13.image</td><td>(FREETZ_TYPE_7530_W5 &vert;&vert;<br> FREETZ_TYPE_7520_V1_7530_W5) &amp;&amp;<br> FREETZ_TYPE_LANG_EN &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_1X</td></tr>
 <tr><td>FRITZ.Box_7530.164.07.02.image</td><td>(FREETZ_TYPE_7530_W5 &vert;&vert;<br> FREETZ_TYPE_7520_V1_7530_W5) &amp;&amp;<br> FREETZ_TYPE_LANG_DE &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_0X</td></tr>
@@ -596,7 +598,7 @@
 <tr><td>FRITZ.Box_7690-08.02.image</td><td>FREETZ_TYPE_7690 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_0X</td></tr>
 <tr><td>FRITZ.Smart_Gateway-07.63-Release.image</td><td>FREETZ_TYPE_GATE &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_5X</td></tr>
 <tr><td>FRITZ.Smart_Gateway-08.02-Release.image</td><td>FREETZ_TYPE_GATE &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_0X</td></tr>
-<tr><td>FRITZ.Smart_Gateway-08.20-Release.image</td><td>FREETZ_TYPE_GATE &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
+<tr><td>FRITZ.Smart_Gateway-08.24-Release.image</td><td>FREETZ_TYPE_GATE &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
 <tr><td>fw_Speedport_W501V_v_28.04.38.image</td><td>FREETZ_TYPE_W501V &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_04_XX</td></tr>
 </tbody></table>
 </details>

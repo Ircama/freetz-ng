@@ -436,11 +436,13 @@ Currently supported devices and firmwares
     - 175.07.29 rev92061 {ALL} [PSQ19P2NL4]
     - 175.07.59 rev113612 {ALL} [MOVE21NL2]
     - 175.08.02 rev118102 {ALL} [Smart24 P1 NL1]
+    - 175.08.21 rev127230 {ALL} [Smart24 P2]
     - Alien 7530 {GER}
   * __Fritz!Box Fon WLAN 7520 B (UNTESTED)__
     - 276.07.31 rev98652 {ALL} [PSQ19P2NL4]
     - 276.07.59 rev113613 {ALL} [MOVE21NL2]
     - 276.08.02 rev118103 {ALL} [Smart24 P1 NL1]
+    - 276.08.21 rev127231 {ALL} [Smart24 P2]
   * __Fritz!Box Fon WLAN 7530__
     - 164.07.02 rev62311 {GER}
     - 164.07.14 rev73183 {GER} [MESH18 NL4]
@@ -609,7 +611,7 @@ Currently supported devices and firmwares
   * __Fritz!Smart Gateway__
     - 265.07.63 rev116265 {ALL} [MOVE21NL1]
     - 265.08.02 rev119969 {ALL} [Smart24 P1 NL1]
-    - 265.08.20 rev124035 {ALL} [Smart24 P2]
+    - 265.08.24 rev127475 {ALL} [Smart24 P2 NL1]
 
 ### T-Com derivatives
 

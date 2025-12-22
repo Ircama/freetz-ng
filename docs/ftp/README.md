@@ -138,9 +138,9 @@ Content: [FritzBox](#fritzbox) - [FritzPowerline](#fritzpowerline) - [FritzSmart
     - deutschland: [FRITZ.Box_7510-08.20.image](https://download.avm.de/fritzbox/fritzbox-7510/deutschland/fritz.os/FRITZ.Box_7510-08.20.image)
     - other: [FRITZ.Box_7510-08.20.image](https://download.avm.de/fritzbox/fritzbox-7510/other/fritz.os/FRITZ.Box_7510-08.20.image)
   * fritzbox-7520/
-    - deutschland: [FRITZ.Box_7520-08.02.image](https://download.avm.de/fritzbox/fritzbox-7520/deutschland/fritz.os/FRITZ.Box_7520-08.02.image)
+    - deutschland: [FRITZ.Box_7520-08.21.image](https://download.avm.de/fritzbox/fritzbox-7520/deutschland/fritz.os/FRITZ.Box_7520-08.21.image)
   * fritzbox-7520-B/
-    - deutschland: [FRITZ.Box_7520_B-08.02.image](https://download.avm.de/fritzbox/fritzbox-7520-B/deutschland/fritz.os/FRITZ.Box_7520_B-08.02.image)
+    - deutschland: [FRITZ.Box_7520_B-08.21.image](https://download.avm.de/fritzbox/fritzbox-7520-B/deutschland/fritz.os/FRITZ.Box_7520_B-08.21.image)
   * fritzbox-7530/
     - belgium: [FRITZ.Box_7530-08.21.image](https://download.avm.de/fritzbox/fritzbox-7530/belgium/fritz.os/FRITZ.Box_7530-08.21.image)
     - deutschland: [FRITZ.Box_7530-08.21.image](https://download.avm.de/fritzbox/fritzbox-7530/deutschland/fritz.os/FRITZ.Box_7530-08.21.image)
