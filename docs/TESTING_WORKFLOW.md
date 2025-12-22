@@ -584,14 +584,14 @@ This multi-layered approach ensures both development efficiency and ecosystem-wi
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'-firmware'`, `'fake-firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php). Supports custom labels using `#` syntax (e.g., `'php#Test PHP 8.4'` or `'php # Test PHP 8.4'`) to customize the workflow run name. Spaces before and after `#` are optional and ignored |
+| `make_target` | string | No | `""` | Make target: `'pkg1,pkg2'`, `'package-precompiled'`, `'package-recompile'`, `'firmware'`, `'-firmware'`, `'fake-firmware'`, `'libs'`, `'=package'`, or `'pkg-firmware'`, `'pkg-recompile-firmware'`, `'pkg-precompiled-firmware'` (builds firmware and the specified package, gh param: -f make_target=php). Supports multiple packages separated by commas (e.g., `'php,openssl'`). Supports custom labels using `#` syntax (e.g., `'php#Test PHP 8.4'` or `'php # Test PHP 8.4'`) to customize the workflow run name. Spaces before and after `#` are optional and ignored |
 | `url` | string | No | `""` | URL of config file (.tar, .tgz, .tbz, .config) or empty to use `secrets.ACTIONS_TESTER` |
 | `verbosity` | choice | No | `"0"` | Build verbosity level: `0`=quiet, `1`=normal, `2`=verbose |
 | `download_toolchain` | boolean | No | `false` | Try to download precompiled toolchain (may fail without AVX2 support) |
 | `download_hosttools` | boolean | No | `false` | Try to download precompiled host tools |
 | `cancel_previous` | boolean | No | `true` | Cancel previous runs of this workflow |
 | `use_queue` | boolean | No | `true` | Use workflow queue to prevent concurrent runs |
-| `custom_config` | string | No | `""` | Custom device/firmware/language (e.g., `'7530_W6_V1 08_2X EN'` or `'7590 08_0X'` or just `'7530'`, separators: space/tab/comma/semicolon/pipe/dash). When used with `-firmware` target, can specify custom pre-build commands to execute before firmware build (e.g., `'make python3-host-dirclean && make python3-host-precompiled'`) |
+| `custom_config` | string | No | `""` | Custom device/firmware/language (e.g., `'7530_W6_V1 08_2X EN'` or `'7590 08_0X'` or just `'7530'`, separators: space/tab/comma/semicolon/pipe/dash). Supports multiple configurations separated by commas (e.g., `'7590_W6 08_2X DE,7530_W5 08_0X EN'`). When used with `-firmware` target, can specify custom pre-build commands to execute before firmware build (e.g., `'make python3-host-dirclean && make python3-host-precompiled'`) |
 | `add_or_override` | choice | No | `"add"` | Add custom config to matrix or override with only custom configuration |
 | `create_artifacts` | boolean | No | `false` | Create and upload build artifacts |
 
@@ -619,6 +619,101 @@ This multi-layered approach ensures both development efficiency and ecosystem-wi
 - `fake-firmware` → Generate fake firmware structure for testing device configuration (no real firmware download required)
 - `libs` → Build only libraries
 - `=package` → Build package skipping library dependencies
+
+## Detailed Parameter Explanations
+
+### make_target Options
+
+#### Multiple Packages
+You can compile multiple packages by listing them separated by commas. For example, `make_target="php,openssl,libxml2"` will build each package sequentially across all configured toolchains. This is useful for testing interdependent packages or validating that a set of packages compiles successfully together.
+
+#### Skipping Library Dependencies (=package)
+The `=package` syntax (e.g., `=php`) builds a package while skipping its library dependencies. This is implemented by setting `skip_libs="true"` in the workflow matrix.
+
+**Pros:**
+- Faster build times since libraries are not rebuilt
+- Useful for testing package compilation when you know libraries are already available or compatible
+- Reduces resource usage in CI/CD environments
+- Allows focused testing of package-specific code changes
+
+**Cons:**
+- May fail if required libraries are missing or incompatible
+- Doesn't validate the complete dependency chain
+- Not suitable for packages with complex or version-specific library requirements
+- Can mask issues with library integration
+
+Use this option when you need quick package validation and are confident about library compatibility, but prefer full builds for comprehensive testing.
+
+#### Building Only Libraries (libs)
+The `make_target="libs"` option builds only the shared libraries without any packages. This is particularly useful in the following scenarios:
+
+- Validating library compilation across multiple toolchains
+- Testing library updates or patches before building dependent packages
+- Pre-building libraries for subsequent package builds in multi-stage workflows
+- Debugging library-specific compilation issues
+- Ensuring library compatibility with different GCC versions or architectures
+
+This target executes `make libs` and is ideal for isolating library-related problems or ensuring libraries are ready before package builds.
+
+#### Firmware Build Options
+- `firmware`: Builds a complete firmware image using the standard workflow configuration modifications
+- `-firmware`: Builds firmware preserving the `.config` file exactly as downloaded or from `myconfig` (no workflow modifications). This requires providing a configuration file via `url` parameter or having a `.github/workflows/myconfig` file. This is useful for testing custom configurations without workflow alterations, CI/CD testing of exact configuration files, and executing custom pre-build commands
+- `fake-firmware`: Creates a complete build process without downloading real AVM firmware, useful for testing device configurations when firmware is unavailable, validating build system configuration, and CI/CD testing without large downloads
+
+#### Single Package Builds
+When building a single package (e.g., `make_target="php"`), no configuration file is required. The workflow automatically generates a default `.config` file using `make olddefconfig` and enables the specified package. This simplifies testing by eliminating the need to create or maintain configuration files for individual package validation.
+
+In the build output, you'll typically see two phases:
+- **"Building library dependencies for package"**: This builds all required shared libraries first
+- **"Building package"**: This compiles the actual package using the pre-built libraries
+
+When using `=package` (skip libraries), only the second phase occurs. When using `make_target="libs"`, only the first phase occurs (building libraries only).
+
+### custom_config Parameter
+
+The `custom_config` parameter allows specifying custom device/firmware/language combinations for testing. It supports flexible syntax with multiple separators (space, tab, comma, semicolon, pipe, dash) and can define multiple configurations separated by commas.
+
+**Single Configuration Examples:**
+- `custom_config="7530_W6_V1 08_2X EN"` - Device 7530_W6_V1, firmware 08_2X, language EN
+- `custom_config="7590 08_0X"` - Device 7590, firmware 08_0X (language defaults to DE)
+- `custom_config="7530"` - Device 7530 (firmware and language use defaults)
+
+**Multiple Configurations:**
+You can specify multiple device/firmware combinations by separating them with commas: `custom_config="7590_W6 08_2X DE,7530_W5 08_0X EN,6670 07_5X"`. Each entry is processed independently, allowing comprehensive testing across different device models and firmware versions in a single workflow run.
+
+When used with `add_or_override="add"` (default), custom configurations are added to the standard matrix. With `add_or_override="override"`, only the custom configurations are tested, providing focused testing on specific combinations.
+
+### Workflow Control Options
+
+#### Branch/Reference Selection (-r)
+The `-r` parameter specifies the Git branch, tag, or commit SHA to run the workflow against. For example, `-r integration-testing` runs the workflow on the `integration-testing` branch. This allows testing on different branches without switching your local checkout.
+
+#### add_or_override
+- `"add"` (default): Adds custom configurations to the standard build matrix
+- `"override"`: Replaces the entire matrix with only the custom configurations
+
+Use `"override"` when you want to test only specific device/firmware combinations, which is faster for targeted testing but doesn't validate across the full ecosystem.
+
+#### create_artifacts
+When set to `true`, the workflow creates and uploads build artifacts (compiled packages, firmware images, etc.) to GitHub. This is useful for:
+- Downloading successful builds for local testing
+- Sharing builds with team members
+- Archiving builds for later use
+- CI/CD pipelines that need build outputs
+
+Note that artifacts consume GitHub storage and may take time to upload/download.
+
+#### cancel_previous
+- `true` (default): Automatically cancels previous runs of the same workflow when a new run starts
+- `false`: Allows multiple concurrent runs of the same workflow
+
+Set to `false` when you want to run multiple workflow instances simultaneously, such as testing different configurations in parallel.
+
+#### use_queue
+- `true` (default): Uses GitHub's workflow queue to prevent concurrent runs of the same workflow
+- `false`: Allows immediate execution without queuing
+
+Disable queuing when you need workflows to run immediately, but be aware this may lead to resource conflicts in busy repositories.
 
 ## Initial Setup
 
