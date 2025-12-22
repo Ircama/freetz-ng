@@ -439,9 +439,9 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
   * fritzbox-7510/
     - [source-files-FRITZ.Box_7510-maple-08.20.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7510/source-files-FRITZ.Box_7510-maple-08.20.tar.gz)
   * fritzbox-7520/
-    - [source-files-FRITZ.Box_7520-cortexa9-08.02.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7520/source-files-FRITZ.Box_7520-cortexa9-08.02.tar.gz)
+    - [source-files-FRITZ.Box_7520-cortexa9-08.21.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7520/source-files-FRITZ.Box_7520-cortexa9-08.21.tar.gz)
   * fritzbox-7520-B/
-    - [source-files-FRITZ.Box_7520_B-cortexa9-08.02.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7520-B/source-files-FRITZ.Box_7520_B-cortexa9-08.02.tar.gz)
+    - [source-files-FRITZ.Box_7520_B-cortexa9-08.21.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7520-B/source-files-FRITZ.Box_7520_B-cortexa9-08.21.tar.gz)
   * fritzbox-7530/
     - [source-files-FRITZ.Box_7530-cortexa9-07.59.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7530/source-files-FRITZ.Box_7530-cortexa9-07.59.tar.gz)
     - [source-files-FRITZ.Box_7530-cortexa9-08.00.tar.gz](https://osp.avm.de/fritzbox/fritzbox-7530/source-files-FRITZ.Box_7530-cortexa9-08.00.tar.gz)
@@ -521,7 +521,7 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
 
 ### FritzPowerline
   * fritzpowerline-1240-ax/
-    - [source-files-FRITZ.Powerline_1240_AX-maple_lowmem-07.58.tar.gz](https://osp.avm.de/fritzpowerline/fritzpowerline-1240-ax/source-files-FRITZ.Powerline_1240_AX-maple_lowmem-07.58.tar.gz)
+    - [source-files-FRITZ.Powerline_1240_AX-maple_lowmem-08.20.tar.gz](https://osp.avm.de/fritzpowerline/fritzpowerline-1240-ax/source-files-FRITZ.Powerline_1240_AX-maple_lowmem-08.20.tar.gz)
   * fritzpowerline-1240e/
     - [source-files-FRITZ.Powerline_1240E-hbee-07.14.tar.gz](https://osp.avm.de/fritzpowerline/fritzpowerline-1240e/source-files-FRITZ.Powerline_1240E-hbee-07.14.tar.gz)
   * fritzpowerline-1260/
@@ -533,7 +533,7 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
 
 ### FritzSmart
   * fritzsmart-gateway/
-    - [source-files-FRITZ.Smart_Gateway-08.20.tar.gz](https://osp.avm.de/fritzsmart/fritzsmart-gateway/source-files-FRITZ.Smart_Gateway-08.20.tar.gz)
+    - [source-files-FRITZ.Smart_Gateway-08.24.tar.gz](https://osp.avm.de/fritzsmart/fritzsmart-gateway/source-files-FRITZ.Smart_Gateway-08.24.tar.gz)
 
 ### FritzWlan
   * fritzmesh-set-1600/
@@ -549,6 +549,7 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
     - [source-files-FRITZ.Repeater_1700-08.06.tar.gz](https://osp.avm.de/fritzwlan/fritzrepeater-1700/source-files-FRITZ.Repeater_1700-08.06.tar.gz)
   * fritzrepeater-2400/
     - [source-files-FRITZ.Repeater_2400-07.58.tar.gz](https://osp.avm.de/fritzwlan/fritzrepeater-2400/source-files-FRITZ.Repeater_2400-07.58.tar.gz)
+    - [source-files-FRITZ.Repeater_2400-08.20.tar.gz](https://osp.avm.de/fritzwlan/fritzrepeater-2400/source-files-FRITZ.Repeater_2400-08.20.tar.gz)
   * fritzrepeater-2700/
     - [source-files-FRITZ.Repeater_2700-08.06.tar.gz](https://osp.avm.de/fritzwlan/fritzrepeater-2700/source-files-FRITZ.Repeater_2700-08.06.tar.gz)
   * fritzrepeater-3000/

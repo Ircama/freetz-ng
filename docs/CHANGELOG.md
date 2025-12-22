@@ -93,6 +93,7 @@ Latest changes
     * uboot 2025.10
 
   - AVM sources:
+    * 2400     8.20 - 4.4.271
     * 600      8.20 - 4.4.271
     * 6850 5G  8.20 - 4.4.271
     * 6860 5G  8.20 - 5.4.213
@@ -115,6 +116,7 @@ Latest changes
     * Bzip2 1.0.8
     * CA-bundle 2025-12-02
     * Curl 8.12.1/8.17.0
+    * Dropbear 2025.89
     * file 5.46
     * GNU Make 4.2.1/4.4.1
     * hostapd_cli 2.7/2.10/2.11

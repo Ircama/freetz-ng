@@ -160,7 +160,7 @@ jobs:
           test -n "$NAME"
       - name: artifact
         id: artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: github.repository != 'freetz-ng/freetz-ng'
         with:
           name: ${{ steps.vars.outputs.last }}
