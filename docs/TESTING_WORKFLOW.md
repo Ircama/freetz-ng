@@ -1,10 +1,13 @@
-# Freetz-NG Testing Workflows Guide
+# Freetz-NG Build Guide
 
-Freetz-NG provides a comprehensive testing framework that combines local development capabilities with automated validation across multiple platforms. Understanding both approaches is crucial for effective package and firmware development.
+
+This document provides guidance for building the complete Freetz-NG framework as well as single packages.
+
+Freetz-NG provides a comprehensive testing framework that combines local development capabilities with automated validation across multiple platforms. Understanding both approaches is crucial for effective package and firmware build, testing and development.
 
 ## Overview
 
-When developing packages or modifying firmware configurations, you'll first work directly on your development machine. This local testing phase allows you to compile packages, build firmware images, and test them on devices you physically own. It's the foundation of the development process, where you can quickly iterate, debug issues, and verify that your changes work as expected. Local testing gives you full control over the build environment and immediate access to debugging tools.
+When building the firmware, testing the build procedure, developing packages or modifying configurations, you'll first work directly on your development machine. This local testing phase allows you to compile packages, build firmware images, and test them on devices you physically own. It's the foundation of the test and development process, where you can quickly iterate, debug issues, and verify that your changes work as expected. Local testing gives you full control over the build environment and immediate access to debugging tools.
 
 While local testing ensures your changes work on your specific setup, Freetz-NG's ecosystem spans approximately tens of different device models, each with unique hardware characteristics, firmware versions, and toolchain requirements. To ensure compatibility across this diverse ecosystem, Freetz-NG uses GitHub Actions workflows that automatically test your changes across all supported platforms. This automated testing catches platform-specific issues that might not appear in your local environment and provides confidence that your modifications work consistently across the entire Freetz-NG user base.
 
@@ -30,21 +33,13 @@ The following two paragraphs better explain the above commands.
 This is Freetz-NG's implementation of the [Kconfig](https://docs.kernel.org/kbuild/kconfig-language.html) system (derived from Linux kernel configuration tools). It provides an interactive menu-driven [Ncurses](https://en.wikipedia.org/wiki/Ncurses) textual user interface for configuring the firmware build options. It generates the `.config` file that serves as the authoritative configuration for the subsequent `make`.
 
 **What it does:**
-- Launches the `tools/kconfig/mconf` binary (built automatically via `make tools` or `make kconfig-host`)
 - Displays a hierarchical menu structure based on `Config.in` files
 - Allows users to select/deselect packages, libraries, kernel options, and device-specific features
 - Generates the `.config` file that serves as the authoritative configuration for subsequent builds
-- The `.config` file contains all user selections in `FREETZ_PACKAGE_*=y/n` format
 
 **Key files involved:**
 - `Config.in` - Main configuration skeleton written in Kconfig language
 - `.config` - User-generated configuration file (should not be edited manually)
-- `tools/kconfig/mconf` - The menu interface binary
-- `tools/kconfig/conf` - Command-line version with more features
-
-**Alternative menuconfig targets:**
-- `make menuconfig-single` - Shows configuration as a flat tree structure without subpages
-- `make config` - Text-based configuration using `tools/kconfig/conf`
 
 #### User Competence Levels
 
@@ -54,7 +49,7 @@ The **Beginner** level is the default setting, offering a curated selection of w
 
 The **Expert** level unlocks several advanced configuration categories. Users at this level gain access to the BusyBox applets menu, allowing fine-grained control over which shell utilities are included in the firmware. The shared libraries menu becomes visible, enabling selection of additional runtime libraries that packages may depend upon. Toolchain configuration options appear, providing the ability to override firmware source locations and compiler settings. Kernel modules selection is exposed, allowing addition of extra kernel functionality. Additionally, various firmware-specific options and hardware-level configuration become accessible.
 
-The **Developer** level is intended for Freetz-NG contributors and advanced users who need access to unstable or experimental features. This level exposes packages that are still under development or not yet thoroughly tested across all device models. The Developer level for instance reveals BusyBox utilities for UBI filesystem management (ubiattach, ubidetach, ubimkvol, and similar tools) as well as low-level NAND flash utilities. A prominent warning is displayed when selecting this level to remind users that Developer features may be unstable or cause issues.
+The **Developer** level is intended for Freetz-NG contributors and advanced users who need access to unstable or experimental features. This level exposes packages that are still under development or not yet thoroughly tested across all device models. A prominent warning is displayed when selecting this level to remind users that Developer features may be unstable or cause issues.
 
 When writing test configurations or creating packages, understanding these levels is important for setting appropriate visibility. Packages and options that require advanced knowledge or may cause issues if misconfigured should be gated behind `FREETZ_SHOW_EXPERT` or `FREETZ_SHOW_DEVELOPER` dependencies in their `Config.in` files.
 
@@ -316,25 +311,22 @@ They are built with:
 - `make tools-distclean-local` - Cleans everything of local tools (dl-tools)
 - `make <tool>-host-precompiled` - Builds a specific tool using precompiled binaries if available
 
-To reduce the build time of host tools, Freetz-NG uses a shared cache hosted on GitHub at [https://github.com/Freetz-NG/dl-mirror/releases/](https://github.com/Freetz-NG/dl-mirror/releases/).
+Freetz-NG uses GNU Make to manage package dependencies and host tools in a modular way. Host tools are typically built first via `make host-tools-precompiled`, followed by target packages. Dependencies are checked recursively. However, only file existence is verified (version mismatches are not automatically detected). If a dependency is missing, the build fails; otherwise, existing binaries are reused.
 
-The cache is updated by the Freetz-NG team, who periodically release precompiled archives of host tools (e.g., `tools-VERSION.tar.xz`) for common architectures.
+Built host tools are cached in `tools/build`, `tools/build/usr/bin/` to avoid redundant rebuilds. The cache persists across builds, but can be invalidated manually (e.g., `make tool-host-dirclean` removes build directories and binaries). The cache is shared across packages.
+
+To reduce the build time of host tools, Freetz-NG supports downloading precompiled host tools from a cloud repository. Freetz-NG uses a shared cache hosted on GitHub at [https://github.com/Freetz-NG/dl-mirror/releases/](https://github.com/Freetz-NG/dl-mirror/releases/). The cache is updated by the Freetz-NG team, who periodically release precompiled archives of host tools (e.g., `tools-VERSION.tar.xz`) for common architectures. Source archives are stored in the `dl` directory. Precompiled binaries are extracted directly to `tools/build`, bypassing local compilation when available.
+
+Specifically, Host tools are compiled locally from source (downloaded to `dl`) when:
+- The build directory is clean (e.g., after make tool-host-dirclean).
+- The build is forced (e.g., via `make tool-host-precompiled` after cleaning).
+- No precompiled version is available or selected, and the target is invoked.
+
+The `dl` directory is preserved by `make dirclean` and `make distclean`. To remove its contents manually if needed, use `rm -rf dl/*`.
 
 During the build process, if the configuration option `FREETZ_HOSTTOOLS_DOWNLOAD` is enabled (which is the default), the system checks if the required host tools archive is available in the cache based on its version and the related SHA256 hash. If the archive is present and matches the expected hash, it is downloaded and extracted for use; otherwise, the tools are compiled locally from source. If `FREETZ_HOSTTOOLS_DOWNLOAD` is disabled, the build always compiles the tools locally, which is useful for incompatible systems or custom modifications.
 
-### Download Directory (dl)
-
-The `dl` directory (defined as `DL_DIR` in the Makefile) is the local cache for downloaded files during the build process. It stores source packages, kernel patches, and precompiled host tool archives to avoid redundant downloads.
-
-- **Contents**:
-  - Source tarballs for packages (e.g., `busybox-1.37.0.tar.bz2`, `openssl-3.5.4.tar.gz`).
-  - Host tool sources (e.g., `Python-3.14.0.tar.xz`, `gcc-13.4.0.tar.xz`).
-  - Precompiled host tool archives (e.g., `tools-2025-11-05.tar.xz`) from the dl-mirror cache.
-  - Kernel patches (e.g., `kernel_4.19.183-7539_08.20-ADv1.patch.xz`).
-  - Other files like CA certificates and firmware images in subdirectories (e.g., `fw/`).
-
-- **Usage**: Files are downloaded automatically if missing. The directory persists across builds for reuse, reducing network traffic.
-- **Cleanup**: The `dl` directory is preserved by `make dirclean` and `make distclean`. To remove its contents manually if needed, use `rm -rf dl/*`.
+The Freetz build system only checks for binary existence, not version compatibility. This process ensures efficient builds (but requires manual intervention for version issues).
 
 ## Package-Specific Make Targets
 
@@ -348,7 +340,7 @@ For example, to work with the PHP package, you would use `php` (from `make/pkgs/
 
 Here are the main target patterns:
 
-### bzip2-clean
+### `make bzip2-clean`
 
 **What it does:**
 - Removes only compiled files and build artifacts
@@ -357,7 +349,7 @@ Here are the main target patterns:
 
 **Use when:** You want to recompile without re-downloading everything, maintaining local source changes
 
-### bzip2-dirclean
+### `make bzip2-dirclean`
 
 **What it does:**
 - Completely removes the package build directory (`$(BZIP2_DIR)`) and target directory
@@ -368,7 +360,7 @@ Here are the main target patterns:
 
 **Relationship:** `bzip2-dirclean` ⊃ `bzip2-clean`
 
-### bzip2-precompiled
+### `make bzip2-precompiled`
 
 **What it does:**
 - Compiles and installs the package in the target directory, making it ready for firmware inclusion
@@ -377,7 +369,7 @@ Here are the main target patterns:
 
 **Use when:** Standard package compilation with dependency resolution
 
-### bzip2-recompile
+### `make bzip2-recompile`
 
 **What it does:**
 - Combination of `dirclean` + `precompiled` - removes everything and recompiles from scratch
@@ -449,6 +441,56 @@ WLAN        04_XX
 ```
 
 Each line represents a supported combination, where the first column is the device model, the second is the firmware version, and additional flags (like `FREETZ_TARGET_IPV6_SUPPORT`) indicate special features or requirements.
+
+The following Python program allows mapping a device model to a device code as well as the firware versions.
+
+```python
+import kconfiglib
+
+def get_prompt(sym):
+    if sym.nodes and sym.nodes[0].prompt:
+        prompt = sym.nodes[0].prompt
+        return prompt[0] if isinstance(prompt, tuple) else prompt
+    return None
+
+kconf = kconfiglib.Kconfig("config/.cache.in", warn=False)
+
+print("=== Device Types Mapping ===")
+for sym in kconf.unique_defined_syms:
+    if sym.name.startswith("FREETZ_TYPE_") and not sym.name.startswith("FREETZ_TYPE_FIRMWARE_"):
+        model = get_prompt(sym)
+        if model:
+            code = sym.name.replace("FREETZ_TYPE_", "")
+            print(f"{model} -> {code}")
+
+print("\n=== Firmware Versions Mapping ===")
+for sym in kconf.unique_defined_syms:
+    if sym.name.startswith("FREETZ_TYPE_FIRMWARE_"):
+        fw = get_prompt(sym)
+        if fw:
+            code = sym.name.replace("FREETZ_TYPE_FIRMWARE_", "")
+            print(f"{fw} -> {code}")
+```
+
+The program reads `config/.cache.in`, which is generated by `make menuconfig`, or `make olddefconfig`.
+
+The output is similar to the following:
+
+```
+=== Device Types Mapping ===
+...
+Speedport W501V -> W501V
+...
+7530 -> 7530_W5
+7530 AX -> 7530_W6_V1
+7530 AX B - UNTESTED -> 7530_W6_V2
+...
+=== Firmware Versions Mapping ===
+FRITZ!OS 04.00+ -> 04_XX
+FRITZ!OS 05.20+ -> 05_2X
+FRITZ!OS 05.50+ -> 05_5X
+...
+```
 
 The workflow follows a structured process:
 
