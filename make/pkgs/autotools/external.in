@@ -1,0 +1,6 @@
+config EXTERNAL_FREETZ_PACKAGE_AUTOTOOLS
+	bool "autotools"
+	default n
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_AUTOTOOLS
+	help
+		externals: /usr/bin/autoconf

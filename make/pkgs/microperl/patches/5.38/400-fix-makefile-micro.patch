@@ -1,0 +1,68 @@
+Fix Makefile.micro for proper microperl 5.38 build
+
+The original Makefile.micro has several issues:
+1. Compiles regcomp.c multiple times creating duplicate symbols
+2. Missing new source files required by Perl 5.38 (class.c, builtin.c)
+3. Missing stub implementations for unsupported features in PERL_MICRO
+
+This patch removes the duplicate regcomp compilation units and adds
+the necessary source files with proper compilation.
+
+--- a/Makefile.micro
++++ b/Makefile.micro
+@@ -14,11 +14,12 @@ all:	microperl
+ 
+ O = uav$(_O) udeb$(_O) udoio$(_O) udoop$(_O) udquote$(_O) udump$(_O) \
+ 	uglobals$(_O) ugv$(_O) uhv$(_O) umro$(_O)\
+-	umg$(_O) uperlmain$(_O) uop$(_O) ureentr$(_O) \
++	umg$(_O) uperlmain$(_O) uop$(_O) ureentr$(_O) ubuiltin$(_O) uclass$(_O) \
+ 	upad$(_O) uperl$(_O) uperlio$(_O) uperly$(_O) upp$(_O) \
+ 	upp_ctl$(_O) upp_hot$(_O) upp_sys$(_O) upp_pack$(_O) upp_sort$(_O) \
+-	uregcomp$(_O) uregcomp_debug$(_O) uregcomp_invlist$(_O) \
+-	uregcomp_study$(_O) uregcomp_trie$(_O) uregexec$(_O) urun$(_O) \
++	uregcomp$(_O) uregcomp_study$(_O) uregcomp_trie$(_O) \
++	uregcomp_invlist$(_O) uregcomp_debug$(_O) \
++	uregexec$(_O) urun$(_O) \
+ 	uscope$(_O) usv$(_O) utaint$(_O) utime64$(_O) utoke$(_O) \
+ 	unumeric$(_O) ulocale$(_O) umathoms$(_O) \
+ 	uuniversal$(_O) uutf8$(_O) uutil$(_O) ukeywords$(_O)
+@@ -104,6 +105,12 @@ uop$(_O):	$(HE) op.c keywords.h
+ ureentr$(_O):	$(HE) reentr.c
+ 	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) reentr.c
+ 
++ubuiltin$(_O):	$(HE) builtin.c
++	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) builtin.c
++
++uclass$(_O):	$(HE) class.c
++	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) class.c
++
+ upad$(_O):	$(HE) pad.c
+ 	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) pad.c
+ 
+@@ -140,19 +147,19 @@ upp_sort$(_O):	$(HE) pp_sort.c
+ uregcomp$(_O):	$(HE) regcomp.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
+ 	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp.c
+ 
+-uregcomp_debug$(_O):	$(HE) regcomp_debug.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
+-	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp.c
+-
+-uregcomp_invlist$(_O):	$(HE) regcomp_invlist.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
+-	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp.c
+-
+ uregcomp_study$(_O):	$(HE) regcomp_study.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
+-	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp.c
++	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp_study.c
+ 
+ uregcomp_trie$(_O):	$(HE) regcomp_trie.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
+-	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp.c
++	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp_trie.c
++
++uregcomp_invlist$(_O):	$(HE) regcomp_invlist.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
++	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp_invlist.c
+ 
++uregcomp_debug$(_O):	$(HE) regcomp_debug.c regcomp_internal.h regcomp.h regnodes.h INTERN.h
++	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regcomp_debug.c
++
+ uregexec$(_O):	$(HE) regexec.c regcomp.h regnodes.h
+ 	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) regexec.c
+ 

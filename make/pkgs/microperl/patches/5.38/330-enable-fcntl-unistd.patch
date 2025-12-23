@@ -1,0 +1,20 @@
+--- uconfig.h
++++ uconfig.h
+@@ -618,7 +618,7 @@
+ /* I_FCNTL:
+  *	This manifest constant tells the C program to include <fcntl.h>.
+  */
+-/*#define I_FCNTL	/ **/
++#define I_FCNTL	/**/
+ 
+ /* I_FLOAT:
+  *	This symbol, if defined, indicates to the C program that it should
+@@ -726,7 +726,7 @@
+  *	This symbol, if defined, indicates to the C program that it should
+  *	include <unistd.h>.
+  */
+-/*#define I_UNISTD		/ **/
++#define I_UNISTD		/**/
+ 
+ /* I_UTIME:
+  *	This symbol, if defined, indicates to the C program that it should

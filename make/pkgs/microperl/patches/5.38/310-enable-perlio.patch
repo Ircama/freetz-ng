@@ -1,0 +1,11 @@
+--- uconfig.h
++++ uconfig.h
+@@ -4370,6 +4370,6 @@
+  *	This symbol, if defined, indicates that Perl should
+  *	be built to use the PerlIO abstraction rather than stdio.
+  */
+-#ifndef USE_PERLIO
+-/*#define USE_PERLIO		/ **/
++#ifndef USE_PERLIO  
++#define USE_PERLIO		/**/
+ #endif

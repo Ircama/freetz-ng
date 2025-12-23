@@ -1,12 +1,28 @@
 config FREETZ_PACKAGE_MICROPERL
-	bool "microperl 5.10.1 (binary only) - DEPRECATED"
+	bool "microperl (binary only)"
 	default n
 	help
 		Perl without operating-specific functions such as readdir.
 
+if FREETZ_PACKAGE_MICROPERL
+
+	choice
+		prompt "Version"
+		default FREETZ_PACKAGE_MICROPERL_VERSION_5_38
+
+		config FREETZ_PACKAGE_MICROPERL_VERSION_5_10
+			bool "5.10.1 (legacy)"
+
+		config FREETZ_PACKAGE_MICROPERL_VERSION_5_38
+			bool "5.38.2 (stable)"
+
+	endchoice
+
+endif # FREETZ_PACKAGE_MICROPERL
+
 config FREETZ_PACKAGE_MICROPERL_MODULES
 	string "microperl modules"
-	default ""
+	default "strict.pm warnings.pm warnings/register.pm constant.pm Exporter.pm Exporter/Heavy.pm Carp.pm Errno.pm POSIX.pm Storable.pm Fcntl.pm Encode.pm"
 	depends on FREETZ_PACKAGE_MICROPERL
 	help
 		List of microperl modules to copy to the rootfs.

@@ -1,0 +1,18 @@
+--- perl.c.orig	2025-12-23 12:26:18.662658844 +0100
++++ perl.c	2025-12-23 12:26:24.041666908 +0100
+@@ -5479,3 +5479,15 @@
+ /*
+  * ex: set ts=8 sts=4 sw=4 et:
+  */
++
++/*
++ * Stub implementations for functions not available in PERL_MICRO
++ */
++
++void
++Perl_set_caret_X(pTHX)
++{
++    GV* tmpgv = gv_fetchpvs("\030", GV_ADD|GV_NOTQUAL, SVt_PV); /* $^X */
++    SV *const caret_x = GvSV(tmpgv);
++    sv_setpv(caret_x, PL_origargv[0]);
++}

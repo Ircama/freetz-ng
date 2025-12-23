@@ -1,0 +1,23 @@
+--- Makefile.micro	2025-12-23 11:38:55.338096387 +0100
++++ Makefile.micro	2025-12-23 11:38:55.338096387 +0100
+@@ -194,16 +194,11 @@
+ 	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) util.c
+ 
+ uuudmap.h umg_data.h: ubitcount.h
++# Use pre-generated headers to avoid cross-compilation issues
++uuudmap.h umg_data.h ubitcount.h:
++	@echo "Using pre-generated uudmap headers"
+ 
+-ubitcount.h: ugenerate_uudmap$(_X)
+-	$(RUN) ./ugenerate_uudmap$(_X) $(generated_headers)
+-
+-ugenerate_uudmap$(_O): generate_uudmap.c
+-	$(CC) $(CCFLAGS) -o $@ $(CFLAGS) generate_uudmap.c
+-
+-ugenerate_uudmap$(_X): ugenerate_uudmap$(_O)
+-	$(LD) -o ugenerate_uudmap $(LDFLAGS) ugenerate_uudmap$(_O) $(LIBS)
+-
++.PHONY: uuudmap.h umg_data.h ubitcount.h
+ microtest: microperl
+ 	- cd t && (rm -f perl; ln -s ../microperl perl) \
+ 	  && ./perl TEST base/*.t cmd/*.t
