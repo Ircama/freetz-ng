@@ -1,0 +1,11 @@
+--- uconfig.h
++++ uconfig.h
+@@ -1800,7 +1800,7 @@
+  * so the default case (for NeXT) is big endian to catch them.
+  * This might matter for NeXT 3.0.
+  */
+-/*#define HAS_LONG_LONG		/ **/
++#define HAS_LONG_LONG		/**/
+ #ifdef HAS_LONG_LONG
+ #  define LONGLONGSIZE 8	/**/
+ #endif

@@ -1,0 +1,23 @@
+--- perl.h
++++ perl.h
+@@ -1460,15 +1460,15 @@
+ */
+ #ifndef UINT16_C
+ #  if INTSIZE >= 2
+-#    define UINT16_C(x) ((U16_TYPE)x##U)
++#    define UINT16_C(x) x##U
+ #  else
+-#    define UINT16_C(x) ((U16_TYPE)x##UL)
++#    define UINT16_C(x) x##UL
+ #  endif
+ #endif
+ 
+ #ifndef UINT32_C
+ #  if INTSIZE >= 4
+-#    define UINT32_C(x) ((U32_TYPE)x##U)
++#    define UINT32_C(x) x##U
+ #  else
+-#    define UINT32_C(x) ((U32_TYPE)x##UL)
++#    define UINT32_C(x) x##UL
+ #  endif
+ #endif

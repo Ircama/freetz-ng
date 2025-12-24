@@ -1,0 +1,12 @@
+--- perl_langinfo.h
++++ perl_langinfo.h
+@@ -4,7 +4,9 @@
+ #ifndef PERL_LANGINFO_H
+ #define PERL_LANGINFO_H 1
+ 
++#ifndef PERL_MICRO
+ #include "config.h"
++#endif
+ 
+ #if defined(HAS_NL_LANGINFO) && defined(I_LANGINFO)
+ #   include <langinfo.h>

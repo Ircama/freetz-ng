@@ -1,0 +1,15 @@
+--- perl.h
++++ perl.h
+@@ -4784,7 +4784,7 @@
+ #define PERL_CORE
+ 
+ #ifndef __cplusplus
+-#if !defined(WIN32)
++#if !defined(WIN32) && !defined(I_UNISTD)
+ Uid_t getuid (void);
+ Uid_t geteuid (void);
+ Gid_t getgid (void);
+ Gid_t getegid (void);
+ #endif
+ #endif
+ #endif
