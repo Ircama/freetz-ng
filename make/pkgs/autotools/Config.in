@@ -1,0 +1,10 @@
+config FREETZ_PACKAGE_AUTOTOOLS
+	bool "autotools (autoconf) 2.72"
+	select FREETZ_PACKAGE_MICROPERL
+	default n
+	help
+		GNU autotools - autoconf suite for generating configure scripts
+
+		autoconf is a tool for producing configure scripts for building,
+		installing and packaging software on computer systems where a
+		Posix shell is available.
