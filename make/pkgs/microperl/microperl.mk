@@ -37,7 +37,15 @@ $(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p
 $(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),cp -f $(abspath $(dir $(lastword $(MAKEFILE_LIST)))patches/5.38/feature.pm) lib/;)
 $(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p lib/File && cp -f $(abspath $(dir $(lastword $(MAKEFILE_LIST)))patches/5.38/File/Basename.pm) lib/File/;)
 
-$(PKG_SOURCE_DOWNLOAD)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),cp -f /usr/lib/x86_64-linux-gnu/perl-base/Cwd.pm lib/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),cp -f /usr/lib/x86_64-linux-gnu/perl-base/overload.pm lib/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p lib/File && cp -f /usr/lib/x86_64-linux-gnu/perl-base/File/Spec.pm lib/File/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p lib/Class && cp -f /usr/share/perl/5.38/Class/Struct.pm lib/Class/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),cp -f /usr/lib/x86_64-linux-gnu/perl/5.38/Data/Dumper.pm lib/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),cp -f /usr/lib/x86_64-linux-gnu/perl-base/File/Temp.pm lib/File/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p lib/Getopt && cp -f /usr/lib/x86_64-linux-gnu/perl-base/Getopt/Long.pm lib/Getopt/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p lib/IO && cp -f /usr/lib/x86_64-linux-gnu/perl-base/IO/File.pm lib/IO/;)
+$(PKG)_PATCH_POST_CMDS += $(if $(FREETZ_PACKAGE_MICROPERL_VERSION_5_38),mkdir -p lib/Scalar && cp -f /usr/lib/x86_64-linux-gnu/perl-base/Scalar/Util.pm lib/Scalar/;)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_NOP)
 
@@ -51,14 +59,7 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 
 $($(PKG)_TARGET_MODULES): $($(PKG)_DIR)/.unpacked
 	mkdir -p $(MICROPERL_TARGET_MODULES_DIR)
-	( \
-		for i in $(patsubst %,$(MICROPERL_TARGET_MODULES_DIR)/%,$(dir $(MICROPERL_TARGET_MODS))); do \
-			[ -d $$i ] || mkdir -p $$i; \
-		done; \
-		for i in $(MICROPERL_TARGET_MODS); do \
-			cp -dpf $(MICROPERL_DIR)/lib/$$i $(MICROPERL_TARGET_MODULES_DIR)/$$i; \
-		done; \
-	)
+	cp -dpfR $(MICROPERL_DIR)/lib/* $(MICROPERL_TARGET_MODULES_DIR)/
 	touch $@
 
 $(pkg):

@@ -22,7 +22,7 @@ endif # FREETZ_PACKAGE_MICROPERL
 
 config FREETZ_PACKAGE_MICROPERL_MODULES
 	string "microperl modules"
-	default "strict.pm warnings.pm warnings/register.pm constant.pm Exporter.pm Exporter/Heavy.pm Carp.pm Errno.pm POSIX.pm Storable.pm Fcntl.pm Encode.pm"
+	default "strict.pm warnings.pm warnings/register.pm constant.pm Exporter.pm Exporter/Heavy.pm Carp.pm Errno.pm POSIX.pm Storable.pm Fcntl.pm Encode.pm Cwd.pm overload.pm File/Spec.pm File/stat.pm Class/Struct.pm Data/Dumper.pm File/Temp.pm Getopt/Long.pm IO/File.pm Scalar/Util.pm"
 	depends on FREETZ_PACKAGE_MICROPERL
 	help
 		List of microperl modules to copy to the rootfs.
