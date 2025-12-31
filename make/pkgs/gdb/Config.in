@@ -14,6 +14,9 @@ if FREETZ_PACKAGE_GDB
 
 		config FREETZ_GDB_VERSION_7_9
 			bool "gdb 7.9.1"
+
+		config FREETZ_GDB_VERSION_17_1
+			bool "gdb 17.1"
 	endchoice
 
 	config FREETZ_PACKAGE_GDB_GDB
