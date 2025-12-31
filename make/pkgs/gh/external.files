@@ -1,1 +1,1 @@
-usr/bin/gh
+[ "$EXTERNAL_FREETZ_PACKAGE_GH" == "y" ] && EXTERNAL_FILES+=" /usr/bin/gh"
