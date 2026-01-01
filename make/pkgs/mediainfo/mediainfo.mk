@@ -20,17 +20,17 @@ MEDIAINFOLIB_SOURCE:=MediaInfoLib-v$(MEDIAINFOLIB_VERSION).tar.gz
 MEDIAINFOLIB_SITE:=https://github.com/MediaArea/MediaInfoLib/archive/refs/tags
 MEDIAINFOLIB_HASH:=e4b2b82f3df8d2c190643d1705ee35c3102674954858d02a2e2b42840f0f07aa
 
-ZENLIB_DIR:=$(shell if [ -d "$(SOURCE_DIR)/ZenLib-$(ZENLIB_VERSION)/ZenLib-$(ZENLIB_VERSION)" ]; then echo "$(SOURCE_DIR)/ZenLib-$(ZENLIB_VERSION)/ZenLib-$(ZENLIB_VERSION)"; else echo "$(SOURCE_DIR)/ZenLib-$(ZENLIB_VERSION)"; fi)
-MEDIAINFOLIB_DIR:=$(shell if [ -d "$(SOURCE_DIR)/MediaInfoLib-$(MEDIAINFOLIB_VERSION)/MediaInfoLib-$(MEDIAINFOLIB_VERSION)" ]; then echo "$(SOURCE_DIR)/MediaInfoLib-$(MEDIAINFOLIB_VERSION)/MediaInfoLib-$(MEDIAINFOLIB_VERSION)"; else echo "$(SOURCE_DIR)/MediaInfoLib-$(MEDIAINFOLIB_VERSION)"; fi)
+ZENLIB_DIR:=$(SOURCE_DIR)/ZenLib-$(ZENLIB_VERSION)
+MEDIAINFOLIB_DIR:=$(SOURCE_DIR)/MediaInfoLib-$(MEDIAINFOLIB_VERSION)
 
-$(PKG)_BINARY := $($(PKG)_DIR)/Project/GNU/CLI/mediainfo
-$(PKG)_BINARY_TARGET := $($(PKG)_DEST_DIR)/usr/bin/mediainfo
+$(PKG)_BINARY:=$($(PKG)_DIR)/Project/GNU/CLI/mediainfo
+$(PKG)_BINARY_TARGET:=$($(PKG)_DEST_DIR)/usr/bin/mediainfo
 
-$(PKG)_LIBZEN_BINARY:=$(ZENLIB_DIR)/Project/GNU/Library/src/libzen.la
+$(PKG)_LIBZEN_BINARY:=$(ZENLIB_DIR)/Project/GNU/Library/.libs/libzen.so.0.0.0
 $(PKG)_LIBZEN_STAGING_LIB:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libzen.so.0.0.0
 $(PKG)_LIBZEN_TARGET_LIB:=$($(PKG)_TARGET_LIBDIR)/libzen.so.0.0.0
 
-$(PKG)_LIBMEDIAINFO_BINARY:=$(MEDIAINFOLIB_DIR)/Project/GNU/Library/src/libmediainfo.la
+$(PKG)_LIBMEDIAINFO_BINARY:=$(MEDIAINFOLIB_DIR)/Project/GNU/Library/.libs/libmediainfo.so.0.0.0
 $(PKG)_LIBMEDIAINFO_STAGING_LIB:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libmediainfo.so.0.0.0
 $(PKG)_LIBMEDIAINFO_TARGET_LIB:=$($(PKG)_TARGET_LIBDIR)/libmediainfo.so.0.0.0
 
@@ -38,164 +38,115 @@ $(PKG)_CONFIGURE_OPTIONS += --enable-static
 $(PKG)_CONFIGURE_OPTIONS += --disable-shared
 
 $(PKG_SOURCE_DOWNLOAD)
+$(PKG_UNPACKED)
 
+# Download additional sources
 $(DL_DIR)/ZenLib-v$(ZENLIB_VERSION).tar.gz: | $(DL_DIR)
 	$(DL_TOOL) -o ZenLib-v$(ZENLIB_VERSION).tar.gz $(DL_DIR) v$(ZENLIB_VERSION).tar.gz $(ZENLIB_SITE) $(ZENLIB_HASH)
 
 $(DL_DIR)/MediaInfoLib-v$(MEDIAINFOLIB_VERSION).tar.gz: | $(DL_DIR)
 	$(DL_TOOL) -o MediaInfoLib-v$(MEDIAINFOLIB_VERSION).tar.gz $(DL_DIR) v$(MEDIAINFOLIB_VERSION).tar.gz $(MEDIAINFOLIB_SITE) $(MEDIAINFOLIB_HASH)
 
-$(PKG_UNPACKED)
-
-$(ZENLIB_DIR)/.unpacked: $(DL_DIR)/ZenLib-v$(ZENLIB_VERSION).tar.gz
-	mkdir -p $(ZENLIB_DIR)
-	$(call UNPACK_TARBALL,$<,$(ZENLIB_DIR))
-	touch $@
-
-$(MEDIAINFOLIB_DIR)/.unpacked: $(DL_DIR)/MediaInfoLib-v$(MEDIAINFOLIB_VERSION).tar.gz
-	mkdir -p $(MEDIAINFOLIB_DIR)
-	$(call UNPACK_TARBALL,$<,$(MEDIAINFOLIB_DIR))
-	touch $@
-
-$(ZENLIB_DIR)/.configured: $(ZENLIB_DIR)/.unpacked
-	@zen_cfg="$$(find $(ZENLIB_DIR) -maxdepth 4 -type f -name configure -print -quit)"; \
-	if [ -n "$$zen_cfg" ]; then \
-		zen_dir="$$(dirname $$zen_cfg)"; \
-	else \
-		zen_ag="$$(find $(ZENLIB_DIR) -maxdepth 5 -type f -name autogen.sh -print -quit)"; \
-		if [ -n "$$zen_ag" ]; then zen_dir="$$(dirname $$zen_ag)"; else zen_dir="$(ZENLIB_DIR)"; fi; \
-	fi; \
-	( cd "$$zen_dir"; if [ ! -f ./configure -a -f ./autogen.sh ]; then ./autogen.sh || true; fi; if [ ! -f ./configure ]; then autoreconf -fi || true; fi; $(TARGET_CONFIGURE_ENV) \
+# Build ZenLib
+$($(PKG)_LIBZEN_BINARY): $(DL_DIR)/ZenLib-v$(ZENLIB_VERSION).tar.gz
+	$(call UNPACK_TARBALL,$<,$(SOURCE_DIR))
+	(cd $(ZENLIB_DIR)/Project/GNU/Library && \
+		./autogen.sh && \
+		$(TARGET_CONFIGURE_ENV) \
 		./configure \
-		--host=$(GNU_TARGET_NAME) \
-		--build=$(GNU_HOST_NAME) \
-		--prefix=/usr \
-		--enable-static \
-		--enable-shared \
+			--host=$(GNU_TARGET_NAME) \
+			--build=$(GNU_HOST_NAME) \
+			--prefix=/usr \
+			--enable-static \
+			--enable-shared && \
+		$(SUBMAKE) \
 	)
-	touch $@
-
-$(MEDIAINFOLIB_DIR)/.configured: $(MEDIAINFOLIB_DIR)/.unpacked $(ZENLIB_DIR)/.configured $($(PKG)_LIBZEN_STAGING_LIB)
-	@milib_cfg="$$(find $(MEDIAINFOLIB_DIR) -maxdepth 5 -type f -name configure -print -quit)"; \
-	if [ -n "$$milib_cfg" ]; then \
-		milib_dir="$$(dirname $$milib_cfg)"; \
-	else \
-		milib_ag="$$(find $(MEDIAINFOLIB_DIR) -maxdepth 6 -type f -name autogen.sh -print -quit)"; \
-		if [ -n "$$milib_ag" ]; then milib_dir="$$(dirname $$milib_ag)"; else milib_dir="$(MEDIAINFOLIB_DIR)"; fi; \
-	fi; \
-	( cd "$$milib_dir"; if [ ! -f ./configure -a -f ./autogen.sh ]; then ./autogen.sh || true; fi; if [ ! -f ./configure ]; then autoreconf -fi || true; fi; CFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib" PKG_CONFIG_PATH="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig" $(TARGET_CONFIGURE_ENV) \
-		./configure \
-		--host=$(GNU_TARGET_NAME) \
-		--build=$(GNU_HOST_NAME) \
-		--prefix=/usr \
-		--enable-static \
-		--enable-shared \
-	)
-	touch $@
-
-$($(PKG)_DIR)/.configured: $($(PKG)_DIR)/.unpacked $(MEDIAINFOLIB_DIR)/.configured $($(PKG)_LIBMEDIAINFO_STAGING_LIB)
-	@mi_cfg="$$(find $($(PKG)_DIR) -maxdepth 6 -type f -name configure -print -quit)"; \
-	if [ -n "$$mi_cfg" ]; then \
-		mi_dir="$$(dirname $$mi_cfg)"; \
-	else \
-		mi_ag="$$(find $($(PKG)_DIR) -maxdepth 8 -type f -name autogen.sh -print -quit)"; \
-		if [ -n "$$mi_ag" ]; then mi_dir="$$(dirname $$mi_ag)"; else mi_dir="$($(PKG)_DIR)"; fi; \
-	fi; \
-	( cd "$$mi_dir"; if [ -f ./autogen.sh ] && ([ ! -f ./configure ] || [ ! -f ./config.guess ] || [ ! -f ./config.sub ] || [ ! -f ./install-sh ] || [ ! -f ./ltmain.sh ]); then ./autogen.sh || true; fi; if [ ! -f ./config.guess ] || [ ! -f ./config.sub ] || [ ! -f ./install-sh ] || [ ! -f ./ltmain.sh ]; then autoreconf -fi || true; fi; if [ ! -f ./configure ]; then autoreconf -fi || true; fi; CFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib" PKG_CONFIG_PATH="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig" $(TARGET_CONFIGURE_ENV) \
-		./configure \
-		--host=$(GNU_TARGET_NAME) \
-		--build=$(GNU_HOST_NAME) \
-		--prefix=/usr \
-		--enable-static \
-		--disable-shared \
-	; sed -i 's|../../../Project/GNU/Library/src/libmediainfo.la|-lmediainfo|' Makefile \
-	)
-	touch $@
-
-$($(PKG)_LIBZEN_BINARY): $(ZENLIB_DIR)/.configured
-	@libdir="$$(find $(ZENLIB_DIR) -maxdepth 8 -type f -path '*/Project/GNU/Library/Makefile' -print -quit)"; \
-	if [ -n "$$libdir" ]; then \
-		libdir="$$(dirname $$libdir)"; \
-	else \
-		libdir="$(ZENLIB_DIR)/Project/GNU/Library"; \
-	fi; \
-	$(SUBMAKE) -C "$$libdir"
 
 $($(PKG)_LIBZEN_STAGING_LIB): $($(PKG)_LIBZEN_BINARY)
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig
-	@libdir="$$(find $(ZENLIB_DIR) -maxdepth 8 -type f -name libzen.la -print -quit)"; \
-	if [ -n "$$libdir" ]; then \
-		libdir="$$(dirname $$libdir)"; \
-	else \
-		libdir="$(ZENLIB_DIR)/Project/GNU/Library"; \
-	fi; \
-	cp -a "$$libdir"/.libs/libzen.{a,so*} $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/ 2>/dev/null || true; \
-	cp -a "$$libdir"/libzen.la $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/ 2>/dev/null || true
-	$(PKG_FIX_LIBTOOL_LA) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libzen.la
-	# install ZenLib headers under usr/include/ZenLib so includes like "ZenLib/Conf.h" work
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ZenLib
-	cp -a $(ZENLIB_DIR)/Source/ZenLib $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ 2>/dev/null || true
-	@pcfile="$$(find $(ZENLIB_DIR) -maxdepth 8 -type f -name libzen.pc -print -quit)"; \
-	if [ -n "$$pcfile" ]; then \
-		cp -a "$$pcfile" $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/ 2>/dev/null || true; \
-	fi
+	$(SUBMAKE) -C $(ZENLIB_DIR)/Project/GNU/Library \
+		DESTDIR="$(TARGET_TOOLCHAIN_STAGING_DIR)" \
+		install
+	$(PKG_FIX_LIBTOOL_LA) \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libzen.la
 
-$($(PKG)_LIBMEDIAINFO_BINARY): $(MEDIAINFOLIB_DIR)/.configured
-	@libdir="$$(find $(MEDIAINFOLIB_DIR) -maxdepth 8 -type f -path '*/Project/GNU/Library/Makefile' -print -quit)"; \
-	if [ -n "$$libdir" ]; then \
-		libdir="$$(dirname $$libdir)"; \
-	else \
-		libdir="$(MEDIAINFOLIB_DIR)/Project/GNU/Library"; \
-	fi; \
-	$(SUBMAKE) -C "$$libdir"
+# Build MediaInfoLib
+$($(PKG)_LIBMEDIAINFO_BINARY): $(DL_DIR)/MediaInfoLib-v$(MEDIAINFOLIB_VERSION).tar.gz $($(PKG)_LIBZEN_STAGING_LIB)
+	$(call UNPACK_TARBALL,$<,$(SOURCE_DIR))
+	(cd $(MEDIAINFOLIB_DIR)/Project/GNU/Library && \
+		./autogen.sh && \
+		CFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
+		CXXFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
+		LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib" \
+		PKG_CONFIG_PATH="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig" \
+		$(TARGET_CONFIGURE_ENV) \
+		./configure \
+			--host=$(GNU_TARGET_NAME) \
+			--build=$(GNU_HOST_NAME) \
+			--prefix=/usr \
+			--enable-static \
+			--enable-shared && \
+		$(SUBMAKE) \
+	)
 
 $($(PKG)_LIBMEDIAINFO_STAGING_LIB): $($(PKG)_LIBMEDIAINFO_BINARY)
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig
-	@mlibdir="$$(find $(MEDIAINFOLIB_DIR) -maxdepth 8 -type f -name libmediainfo.la -print -quit)"; \
-	if [ -n "$$mlibdir" ]; then \
-		mlibdir="$$(dirname $$mlibdir)"; \
-	else \
-		mlibdir="$(MEDIAINFOLIB_DIR)/Project/GNU/Library"; \
-	fi; \
-	cp -a "$$mlibdir"/.libs/libmediainfo.{a,so*} $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/ 2>/dev/null || true; \
-	cp -a "$$mlibdir"/libmediainfo.la $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/ 2>/dev/null || true
-	$(PKG_FIX_LIBTOOL_LA) $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libmediainfo.la
-	# install MediaInfo headers (copy whole directories to preserve structure)
-	mkdir -p $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include
-	cp -a $(MEDIAINFOLIB_DIR)/Source/MediaInfo $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ 2>/dev/null || true
-	cp -a $(MEDIAINFOLIB_DIR)/Source/MediaInfoDLL $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ 2>/dev/null || true
-	cp -a "$$mlibdir"/libmediainfo.pc $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/ 2>/dev/null || true
+	$(SUBMAKE) -C $(MEDIAINFOLIB_DIR)/Project/GNU/Library \
+		DESTDIR="$(TARGET_TOOLCHAIN_STAGING_DIR)" \
+		install
+	$(PKG_FIX_LIBTOOL_LA) \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libmediainfo.la
 
-$($(PKG)_BINARY): $($(PKG)_DIR)/.configured $($(PKG)_LIBMEDIAINFO_BINARY)
-	@clid="$$(find $($(PKG)_DIR) -maxdepth 10 -type f -path '*/Project/GNU/CLI/Makefile' -print -quit)"; \
-	if [ -n "$$clid" ]; then \
-		clid="$$(dirname $$clid)"; \
-	else \
-		clid="$($(PKG)_DIR)/Project/GNU/CLI"; \
-	fi; \
-	$(SUBMAKE) -C "$$clid"
+# Build MediaInfo CLI
+$(MEDIAINFO_DIR)/.configured: $(MEDIAINFO_DIR)/.unpacked $(MEDIAINFO_LIBMEDIAINFO_STAGING_LIB)
+	(cd $(MEDIAINFO_DIR)/Project/GNU/CLI && \
+		./autogen.sh && \
+		CFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
+		CXXFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
+		LDFLAGS="-L$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib" \
+		PKG_CONFIG_PATH="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig" \
+		$(TARGET_CONFIGURE_ENV) \
+		./configure \
+			--host=$(GNU_TARGET_NAME) \
+			--build=$(GNU_HOST_NAME) \
+			--prefix=/usr \
+			$(MEDIAINFO_CONFIGURE_OPTIONS) \
+	)
+	touch $@
 
-$($(PKG)_BINARY_TARGET): $($(PKG)_BINARY)
+$(MEDIAINFO_BINARY): $(MEDIAINFO_DIR)/.configured
+	$(SUBMAKE) -C $(MEDIAINFO_DIR)/Project/GNU/CLI
+
+$(MEDIAINFO_BINARY_TARGET): $(MEDIAINFO_BINARY)
 	$(INSTALL_BINARY_STRIP)
 
-$($(PKG)_LIBZEN_TARGET_LIB): $($(PKG)_LIBZEN_BINARY)
+$($(PKG)_LIBZEN_TARGET_LIB): $($(PKG)_LIBZEN_STAGING_LIB)
 	$(INSTALL_LIBRARY_STRIP)
 
-$($(PKG)_LIBMEDIAINFO_TARGET_LIB): $($(PKG)_LIBMEDIAINFO_BINARY)
+$($(PKG)_LIBMEDIAINFO_TARGET_LIB): $($(PKG)_LIBMEDIAINFO_STAGING_LIB)
 	$(INSTALL_LIBRARY_STRIP)
 
 $(pkg):
 
-$(pkg)-precompiled: $($(PKG)_BINARY_TARGET) $($(PKG)_LIBZEN_TARGET_LIB) $($(PKG)_LIBMEDIAINFO_TARGET_LIB)
+$(pkg)-precompiled: $($(PKG)_BINARY_TARGET)
+
+ifeq ($(strip $(FREETZ_PACKAGE_MEDIAINFO_STATIC)),y)
+$(pkg)-precompiled:
+else
+$(pkg)-precompiled: $($(PKG)_LIBZEN_TARGET_LIB) $($(PKG)_LIBMEDIAINFO_TARGET_LIB)
+endif
 
 $(pkg)-clean:
-	$(RM) $($(PKG)_BINARY_TARGET) $($(PKG)_LIBZEN_TARGET_LIB) $($(PKG)_LIBMEDIAINFO_TARGET_LIB)
+	-$(SUBMAKE) -C $(ZENLIB_DIR)/Project/GNU/Library clean
+	-$(SUBMAKE) -C $(MEDIAINFOLIB_DIR)/Project/GNU/Library clean
+	-$(SUBMAKE) -C $($(PKG)_DIR)/Project/GNU/CLI clean
+	$(RM) -r \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libzen* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libmediainfo* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ZenLib \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/MediaInfo* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/libzen.pc \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/libmediainfo.pc
 
 $(pkg)-uninstall:
-	$(RM) $($(PKG)_BINARY_TARGET) $($(PKG)_LIBZEN_TARGET_LIB) $($(PKG)_LIBMEDIAINFO_TARGET_LIB)
+	$(RM) $(MEDIAINFO_BINARY_TARGET) $(MEDIAINFO_LIBZEN_TARGET_LIB) $(MEDIAINFO_LIBMEDIAINFO_TARGET_LIB)
 
 $(PKG_FINISH)

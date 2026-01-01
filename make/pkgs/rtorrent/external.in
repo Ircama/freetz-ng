@@ -1,0 +1,10 @@
+config EXTERNAL_FREETZ_PACKAGE_RTORRENT
+	depends on EXTERNAL_ENABLED && FREETZ_PACKAGE_RTORRENT
+	bool "rTorrent/ruTorrent"
+	default n
+	help
+		externals the following file(s):
+		 /usr/bin/rtorrent (if daemon enabled)
+		 /usr/share/rutorrent (if webui enabled)
+		 ${FREETZ_LIBRARY_DIR}/libtorrent.so.21.0.0 (if not static)
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc.so.3.51 (if XMLRPC enabled and not static)

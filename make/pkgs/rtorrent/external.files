@@ -1,0 +1,8 @@
+[ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_DAEMON" == "y" ] && EXTERNAL_FILES+=" /usr/bin/rtorrent"
+[ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_WEBUI" == "y" ] && EXTERNAL_FILES+=" /usr/share/rutorrent"
+
+# Include libraries if not static
+if [ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_STATIC" != "y" ]; then
+	[ "$FREETZ_PACKAGE_RTORRENT_DAEMON" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libtorrent.so.21.0.0"
+	[ "$FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libxmlrpc.so.3.51"
+fi
