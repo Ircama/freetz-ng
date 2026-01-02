@@ -161,6 +161,10 @@ menu "Readline"
 	source "make/libs/readline/Config.in"
 endmenu ### "Readline"
 
+menu "rTorrent"
+	source "make/pkgs/rtorrent/Config.in.libs"
+endmenu ### "rTorrent"
+
 menu "Regular expressions"
 	source "make/libs/libonig/Config.in"
 	source "make/libs/pcre/Config.in"

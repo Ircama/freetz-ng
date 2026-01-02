@@ -8,12 +8,13 @@ $(PKG)_SITE:=https://github.com/rakshasa/rtorrent/releases/download/v$($(PKG)_VE
 ### CVSREPO:=https://github.com/rakshasa/rtorrent
 ### SUPPORT:=Ircama
 
-# libtorrent (dependency)
-LIBTORRENT_VERSION:=0.16.5
-LIBTORRENT_SOURCE:=v$(LIBTORRENT_VERSION).tar.gz
+# libTorrent by rakshasa
+# (distinct from libtorrent-rasterbar used by qBittorrent/Deluge)
+LIBTORRENT_RAKSHASA_VERSION:=0.16.5
+LIBTORRENT_SOURCE:=v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz
 LIBTORRENT_HASH:=fdd94681b92d8a5bc6077bb54d8c6529fe8bfa700af9ec118e0292c8200dbcb3
 LIBTORRENT_SITE:=https://github.com/rakshasa/libtorrent/archive/refs/tags
-LIBTORRENT_DIR:=$(SOURCE_DIR)/libtorrent-$(LIBTORRENT_VERSION)
+LIBTORRENT_DIR:=$(SOURCE_DIR)/libtorrent-$(LIBTORRENT_RAKSHASA_VERSION)
 
 # xmlrpc-c (dependency)
 XMLRPC_VERSION:=1.64.03
@@ -36,11 +37,13 @@ LIBTORRENT_BINARY:=$(LIBTORRENT_DIR)/src/.libs/libtorrent.so
 LIBTORRENT_STAGING_LIB:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libtorrent.so
 LIBTORRENT_TARGET_LIB:=$($(PKG)_TARGET_LIBDIR)/libtorrent.so
 
-XMLRPC_BINARY:=$(XMLRPC_DIR)/lib/libutil/libxmlrpc_util.so
-XMLRPC_STAGING_LIB:=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libxmlrpc.so
-XMLRPC_TARGET_LIB:=$($(PKG)_TARGET_LIBDIR)/libxmlrpc.so
+# xmlrpc-c has multiple libraries
+XMLRPC_LIBS_SHORT := xmlrpc xmlrpc_server xmlrpc_server_abyss xmlrpc_server_cgi xmlrpc_client xmlrpc_abyss xmlrpc_util xmlrpc_xmlparse xmlrpc_xmltok
+XMLRPC_BINARY:=$(XMLRPC_DIR)/src/libxmlrpc.so
+XMLRPC_STAGING_LIBS:=$(XMLRPC_LIBS_SHORT:%=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/lib%.so)
+XMLRPC_TARGET_LIBS:=$(XMLRPC_LIBS_SHORT:%=$($(PKG)_TARGET_LIBDIR)/lib%.so)
 
-$(PKG)_RUTORRENT_WEBDIR:=$($(PKG)_DEST_DIR)/usr/share/rutorrent
+$(PKG)_RUTORRENT_WEBDIR:=$($(PKG)_DEST_DIR)/usr/mww/rutorrent
 
 $(PKG)_DEPENDS_ON += curl openssl zlib ncurses expat
 
@@ -79,8 +82,8 @@ $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 
 # Download additional sources
-$(DL_DIR)/v$(LIBTORRENT_VERSION).tar.gz: | $(DL_DIR)
-	$(DL_TOOL) -o v$(LIBTORRENT_VERSION).tar.gz $(DL_DIR) v$(LIBTORRENT_VERSION).tar.gz $(LIBTORRENT_SITE) $(LIBTORRENT_HASH)
+$(DL_DIR)/v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz: | $(DL_DIR)
+	$(DL_TOOL) -o v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz $(DL_DIR) v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz $(LIBTORRENT_SITE) $(LIBTORRENT_HASH)
 
 $(DL_DIR)/xmlrpc-$(XMLRPC_VERSION).tgz: | $(DL_DIR)
 	$(DL_TOOL) $(DL_DIR) $(XMLRPC_SOURCE) $(XMLRPC_SITE) $(XMLRPC_HASH)
@@ -117,7 +120,7 @@ $(XMLRPC_BINARY): $(DL_DIR)/xmlrpc-$(XMLRPC_VERSION).tgz
 		$(MAKE) -j1 \
 	)
 
-$(XMLRPC_STAGING_LIB): $(XMLRPC_BINARY)
+$(XMLRPC_STAGING_LIBS): $(XMLRPC_BINARY)
 	$(SUBMAKE) -C $(XMLRPC_DIR) \
 		DESTDIR="$(TARGET_TOOLCHAIN_STAGING_DIR)" \
 		install
@@ -127,12 +130,12 @@ $(XMLRPC_STAGING_LIB): $(XMLRPC_BINARY)
 		-e 's|LIBINST_DIR="/usr/lib"|LIBINST_DIR="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib"|' \
 		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/xmlrpc-c-config
 
-$(XMLRPC_TARGET_LIB): $(XMLRPC_STAGING_LIB)
+$(XMLRPC_TARGET_LIBS): $($(PKG)_TARGET_LIBDIR)/lib%.so: $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/lib%.so
 	$(INSTALL_LIBRARY_STRIP)
 endif
 
 # Build libtorrent
-$(LIBTORRENT_BINARY): $(DL_DIR)/v$(LIBTORRENT_VERSION).tar.gz
+$(LIBTORRENT_BINARY): $(DL_DIR)/v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz
 	$(call UNPACK_TARBALL,$<,$(SOURCE_DIR))
 	(cd $(LIBTORRENT_DIR) && \
 		autoreconf -if && \
@@ -158,7 +161,7 @@ $(LIBTORRENT_TARGET_LIB): $(LIBTORRENT_STAGING_LIB)
 
 # Build rTorrent
 ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_DAEMON)),y)
-$(RTORRENT_DIR)/.configured: $(RTORRENT_DIR)/.unpacked $(LIBTORRENT_STAGING_LIB) $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_STAGING_LIB))
+$(RTORRENT_DIR)/.configured: $(RTORRENT_DIR)/.unpacked $(LIBTORRENT_STAGING_LIB) $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_STAGING_LIBS))
 	(cd $(RTORRENT_DIR) && \
 		$(TARGET_CONFIGURE_ENV) \
 		CPPFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
@@ -208,7 +211,7 @@ ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_STATIC)),y)
 $(pkg)-precompiled:
 else
 $(pkg)-precompiled: $(LIBTORRENT_TARGET_LIB)
-$(pkg)-precompiled: $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_TARGET_LIB))
+$(pkg)-precompiled: $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_TARGET_LIBS))
 endif
 
 $(pkg)-clean:

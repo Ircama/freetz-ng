@@ -6,7 +6,7 @@ $(PKG)_SITE:=http://pyyaml.org/download/libyaml/
 
 $(PKG)_BINARY:=$($(PKG)_DIR)/src/.libs/libyaml-0.so.$($(PKG)_LIB_VERSION)
 $(PKG)_STAGING_BINARY:=$(TARGET_TOOLCHAIN_STAGING_DIR)/lib/libyaml-0.so.$($(PKG)_LIB_VERSION)
-$(PKG)_TARGET_BINARY:=$($(PKG)_TARGET_DIR)/libyaml-0.so.$($(PKG)_LIB_VERSION)
+$(PKG)_TARGET_BINARY:=$($(PKG)_TARGET_LIBDIR)/libyaml-0.so.$($(PKG)_LIB_VERSION)
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)

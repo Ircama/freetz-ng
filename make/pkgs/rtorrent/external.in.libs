@@ -1,0 +1,79 @@
+config EXTERNAL_FREETZ_LIB_libtorrent
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libtorrent
+	bool "libtorrent"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libtorrent.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc
+	bool "libxmlrpc"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_server
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_server
+	bool "libxmlrpc_server"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_server.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_server_abyss
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_server_abyss
+	bool "libxmlrpc_server_abyss"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_server_abyss.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_server_cgi
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_server_cgi
+	bool "libxmlrpc_server_cgi"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_server_cgi.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_client
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_client
+	bool "libxmlrpc_client"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_client.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_abyss
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_abyss
+	bool "libxmlrpc_abyss"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_abyss.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_util
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_util
+	bool "libxmlrpc_util"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_util.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_xmlparse
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_xmlparse
+	bool "libxmlrpc_xmlparse"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_xmlparse.so*
+
+config EXTERNAL_FREETZ_LIB_libxmlrpc_xmltok
+	depends on EXTERNAL_ENABLED && FREETZ_LIB_libxmlrpc_xmltok
+	bool "libxmlrpc_xmltok"
+	default n
+	help
+		externals the following file(s):
+		 ${FREETZ_LIBRARY_DIR}/libxmlrpc_xmltok.so*

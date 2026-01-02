@@ -1,8 +1,11 @@
-[ "FREETZ_LIB_librrd_WITH_VERSION_ABANDON" == "y" ] && ELIBVER="2.0.15" || ELIBVER="8.3.0"
-
 [ "$EXTERNAL_FREETZ_PACKAGE_RRDTOOL" == "y" ] && EXTERNAL_FILES+=" /usr/bin/rrdtool-freetz"
 [ "$EXTERNAL_FREETZ_PACKAGE_RRDTOOL" == "y" -a "$FREETZ_LIB_librrd_WITH_VERSION_ABANDON" == "y" ] && EXTERNAL_FILES+=" /usr/share/rrdtool/fonts/DejaVuSansMono-Roman.ttf"
 
-[ "$EXTERNAL_FREETZ_LIB_librrd" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/librrd.so.$ELIBVER"
+if [ "$EXTERNAL_FREETZ_LIB_librrd" == "y" ]; then
+	LIBRRD_LIB=$(find "$FILESYSTEM_MOD_DIR/usr/lib/freetz" -maxdepth 1 -type f -name 'librrd.so.*.*' \
+		| grep -v '\.a$' | head -1)
+	[ -z "$LIBRRD_LIB" ] && echo "ERROR: librrd library not found in $FILESYSTEM_MOD_DIR/usr/lib/freetz" && exit 1
+	[ -n "$LIBRRD_LIB" ] && EXTERNAL_FILES+=" $(echo "$LIBRRD_LIB" | sed "s|^$FILESYSTEM_MOD_DIR||")"
+fi
 [ "$EXTERNAL_FREETZ_LIB_librrd_th" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/librrd_th.so.2.0.13"
 

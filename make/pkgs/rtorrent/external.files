@@ -1,8 +1,22 @@
 [ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_DAEMON" == "y" ] && EXTERNAL_FILES+=" /usr/bin/rtorrent"
-[ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_WEBUI" == "y" ] && EXTERNAL_FILES+=" /usr/share/rutorrent"
+[ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_WEBUI" == "y" ] && EXTERNAL_FILES+=" /usr/mww/rutorrent"
 
-# Include libraries if not static
-if [ "$EXTERNAL_FREETZ_PACKAGE_RTORRENT" == "y" -a "$FREETZ_PACKAGE_RTORRENT_STATIC" != "y" ]; then
-	[ "$FREETZ_PACKAGE_RTORRENT_DAEMON" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libtorrent.so.21.0.0"
-	[ "$FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libxmlrpc.so.3.51"
+# Include libraries based on EXTERNAL_FREETZ_LIB_* variables (not EXTERNAL_FREETZ_PACKAGE_RTORRENT)
+if [ "$EXTERNAL_FREETZ_LIB_libtorrent" == "y" ]; then
+	LIBTORRENT_LIB=$(find "$FILESYSTEM_MOD_DIR/usr/lib/freetz" -maxdepth 1 -type f -name 'libtorrent.so.*.*' \
+		| grep -v '\.a$' | head -1)
+	[ -z "$LIBTORRENT_LIB" ] && echo "ERROR: libtorrent library not found in $FILESYSTEM_MOD_DIR/usr/lib/freetz" && exit 1
+	[ -n "$LIBTORRENT_LIB" ] && EXTERNAL_FILES+=" $(echo "$LIBTORRENT_LIB" | sed "s|^$FILESYSTEM_MOD_DIR||")"
+fi
+
+if [ "$EXTERNAL_FREETZ_LIB_libxmlrpc" == "y" ]; then
+	# xmlrpc-c has multiple libraries - find and add them all
+	for xmlrpc_lib in $(find "$FILESYSTEM_MOD_DIR/usr/lib/freetz" -maxdepth 1 -type f -name 'libxmlrpc*.so.*.*' | grep -v '\.a$' | sort); do
+		[ -n "$xmlrpc_lib" ] && EXTERNAL_FILES+=" $(echo "$xmlrpc_lib" | sed "s|^$FILESYSTEM_MOD_DIR||")"
+	done
+	# Check if at least one library was found
+	if ! echo "$EXTERNAL_FILES" | grep -q "libxmlrpc"; then
+		echo "ERROR: No libxmlrpc libraries found in $FILESYSTEM_MOD_DIR/usr/lib/freetz"
+		exit 1
+	fi
 fi

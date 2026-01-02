@@ -1,11 +1,17 @@
 menuconfig FREETZ_PACKAGE_RTORRENT
 	bool "rTorrent/ruTorrent"
 	default n
-	select FREETZ_LIB_libcurl      if !FREETZ_PACKAGE_RTORRENT_STATIC
-	select FREETZ_LIB_libcrypto    if !FREETZ_PACKAGE_RTORRENT_STATIC
-	select FREETZ_LIB_libssl       if !FREETZ_PACKAGE_RTORRENT_STATIC
-	select FREETZ_LIB_libxml2      if !FREETZ_PACKAGE_RTORRENT_STATIC
-	select FREETZ_LIB_libncursesw  if !FREETZ_PACKAGE_RTORRENT_STATIC
+	select FREETZ_LIB_libtorrent              if !FREETZ_PACKAGE_RTORRENT_STATIC
+	select FREETZ_LIB_libxmlrpc               if !FREETZ_PACKAGE_RTORRENT_STATIC && FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC
+	select FREETZ_LIB_libxmlrpc_server        if !FREETZ_PACKAGE_RTORRENT_STATIC && FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC
+	select FREETZ_LIB_libxmlrpc_util          if !FREETZ_PACKAGE_RTORRENT_STATIC && FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC
+	select FREETZ_LIB_libxmlrpc_xmlparse      if !FREETZ_PACKAGE_RTORRENT_STATIC && FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC
+	select FREETZ_LIB_libxmlrpc_xmltok        if !FREETZ_PACKAGE_RTORRENT_STATIC && FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC
+	select FREETZ_LIB_libcurl                 if !FREETZ_PACKAGE_RTORRENT_STATIC
+	select FREETZ_LIB_libcrypto               if !FREETZ_PACKAGE_RTORRENT_STATIC
+	select FREETZ_LIB_libssl                  if !FREETZ_PACKAGE_RTORRENT_STATIC
+	select FREETZ_LIB_libxml2                 if !FREETZ_PACKAGE_RTORRENT_STATIC
+	select FREETZ_LIB_libncursesw             if !FREETZ_PACKAGE_RTORRENT_STATIC
 	select FREETZ_LIB_libz         if !FREETZ_PACKAGE_RTORRENT_STATIC
 	help
 		rTorrent is a console-based BitTorrent client.
@@ -31,12 +37,15 @@ if FREETZ_PACKAGE_RTORRENT
 		select FREETZ_PACKAGE_PHP_WITH_CURL
 		select FREETZ_PACKAGE_PHP_WITH_JSON
 		select FREETZ_PACKAGE_PHP_WITH_XML
-		select FREETZ_PACKAGE_LIGHTTPD if !FREETZ_PACKAGE_APACHE2
 		help
-			Installs ruTorrent, the web-based front-end for rTorrent.
-			Version: 5.2.10-hotfix
+			Installs ruTorrent web interface to /usr/mww/rutorrent.
+			Version: 5.2.10
 			
-			Requires a web server (lighttpd or apache2) and PHP.
+			Served by httpd-webcfg on port 81 at http://fritzbox:81/rutorrent/
+			Requires PHP-CGI support (automatically configured).
+			
+			Configure SCGI socket in conf/config.php:
+			$scgi_host = 'unix:///var/media/ftp/FRITZBOX/rtorrent/rpc.socket';
 
 	config FREETZ_PACKAGE_RTORRENT_STATIC
 		bool "Link statically"
