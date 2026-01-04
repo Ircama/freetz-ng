@@ -33,19 +33,25 @@ if FREETZ_PACKAGE_RTORRENT
 		bool "ruTorrent web interface"
 		default y
 		depends on FREETZ_PACKAGE_RTORRENT_DAEMON
+		select FREETZ_PACKAGE_RTORRENT_CGI
 		select FREETZ_PACKAGE_PHP
+		select FREETZ_PACKAGE_PHP_cgi
 		select FREETZ_PACKAGE_PHP_WITH_CURL
-		select FREETZ_PACKAGE_PHP_WITH_JSON
-		select FREETZ_PACKAGE_PHP_WITH_XML
+		select FREETZ_PACKAGE_PHP_WITH_LIBXML
+		select FREETZ_PACKAGE_PHP_WITH_SESSION
+		select FREETZ_PACKAGE_PHP_WITH_MBSTRING
+		select FREETZ_PACKAGE_P7ZIP if FREETZ_PACKAGE_RTORRENT_WEBUI
 		help
 			Installs ruTorrent web interface to /usr/mww/rutorrent.
 			Version: 5.2.10
 			
 			Served by httpd-webcfg on port 81 at http://fritzbox:81/rutorrent/
 			Requires PHP-CGI support (automatically configured).
+			JSON support is built-in by default in PHP 8.x.
+			MBSTRING extension is required for proper character encoding.
+			P7ZIP is required for archive management in the filemanager plugin.
 			
-			Configure SCGI socket in conf/config.php:
-			$scgi_host = 'unix:///var/media/ftp/FRITZBOX/rtorrent/rpc.socket';
+			Configure rTorrent via: http://fritz.box:81/cgi-bin/conf/rtorrent
 
 	config FREETZ_PACKAGE_RTORRENT_STATIC
 		bool "Link statically"
@@ -69,5 +75,14 @@ if FREETZ_PACKAGE_RTORRENT
 		help
 			Enables XMLRPC interface for remote control.
 			Required for ruTorrent web interface.
+
+	config FREETZ_PACKAGE_RTORRENT_SELECT_CGI
+		bool "Select rTorrent CGI"
+		select FREETZ_PACKAGE_RTORRENT_CGI
+		select FREETZ_PACKAGE_RTORRENT_DAEMON
+		default y
+		help
+			Configuration web interface for Freetz at http://fritz.box:81/cgi-bin/conf/rtorrent
+			Allows to configure rTorrent daemon settings, directories, bandwidth, and SCGI socket.
 
 endif # FREETZ_PACKAGE_RTORRENT

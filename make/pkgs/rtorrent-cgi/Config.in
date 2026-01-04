@@ -1,0 +1,17 @@
+config FREETZ_PACKAGE_RTORRENT_CGI
+	bool "rTorrent CGI"
+	depends on FREETZ_PACKAGE_RTORRENT_DAEMON
+	select FREETZ_BUSYBOX_START_STOP_DAEMON
+	default y if FREETZ_PACKAGE_RTORRENT_DAEMON
+	help
+		Provides a configuration interface for rTorrent daemon.
+		
+		Access the configuration at http://fritz.box:81/cgi-bin/conf/rtorrent
+		
+		Features:
+		- Start/Stop/Restart daemon control
+		- Automatic startup configuration
+		- Working directories setup (downloads, session, watch)
+		- Peer settings (ports, encryption, DHT, PEX)
+		- SCGI/RPC settings for ruTorrent integration
+		- Logging configuration

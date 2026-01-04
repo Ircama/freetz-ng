@@ -1,6 +1,6 @@
-$(call PKG_INIT_BIN, 0.16.5)
+$(call PKG_INIT_BIN, 0.16.6)
 $(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.gz
-$(PKG)_HASH:=62ebd7662d02bdff005bc29a4b3385238e703bbe2b0c845ea7ae1ffaf9cb66c8
+$(PKG)_HASH:=94e8408a20332cedea45a4b5f09c69f0f0c54581e1b02e1d7f61f46fee3c41f2
 $(PKG)_SITE:=https://github.com/rakshasa/rtorrent/releases/download/v$($(PKG)_VERSION)
 ### WEBSITE:=https://github.com/rakshasa/rtorrent
 ### MANPAGE:=https://github.com/rakshasa/rtorrent/wiki
@@ -10,9 +10,9 @@ $(PKG)_SITE:=https://github.com/rakshasa/rtorrent/releases/download/v$($(PKG)_VE
 
 # libTorrent by rakshasa
 # (distinct from libtorrent-rasterbar used by qBittorrent/Deluge)
-LIBTORRENT_RAKSHASA_VERSION:=0.16.5
+LIBTORRENT_RAKSHASA_VERSION:=0.16.6
 LIBTORRENT_SOURCE:=v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz
-LIBTORRENT_HASH:=fdd94681b92d8a5bc6077bb54d8c6529fe8bfa700af9ec118e0292c8200dbcb3
+LIBTORRENT_HASH:=720ff411ef0627a928141cad7f60b171a2fc44fb8700b0914e0072eab1a7be1b
 LIBTORRENT_SITE:=https://github.com/rakshasa/libtorrent/archive/refs/tags
 LIBTORRENT_DIR:=$(SOURCE_DIR)/libtorrent-$(LIBTORRENT_RAKSHASA_VERSION)
 
@@ -26,7 +26,7 @@ XMLRPC_DIR:=$(SOURCE_DIR)/xmlrpc-$(XMLRPC_VERSION)
 # ruTorrent
 RUTORRENT_VERSION:=5.2.10
 RUTORRENT_SOURCE:=v$(RUTORRENT_VERSION).tar.gz
-RUTORRENT_HASH:=skip
+RUTORRENT_HASH:=a3e57be03f965abcf2ed17125b61ee2bd55a1223fe9226fa1978f3002a93427d
 RUTORRENT_SITE:=https://github.com/Novik/ruTorrent/archive/refs/tags
 RUTORRENT_DIR:=$(SOURCE_DIR)/ruTorrent-$(RUTORRENT_VERSION)
 
@@ -185,15 +185,22 @@ endif
 # Install ruTorrent
 ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_WEBUI)),y)
 $(RTORRENT_RUTORRENT_WEBDIR)/.installed: $(DL_DIR)/v$(RUTORRENT_VERSION).tar.gz
-	$(call UNPACK_TARBALL,$<,$(SOURCE_DIR))
+	$(call UNPACK_TARBALL,$(DL_DIR)/v$(RUTORRENT_VERSION).tar.gz,$(SOURCE_DIR))
 	mkdir -p $(RTORRENT_RUTORRENT_WEBDIR)
-	# Copy all ruTorrent files including plugins
+	# Copy all ruTorrent files including ALL plugins
 	cp -a $(RUTORRENT_DIR)/* $(RTORRENT_RUTORRENT_WEBDIR)/
+	# Override settings.php with rTorrent 0.16+ compatible version (removes obsolete to_kb test)
+	cp $(RTORRENT_MAKE_DIR)/files/rutorrent/settings.php $(RTORRENT_RUTORRENT_WEBDIR)/php/settings.php
 	# Remove unnecessary files
 	$(RM) -rf $(RTORRENT_RUTORRENT_WEBDIR)/.git*
 	$(RM) -rf $(RTORRENT_RUTORRENT_WEBDIR)/.github
 	$(RM) -f $(RTORRENT_RUTORRENT_WEBDIR)/.gitignore
 	$(RM) -f $(RTORRENT_RUTORRENT_WEBDIR)/.gitattributes
+	# Note: All plugins are enabled by default. Users can disable problematic ones from Settings → Plugins
+	# Add include of freetz_config.php to config.php for dynamic SCGI socket configuration
+	# Insert after the opening <?php tag and initial comment block
+	sed -i '/^<\?php$$/a// Freetz-NG dynamic SCGI configuration\nrequire_once(__DIR__ . "/freetz_config.php");\n' \
+		$(RTORRENT_RUTORRENT_WEBDIR)/conf/config.php
 	# Verify plugins directory exists
 	@if [ ! -d "$(RTORRENT_RUTORRENT_WEBDIR)/plugins" ]; then \
 		echo "ERROR: ruTorrent plugins directory not found!"; \
@@ -222,7 +229,8 @@ $(pkg)-clean:
 		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libtorrent* \
 		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libxmlrpc* \
 		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/torrent \
-		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/libtorrent.pc
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig/libtorrent.pc \
+		$(RUTORRENT_DIR)
 
 $(pkg)-uninstall:
 	$(RM) $(RTORRENT_BINARY_TARGET)
