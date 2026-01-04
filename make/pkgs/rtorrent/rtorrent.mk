@@ -56,7 +56,7 @@ $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_RTORRENT_WEBUI
 $(PKG)_CONFIGURE_OPTIONS += --host=$(GNU_TARGET_NAME)
 $(PKG)_CONFIGURE_OPTIONS += --build=$(GNU_HOST_NAME)
 $(PKG)_CONFIGURE_OPTIONS += --prefix=/usr
-$(PKG)_CONFIGURE_OPTIONS += --with-xmlrpc-c
+$(PKG)_CONFIGURE_OPTIONS += --with-ncurses
 $(PKG)_CONFIGURE_OPTIONS += --enable-static=$(if $(FREETZ_PACKAGE_RTORRENT_STATIC),yes,no)
 $(PKG)_CONFIGURE_OPTIONS += --enable-shared=$(if $(FREETZ_PACKAGE_RTORRENT_STATIC),no,yes)
 $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_RTORRENT_WITH_IPV6),--enable-ipv6,--disable-ipv6)
@@ -64,12 +64,10 @@ $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_RTORRENT_WITH_IPV6),--enable-i
 LIBTORRENT_CONFIGURE_OPTIONS := --host=$(GNU_TARGET_NAME)
 LIBTORRENT_CONFIGURE_OPTIONS += --build=$(GNU_HOST_NAME)
 LIBTORRENT_CONFIGURE_OPTIONS += --prefix=/usr
-LIBTORRENT_CONFIGURE_OPTIONS += --with-zlib=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr
-LIBTORRENT_CONFIGURE_OPTIONS += --enable-static
-LIBTORRENT_CONFIGURE_OPTIONS += --enable-shared
+LIBTORRENT_CONFIGURE_OPTIONS += --enable-static=$(if $(FREETZ_PACKAGE_RTORRENT_STATIC),yes,no)
+LIBTORRENT_CONFIGURE_OPTIONS += --enable-shared=$(if $(FREETZ_PACKAGE_RTORRENT_STATIC),no,yes)
 LIBTORRENT_CONFIGURE_OPTIONS += --disable-instrumentation
 LIBTORRENT_CONFIGURE_OPTIONS += --enable-aligned
-LIBTORRENT_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_RTORRENT_WITH_IPV6),--enable-ipv6,--disable-ipv6)
 
 XMLRPC_CONFIGURE_OPTIONS := --host=$(GNU_TARGET_NAME)
 XMLRPC_CONFIGURE_OPTIONS += --build=$(GNU_HOST_NAME)
@@ -77,6 +75,13 @@ XMLRPC_CONFIGURE_OPTIONS += --prefix=/usr
 XMLRPC_CONFIGURE_OPTIONS += --disable-libxml2-backend
 XMLRPC_CONFIGURE_OPTIONS += --disable-wininet-client
 XMLRPC_CONFIGURE_OPTIONS += --disable-cplusplus
+
+# Intermediate variables to avoid double expansion in shell commands
+RTORRENT_PKG_DIR := $($(PKG)_DIR)
+RTORRENT_PKG_CONFIGURE_OPTIONS := $($(PKG)_CONFIGURE_OPTIONS)
+RTORRENT_PKG_RUTORRENT_WEBDIR := $($(PKG)_RUTORRENT_WEBDIR)
+RTORRENT_PKG_MAKE_DIR := $($(PKG)_MAKE_DIR)
+RTORRENT_PKG_DEST_DIR := $($(PKG)_DEST_DIR)
 
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
@@ -97,7 +102,8 @@ endif
 ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC)),y)
 $(XMLRPC_BINARY): $(DL_DIR)/xmlrpc-$(XMLRPC_VERSION).tgz
 	$(call UNPACK_TARBALL,$<,$(SOURCE_DIR))
-	# Build gennmtab for host
+	# Build gennmtab for host (used during cross-compilation of xmlrpc-c)
+	@echo ">>> Building host gennmtab in $(XMLRPC_DIR)"
 	(cd $(XMLRPC_DIR) && \
 		./configure \
 			--prefix=/usr \
@@ -110,6 +116,7 @@ $(XMLRPC_BINARY): $(DL_DIR)/xmlrpc-$(XMLRPC_VERSION).tgz
 		cp lib/expat/gennmtab/gennmtab tools/gennmtab-host \
 	)
 	# Cross-compile with host gennmtab
+	@echo ">>> Building xmlrpc-c in $(XMLRPC_DIR)"
 	(cd $(XMLRPC_DIR) && \
 		$(TARGET_CONFIGURE_ENV) \
 		AR="$(TARGET_AR)" \
@@ -137,6 +144,7 @@ endif
 # Build libtorrent
 $(LIBTORRENT_BINARY): $(DL_DIR)/v$(LIBTORRENT_RAKSHASA_VERSION).tar.gz
 	$(call UNPACK_TARBALL,$<,$(SOURCE_DIR))
+	@echo ">>> Building libtorrent in $(LIBTORRENT_DIR)"
 	(cd $(LIBTORRENT_DIR) && \
 		autoreconf -if && \
 		$(TARGET_CONFIGURE_ENV) \
@@ -161,9 +169,13 @@ $(LIBTORRENT_TARGET_LIB): $(LIBTORRENT_STAGING_LIB)
 
 # Build rTorrent
 ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_DAEMON)),y)
-$(RTORRENT_DIR)/.configured: $(RTORRENT_DIR)/.unpacked $(LIBTORRENT_STAGING_LIB) $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_STAGING_LIBS))
-	(cd $(RTORRENT_DIR) && \
+$($(PKG)_DIR)/.configured: $($(PKG)_DIR)/.unpacked $(LIBTORRENT_STAGING_LIB) $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_STAGING_LIBS))
+	@echo ">>> Building rTorrent in $(RTORRENT_PKG_DIR)"
+	(cd $(RTORRENT_PKG_DIR) && \
+		autoreconf -if && \
 		$(TARGET_CONFIGURE_ENV) \
+		AR="$(TARGET_AR)" \
+		RANLIB="$(TARGET_RANLIB)" \
 		CPPFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
 		CFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
 		CXXFLAGS="-I$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include" \
@@ -171,38 +183,38 @@ $(RTORRENT_DIR)/.configured: $(RTORRENT_DIR)/.unpacked $(LIBTORRENT_STAGING_LIB)
 		PKG_CONFIG_PATH="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/pkgconfig" \
 		XMLRPC_C_CONFIG="$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/bin/xmlrpc-c-config" \
 		./configure \
-			$(RTORRENT_CONFIGURE_OPTIONS) \
+			$(RTORRENT_PKG_CONFIGURE_OPTIONS) \
 	)
 	touch $@
 
-$(RTORRENT_BINARY): $(RTORRENT_DIR)/.configured
-	$(SUBMAKE) -C $(RTORRENT_DIR)
+$($(PKG)_BINARY): $($(PKG)_DIR)/.configured
+	$(SUBMAKE) -C $(RTORRENT_PKG_DIR)
 
-$(RTORRENT_BINARY_TARGET): $(RTORRENT_BINARY)
+$($(PKG)_BINARY_TARGET): $($(PKG)_BINARY)
 	$(INSTALL_BINARY_STRIP)
 endif
 
 # Install ruTorrent
 ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_WEBUI)),y)
-$(RTORRENT_RUTORRENT_WEBDIR)/.installed: $(DL_DIR)/v$(RUTORRENT_VERSION).tar.gz
+$($(PKG)_RUTORRENT_WEBDIR)/.installed: $(DL_DIR)/v$(RUTORRENT_VERSION).tar.gz
 	$(call UNPACK_TARBALL,$(DL_DIR)/v$(RUTORRENT_VERSION).tar.gz,$(SOURCE_DIR))
-	mkdir -p $(RTORRENT_RUTORRENT_WEBDIR)
+	mkdir -p $(RTORRENT_PKG_RUTORRENT_WEBDIR)
 	# Copy all ruTorrent files including ALL plugins
-	cp -a $(RUTORRENT_DIR)/* $(RTORRENT_RUTORRENT_WEBDIR)/
+	cp -a $(RUTORRENT_DIR)/* $(RTORRENT_PKG_RUTORRENT_WEBDIR)/
 	# Override settings.php with rTorrent 0.16+ compatible version (removes obsolete to_kb test)
-	cp $(RTORRENT_MAKE_DIR)/files/rutorrent/settings.php $(RTORRENT_RUTORRENT_WEBDIR)/php/settings.php
+	cp $(RTORRENT_PKG_MAKE_DIR)/files/rutorrent/settings.php $(RTORRENT_PKG_RUTORRENT_WEBDIR)/php/settings.php
 	# Remove unnecessary files
-	$(RM) -rf $(RTORRENT_RUTORRENT_WEBDIR)/.git*
-	$(RM) -rf $(RTORRENT_RUTORRENT_WEBDIR)/.github
-	$(RM) -f $(RTORRENT_RUTORRENT_WEBDIR)/.gitignore
-	$(RM) -f $(RTORRENT_RUTORRENT_WEBDIR)/.gitattributes
+	$(RM) -rf $(RTORRENT_PKG_RUTORRENT_WEBDIR)/.git*
+	$(RM) -rf $(RTORRENT_PKG_RUTORRENT_WEBDIR)/.github
+	$(RM) -f $(RTORRENT_PKG_RUTORRENT_WEBDIR)/.gitignore
+	$(RM) -f $(RTORRENT_PKG_RUTORRENT_WEBDIR)/.gitattributes
 	# Note: All plugins are enabled by default. Users can disable problematic ones from Settings → Plugins
 	# Add include of freetz_config.php to config.php for dynamic SCGI socket configuration
 	# Insert after the opening <?php tag and initial comment block
 	sed -i '/^<\?php$$/a// Freetz-NG dynamic SCGI configuration\nrequire_once(__DIR__ . "/freetz_config.php");\n' \
-		$(RTORRENT_RUTORRENT_WEBDIR)/conf/config.php
+		$(RTORRENT_PKG_RUTORRENT_WEBDIR)/conf/config.php
 	# Verify plugins directory exists
-	@if [ ! -d "$(RTORRENT_RUTORRENT_WEBDIR)/plugins" ]; then \
+	@if [ ! -d "$(RTORRENT_PKG_RUTORRENT_WEBDIR)/plugins" ]; then \
 		echo "ERROR: ruTorrent plugins directory not found!"; \
 		exit 1; \
 	fi
@@ -211,20 +223,26 @@ endif
 
 $(pkg):
 
-$(pkg)-precompiled: $(if $(FREETZ_PACKAGE_RTORRENT_DAEMON),$(RTORRENT_BINARY_TARGET))
-$(pkg)-precompiled: $(if $(FREETZ_PACKAGE_RTORRENT_WEBUI),$(RTORRENT_RUTORRENT_WEBDIR)/.installed)
+$(pkg)-precompiled: \
+	$(if $(FREETZ_PACKAGE_RTORRENT_DAEMON),$($(PKG)_BINARY_TARGET)) \
+	$(if $(FREETZ_PACKAGE_RTORRENT_WEBUI),$($(PKG)_RUTORRENT_WEBDIR)/.installed) \
+	$(if $(FREETZ_PACKAGE_RTORRENT_STATIC),,$(LIBTORRENT_TARGET_LIB)) \
+	$(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(if $(FREETZ_PACKAGE_RTORRENT_STATIC),,$(XMLRPC_TARGET_LIBS))) \
+	$(if $(FREETZ_PACKAGE_RTORRENT_DAEMON),$($(PKG)_DEST_DIR)/root/.rtorrent.rc)
 
-ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_STATIC)),y)
-$(pkg)-precompiled:
-else
-$(pkg)-precompiled: $(LIBTORRENT_TARGET_LIB)
-$(pkg)-precompiled: $(if $(FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC),$(XMLRPC_TARGET_LIBS))
+# Install rtorrent configuration template with dynamic storage path
+ifeq ($(strip $(FREETZ_PACKAGE_RTORRENT_DAEMON)),y)
+$($(PKG)_DEST_DIR)/root/.rtorrent.rc: $($(PKG)_MAKE_DIR)/files/root/.rtorrent.rc
+	$(INSTALL_FILE)
+	# Replace @MOD_STOR_PREFIX@ with configured storage prefix (default: uStor)
+	sed -i 's/@MOD_STOR_PREFIX@/$(or $(FREETZ_MOD_STOR_PREFIX),uStor)/g' \
+		$(RTORRENT_PKG_DEST_DIR)/root/.rtorrent.rc
 endif
 
 $(pkg)-clean:
 	-$(SUBMAKE) -C $(LIBTORRENT_DIR) clean
 	-$(SUBMAKE) -C $(XMLRPC_DIR) clean
-	-$(SUBMAKE) -C $(RTORRENT_DIR) clean
+	-$(SUBMAKE) -C $(RTORRENT_PKG_DIR) clean
 	$(RM) -rf \
 		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libtorrent* \
 		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libxmlrpc* \
@@ -233,8 +251,8 @@ $(pkg)-clean:
 		$(RUTORRENT_DIR)
 
 $(pkg)-uninstall:
-	$(RM) $(RTORRENT_BINARY_TARGET)
-	$(RM) -r $(RTORRENT_RUTORRENT_WEBDIR)
+	$(RM) $($(PKG)_BINARY_TARGET)
+	$(RM) -r $($(PKG)_RUTORRENT_WEBDIR)
 	$(RM) $(LIBTORRENT_TARGET_LIB) $(XMLRPC_TARGET_LIB)
 
 $(PKG_FINISH)
