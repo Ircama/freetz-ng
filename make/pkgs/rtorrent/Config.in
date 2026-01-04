@@ -22,6 +22,8 @@ menuconfig FREETZ_PACKAGE_RTORRENT
 
 if FREETZ_PACKAGE_RTORRENT
 
+	comment "NOTE: For ruTorrent Web UI, enable PHP or PHP5 in 'Packages -> Web interface & server' first"
+
 	config FREETZ_PACKAGE_RTORRENT_DAEMON
 		bool "rTorrent daemon"
 		default y
@@ -33,24 +35,32 @@ if FREETZ_PACKAGE_RTORRENT
 		bool "ruTorrent web interface"
 		default y
 		depends on FREETZ_PACKAGE_RTORRENT_DAEMON
+		depends on FREETZ_PACKAGE_PHP || FREETZ_PACKAGE_PHP5
+		select FREETZ_PACKAGE_RTORRENT_WITH_XMLRPC
 		select FREETZ_PACKAGE_RTORRENT_CGI
-		select FREETZ_PACKAGE_PHP
-		select FREETZ_PACKAGE_PHP_cgi
-		select FREETZ_PACKAGE_PHP_WITH_CURL
-		select FREETZ_PACKAGE_PHP_WITH_LIBXML
-		select FREETZ_PACKAGE_PHP_WITH_SESSION
-		select FREETZ_PACKAGE_PHP_WITH_MBSTRING
-		select FREETZ_PACKAGE_P7ZIP if FREETZ_PACKAGE_RTORRENT_WEBUI
 		help
 			Installs ruTorrent web interface to /usr/mww/rutorrent.
 			Version: 5.2.10
 			
-			Served by httpd-webcfg on port 81 at http://fritzbox:81/rutorrent/
-			Requires PHP-CGI support (automatically configured).
-			JSON support is built-in by default in PHP 8.x.
-			MBSTRING extension is required for proper character encoding.
-			P7ZIP is required for archive management in the filemanager plugin.
+			*** IMPORTANT: Enable PHP or PHP5 package first before selecting this option ***
 			
+			This option requires either PHP (8.x) or PHP5 (5.6.40) to be enabled.
+			If this option is not available, go to "Packages -> Web interface & server"
+			and select either "PHP" or "PHP5" first.
+			
+			Required PHP extensions (configure in PHP menu):
+			- CGI support
+			- CURL
+			- LIBXML
+			- SESSION
+			- MBSTRING
+			- JSON (built-in PHP 8.x, extension in PHP 5.6)
+			
+			Additional requirements:
+			- P7ZIP (optional, for archive management)
+			- XMLRPC support (automatically enabled)
+			
+			Served by httpd-webcfg on port 81 at http://fritzbox:81/rutorrent/
 			Configure rTorrent via: http://fritz.box:81/cgi-bin/conf/rtorrent
 
 	config FREETZ_PACKAGE_RTORRENT_STATIC
