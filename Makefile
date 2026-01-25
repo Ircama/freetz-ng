@@ -659,7 +659,7 @@ common-cacheclean:
 	[ ! -x .fwmod_custom ] || ./.fwmod_custom clean
 	./fwmod_custom clean
 	$(RM) make/pkgs/Config.in.generated make/pkgs/external.in.generated
-	$(RM) .config.compressed .config.old  .config.*.tmp
+	$(RM) .config.compressed .config.old .config.*.tmp
 	$(RM) .packages .exclude-release-tmp $(CONFIG_IN_CACHE)
 	$(RM) $(DL_FW_DIR)/*.detected.image $(DL_FW_DIR)/*.detected.image.url
 	$(RM) -r $(BUILD_DIR)

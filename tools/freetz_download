@@ -353,6 +353,7 @@ enumerate_mirrors_official() {
 #				sites[${#sites[@]}]=https://download.avm.de/inhaus/GoFiber23NL1/$subpath
 #				sites[${#sites[@]}]=https://download.avm.de/inhaus/GoFiber23/$subpath
 #				sites[${#sites[@]}]=https://download.avm.de/inhaus/FCS23/$subpath
+#				sites[${#sites[@]}]=https://download.avm.de/inhaus/MOVE21NL3WU25/$subpath
 #				sites[${#sites[@]}]=https://download.avm.de/inhaus/MOVE21NL1/$subpath
 #				sites[${#sites[@]}]=https://download.avm.de/inhaus/MOVE21/$subpath
 #				sites[${#sites[@]}]=https://download.avm.de/inhaus/WU22PSQ19/$subpath

@@ -1,7 +1,7 @@
-$(call PKG_INIT_BIN, 9.1.1275)
+$(call PKG_INIT_BIN, 9.1.1952)
 $(PKG)_SOURCE_DOWNLOAD_NAME:=v$($(PKG)_VERSION).tar.gz
 $(PKG)_SOURCE:=$(pkg)-$($(PKG)_VERSION).tar.gz
-$(PKG)_HASH:=cf5a77f2bc51ac67d747f8b309b42811322d6e0103d838ee29a5f60c03cd9b2d
+$(PKG)_HASH:=86c973528c5c33772d2969c13931d6abe137ab111ad53f0c6cdc97721895715a
 $(PKG)_SITE:=https://github.com/vim/vim/archive/refs/tags
 ### WEBSITE:=https://www.vim.org/
 ### MANPAGE:=https://www.vim.org/docs.php
@@ -32,9 +32,24 @@ $(PKG)_CONFIGURE_OPTIONS += --with-features=$(if $(FREETZ_PACKAGE_VIM_HUGE),huge
 $(PKG)_CONFIGURE_OPTIONS += --disable-gui
 $(PKG)_CONFIGURE_OPTIONS += --disable-gtktest
 $(PKG)_CONFIGURE_OPTIONS += --disable-xim
-$(PKG)_CONFIGURE_OPTIONS += --without-x
 $(PKG)_CONFIGURE_OPTIONS += --disable-netbeans
+$(PKG)_CONFIGURE_OPTIONS += --disable-cscope
 $(PKG)_CONFIGURE_OPTIONS += --disable-gpm
+$(PKG)_CONFIGURE_OPTIONS += --disable-acl
+$(PKG)_CONFIGURE_OPTIONS += --disable-libsodium
+$(PKG)_CONFIGURE_OPTIONS += --disable-selinux
+$(PKG)_CONFIGURE_OPTIONS += --disable-canberra
+$(PKG)_CONFIGURE_OPTIONS += --disable-nls
+$(PKG)_CONFIGURE_OPTIONS += --disable-darwin
+$(PKG)_CONFIGURE_OPTIONS += --disable-xsmp
+$(PKG)_CONFIGURE_OPTIONS += --disable-channel
+$(PKG)_CONFIGURE_OPTIONS += --disable-rightleft
+$(PKG)_CONFIGURE_OPTIONS += --disable-arabic
+$(PKG)_CONFIGURE_OPTIONS += --disable-farsi
+$(PKG)_CONFIGURE_OPTIONS += --without-wayland
+$(PKG)_CONFIGURE_OPTIONS += --without-luajit
+$(PKG)_CONFIGURE_OPTIONS += --without-x
+$(PKG)_CONFIGURE_OPTIONS += --without-gnome
 $(PKG)_CONFIGURE_OPTIONS += --with-tlib=ncurses
 
 

@@ -8,7 +8,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[ACME.sh 3.1.2](acme.md)<a id='acme'></a>**<br>
     A pure Unix shell script implementing ACME client protocol.
 
-  * **[Apache2 2.4.65 (binary only)](apache2.md)<a id='apache2'></a>**<br>
+  * **[Apache2 2.4.66 (binary only)](apache2.md)<a id='apache2'></a>**<br>
     The Apache httpd server
 
   * **<u>asterisk-chan-capi: chan_capi: ISDN API 2.0 module for asterisk - DEPRECATED</u><a id='asterisk-chan-capi'></a>**<br>
@@ -48,7 +48,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>bfusb: AVM BlueFRITZ! USB stick support (binary only)</u><a id='bfusb'></a>**<br>
     This package adds support for the AVM BlueFRITZ! USB stick.
 
-  * **[BIND 9.11.37/9.20.15](bind.md)<a id='bind'></a>**<br>
+  * **[BIND 9.11.37/9.20.17](bind.md)<a id='bind'></a>**<br>
     BIND is a suite of software for interacting with the Domain Name System (DNS). The name BIND stands for "Berkeley Internet Name Daemon".
 
   * **[Bip 0.9.2 - DEPRECATED](bip.md)<a id='bip'></a>**<br>
@@ -113,7 +113,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[Ctorrent dnh3.3.2 (binary only) - DEPRECATED](ctorrent.md)<a id='ctorrent'></a>**<br>
     CTorrent is a BitTorrent client written in the C programming language, known to be a very robust and mature programming language, which produces fast and optimized application.
 
-  * **[Curl 8.12.1/8.17.0 (binary only)](curl.md)<a id='curl'></a>**<br>
+  * **[Curl 8.12.1/8.18.0 (binary only)](curl.md)<a id='curl'></a>**<br>
     Curl is a command line tool for transferring files with URL syntax, supporting FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE and LDAP. Curl supports HTTPS certificates, HTTP POST, HTTP PUT, FTP uploading, kerberos, HTTP form based upload, proxies, cookies, user+password authentication, file transfer resume, http proxy tunneling and a busload of other useful tricks.
 
   * **<u>CurlFtpFS 0.9.2 - DEPRECATED</u><a id='curlftpfs'></a>**<br>
@@ -151,13 +151,13 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[dns2tcp 0.5.2 - DEPRECATED](dns2tcp.md)<a id='dns2tcp'></a>**<br>
     Dns2tcp is a network tool designed to relay TCP connections through DNS traffic. Encapsulation is done on the TCP level, thus no specific driver is needed (i.e: TUN/TAP).
 
-  * **[Dnsmasq 2.80/2.91](dnsmasq.md)<a id='dnsmasq'></a>**<br>
+  * **[Dnsmasq 2.80/2.92](dnsmasq.md)<a id='dnsmasq'></a>**<br>
     Combined DHCP, DNS and TFTP server.
 
   * **<u>dosfstools 3.0.28 (binary only) - DEPRECATED</u><a id='dosfstools'></a>**<br>
     utilities to create, check and label MS-DOS FAT filesystems
 
-  * **[Dropbear 2025.88](dropbear.md)<a id='dropbear'></a>**<br>
+  * **[Dropbear 2025.89](dropbear.md)<a id='dropbear'></a>**<br>
     Dropbear SSH server and client Dropbear is a relatively small SSH 2 server and client. It runs on a variety of POSIX-based platforms. Dropbear is open source software, distributed under a MIT-style license. Dropbear is particularly useful for "embedded"-type Linux (or other Unix) systems, such as wireless routers. Features - A small memory footprint suitable for memory-constrained environments - Dropbear can compile to a 110kB statically linked binary with uClibc on x86 (only minimal options selected) - Dropbear server implements X11 forwarding, and authentication-agent forwarding for OpenSSH clients - Can run from inetd or standalone - Compatible with OpenSSH ~/.ssh/authorized_keys public key authentication - The server, client, keygen, and key converter can be compiled into a single binary (a la busybox) - Features can easily be disabled when compiling to save space TCP forwarding support
 
   * **[dtach 0.9 (binary only)](dtach.md)<a id='dtach'></a>**<br>
@@ -290,7 +290,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[IGMPproxy 0.4](igmpproxy.md)<a id='igmpproxy'></a>**<br>
     IGMPproxy is a simple dynamic Multicast Routing Daemon using only IGMP signalling. It's intended for simple forwarding of Multicast traffic between networks.
 
-  * **[ImageMagick 7.1.0-62/7.1.2-2 (binary only)](imagemagick.md)<a id='imagemagick'></a>**<br>
+  * **[ImageMagick 7.1.0-62/7.1.2-12 (binary only)](imagemagick.md)<a id='imagemagick'></a>**<br>
     ImageMagick is a robust collection of tools and libraries to read, write, and manipulate an image in many image formats, including popular formats like TIFF, JPEG, PNG, PDF, PhotoCD, and GIF. With ImageMagick, you can create images dynamically, making it suitable for Web applications. You can also resize, rotate, sharpen, color-reduce, or add special effects to an image and save your completed work in many different image formats. Image processing operations are available from the command line as well as through C, C++, and PERL-based programming interfaces.
 
   * **[Inadyn-mt 02.28.10 - DEPRECATED](inadyn-mt.md)<a id='inadyn-mt'></a>**<br>
@@ -428,7 +428,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>Netpbm-tools 10.35.85 (binary only) - DEPRECATED</u><a id='netpbm'></a>**<br>
     Provides the following tools from netpbm-suite: bmptopnm, giftopnm, jpegtopnm, pngtopnm, pnmtojpeg, pnmtopng
 
-  * **[netsnmp: Net-SNMP 5.9.4](netsnmp.md)<a id='netsnmp'></a>**<br>
+  * **[netsnmp: Net-SNMP 5.9.5.2](netsnmp.md)<a id='netsnmp'></a>**<br>
     SNMP (Simple Network Management Protocol) daemon. SNMP is a widely used protocol for monitoring the health and welfare of network equipment (eg. routers), computer equipment and even devices like UPSs. Net-SNMP is a suite of applications used to implement SNMP v1, SNMP v2c and SNMP v3.
 
   * **<u>nfsroot: NFS-root 1.0 - DEPRECATED</u><a id='nfsroot'></a>**<br>
@@ -495,6 +495,9 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>phonebook-tools: Phone book tools 1.0</u><a id='phonebook-tools'></a>**<br>
     A set of tools for reading and converting Fritz!Box phone book to such (easy parseable) formats like: - .csv (comma-separated values), or - .tsv (tab-separated values).
 
+  * **[PHP5 5.6.40 (binary only) - DEPRECATED](php5.md)<a id='php5'></a>**<br>
+    PHP: Hypertext Preprocessor PHP is a widely-used general-purpose scripting language that is especially suited for Web development and can be embedded into HTML. Much of its syntax is borrowed from C, Java and Perl with a couple of unique PHP-specific features thrown in. The goal of the language is to allow web developers to write dynamically generated pages quickly.
+
   * **[Pingtunnel 0.72 - DEPRECATED](pingtunnel.md)<a id='pingtunnel'></a>**<br>
     Ptunnel is an application that allows you to reliably tunnel TCP connections to a remote host using ICMP echo request and reply packets, commonly known as ping requests and replies. At first glance, this might seem like a rather useless thing to do, but it can actually come in handy in some cases.
 
@@ -516,7 +519,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>privatekeypassword 0.7-git</u><a id='privatekeypassword'></a>**<br>
     Reveals the password for AVM's private key file (/var/flash/websrv_ssl_key.pem), makes it possible to reuse it for other packages.
 
-  * **[Privoxy 4.0.0](privoxy.md)<a id='privoxy'></a>**<br>
+  * **[Privoxy 4.1.0](privoxy.md)<a id='privoxy'></a>**<br>
     Privoxy is a web proxy with advanced filtering capabilities for protecting privacy, modifying web page data, managing cookies, controlling access, and removing ads, banners, pop-ups and other obnoxious Internet junk. It can also be used together with Tor Proxy to forward HTTP traffic to Tor as described in the Tor documentation. Open http://config.privoxy.org/show-status for details.
 
   * **[procps-ng 4.0.5 (binaries only)](procps-ng.md)<a id='procps-ng'></a>**<br>
@@ -528,13 +531,13 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[psl 0.21.5 (binary only)](psl.md)<a id='psl'></a>**<br>
     Public Suffix List library functions This includes psl binary and public_suffix_list.dat
 
-  * **[pyLoad 0.4.20/78162d75](pyload.md)<a id='pyload'></a>**<br>
+  * **[pyLoad 0.4.x - DEPRECATED](pyload.md)<a id='pyload'></a>**<br>
     pyLoad is a fast, lightweight and full featured download manager for many One-Click-Hoster, container formats like DLC, video sites or just plain http/ftp links.
 
   * **[Python 2.7.18 - DEPRECATED](python.md)<a id='python'></a>**<br>
     Python is a remarkably powerful dynamic programming language that is used in a wide variety of application domains. CAUTION: Python adds roughly 4 MB to 15.5 MB (depending on your choice of modules) of uncompressed data to your image. In most cases, it should therefore be externalized.
 
-  * **[python3: Python 3.14.0 - EXPERIMENTAL](python3.md)<a id='python3'></a>**<br>
+  * **[python3: Python 3.14.2 - EXPERIMENTAL](python3.md)<a id='python3'></a>**<br>
     Python is a remarkably powerful dynamic programming language that is used in a wide variety of application domains. CAUTION: Python adds roughly 4 MB to 15.5 MB (depending on your choice of modules) of uncompressed data to your image. In most cases, it should therefore be externalized.
 
   * **<u>python-bjoern: bjoern 1.3.4 - DEPRECATED</u><a id='python-bjoern'></a>**<br>
@@ -649,7 +652,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>smusbutil 1.1 (binary only)</u><a id='smusbutil'></a>**<br>
     Linux software for setting up the frequency and resetpolarity on WB Electronics ftdi devices. This utility is written and maintained by Carsten Sprung. WB Electronics does not currently provide official support for Linux, please contact the author directly for any support issues.
 
-  * **[socat 1.8.0.3 (binary only)](socat.md)<a id='socat'></a>**<br>
+  * **[socat 1.8.1.0 (binary only)](socat.md)<a id='socat'></a>**<br>
     socat is an extended netcat-like utility
 
   * **<u>spawn-fcgi 1.6.3 (binary only) - DEPRECATED</u><a id='spawn-fcgi'></a>**<br>
@@ -699,7 +702,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### T
 
-  * **[tcpdump 4.1.1/4.99.5 (binary only)](tcpdump.md)<a id='tcpdump'></a>**<br>
+  * **[tcpdump 4.1.1/4.99.6 (binary only)](tcpdump.md)<a id='tcpdump'></a>**<br>
     Network monitoring and data acquisition tool
 
   * **<u>tcpproxy 2.0.0-beta15 (binary only) - DEPRECATED</u><a id='tcpproxy'></a>**<br>
@@ -722,7 +725,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[Tinyproxy 1.11.2](tinyproxy.md)<a id='tinyproxy'></a>**<br>
     Tinyproxy is a lightweight HTTP and HTTPS proxy.
 
-  * **[tmux 3.6 (binary only)](tmux.md)<a id='tmux'></a>**<br>
+  * **[tmux 3.6a (binary only)](tmux.md)<a id='tmux'></a>**<br>
     tmux, a BSD-licensed alternative to GNU screen. Uses ncurses.
 
   * **[Tor 0.4.8.21](tor.md)<a id='tor'></a>**<br>
@@ -765,7 +768,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### V
 
-  * **[Vim 9.1.1275 (binary only)](vim.md)<a id='vim'></a>**<br>
+  * **[Vim 9.1.1952 (binary only)](vim.md)<a id='vim'></a>**<br>
     An improved version of VI
 
   * **[VLMCSD svn1113](vlmcsd.md)<a id='vlmcsd'></a>**<br>
@@ -834,7 +837,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[inotify-tools 3.14 (binary only) - DEPRECATED](inotify-tools.md)<a id='inotify-tools'></a>**<br>
     inotify-tools - watch file and directory access inotify-tools is a C library and a set of command-line programs for Linux providing a simple interface to inotify. These programs can be used to monitor and act upon filesystem events. The programs are written in C and have no dependencies other than a Linux kernel supporting inotify. inotifywait This command simply blocks for inotify events, making it appropriate for use in shell scripts. It can watch any set of files and directories, and can recursively watch entire directory trees. inotifywatch inotifywatch collects filesystem usage statistics and outputs counts of each inotify event. Please read https://freetz.github.io/wiki/packages/inotify_tools for further details. Improper usage can lead to reboots.
 
-  * **[ldd 0.1/1.0.55 (binary only)](ldd.md)<a id='ldd'></a>**<br>
+  * **[ldd 0.1/1.0.56 (binary only)](ldd.md)<a id='ldd'></a>**<br>
     ldd prints the shared libraries required by each program or shared library specified on the command line.
 
   * **[lsof 4.89 (binary only) - DEPRECATED](lsof.md)<a id='lsof'></a>**<br>
@@ -852,7 +855,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[pciutils 3.1.7 (binary only) - DEPRECATED](pciutils.md)<a id='pciutils'></a>**<br>
     The PCI Utilities are a collection of programs for inspecting and manipulating configuration of PCI devices, all based on a common portable library libpci which offers access to the PCI configuration space on a variety of operating systems. lspci displays detailed information about all PCI buses and devices in the system. setpci allows reading from and writing to PCI device configuration registers. For example, you can adjust the latency timers with it.
 
-  * **[strace 4.9/5.0/6.17 (binary only)](strace.md)<a id='strace'></a>**<br>
+  * **[strace 4.9/5.0/6.18 (binary only)](strace.md)<a id='strace'></a>**<br>
     strace - trace system calls and signals strace is a system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program.
 
   * **<u>target-tester - DEVELOPER</u><a id='target-tester'></a>**<br>

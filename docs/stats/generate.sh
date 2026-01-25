@@ -4,7 +4,9 @@ SCRIPT="$(readlink -f $0)"
 PARENT="$(dirname $(dirname ${SCRIPT%/*}))"
 OUTFILE="$PARENT/docs/stats/README.md"
 TMPFILE="$PARENT/.stats"
-rm -f "$TMPFILE".??.*
+DEBUG_GET='y'
+DEBUG_DEL='y'
+[ "$DEBUG_DEL" ] && rm -f "$TMPFILE".??.*
 
 
 table_head() {
@@ -43,6 +45,17 @@ get_fw() {
 	) > "$TMPFILE.fw.body"
 }
 
+get_hr() {
+#	file="config/.img/separate/*.in"
+	(
+		table_head "Name" "HWR"
+		"$PARENT/tools/layoutGens.sh" "" | grep -v '^#' | sort -n | while read -r line; do
+			echo "$line" | sed -rn 's/(.*) - (.*)/@ \1 @ \2 @/p'
+			echo >> "$TMPFILE.hr.head"
+		done
+	) > "$TMPFILE.hr.body"
+}
+
 get_hw() {
 	area='Hardware type'
 	file="config/ui/firmware.in"
@@ -70,9 +83,9 @@ get_dl() {
 	file="config/mod/dl-firmware.in"
 	(
 		table_head "Datei(/AVM)" "Symbole"
-		cat "$file" | grep "string \"${area}\"" -m1 -A9999 | grep "^config " -m1 -B9999 | sed 's/^[ \t]*//g' | grep -E "^(default) " | while read -r line; do
+		cat "$file" | grep "string \"${area}\"" -m1 -A9999 | grep "^config " -m1 -B9999 | sed 's/^[ \t]*//g' | grep -E "^(default) " | grep -v "DETECT_IMAGE_NAME" | while read -r line; do
 			echo "$line" | tr -s ' ' | sed -r 's/.*"(.*)".* if (.*)/@ \2 @ \1 @/g' && echo >> "$TMPFILE.dl.head"
-		done | sed -r 's/_(inhaus|labor|plus)//gI' | grep -v "DETECT_IMAGE_NAME" | sed 's/&&/\&amp;\&amp;<br>/g;s/||/\&vert;\&vert;<br>/g'
+		done | sed -r 's/_(inhaus|labor|plus)//gI' | sed 's/&&/\&amp;\&amp;<br>/g;s/||/\&vert;\&vert;<br>/g'
 	) > "$TMPFILE.dl.body"
 }
 
@@ -147,34 +160,40 @@ main() {
 	echo
 
 	echo "firmware" >&2
-	get_fw
+	[ "$DEBUG_GET" ] && get_fw
 	spoiler_head "$TMPFILE.fw.head" "verschiedene FRITZ!OS"
 	spoiler_body "$TMPFILE.fw.body"
-	rm -f "$TMPFILE.fw."*
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.fw."*
+
+	echo "hwrev" >&2
+	[ "$DEBUG_GET" ] && get_hr
+	spoiler_head "$TMPFILE.hr.head" "verschiedene HWR"
+	spoiler_body "$TMPFILE.hr.body"
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.hr."*
 
 	echo "hardware" >&2
-	get_hw
+	[ "$DEBUG_GET" ] && get_hw
 	spoiler_head "$TMPFILE.hw.head" "verschiedene Geräte"
 	spoiler_body "$TMPFILE.hw.body"
-	rm -f "$TMPFILE.hw."*
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.hw."*
 
 	echo "image" >&2
-	get_dl
+	[ "$DEBUG_GET" ] && get_dl
 	spoiler_head "$TMPFILE.dl.head" "verschiedene Images"
 	spoiler_body "$TMPFILE.dl.body"
-	rm -f "$TMPFILE.dl."*
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.dl."*
 
 	echo "layout" >&2
-	get_lg
+	[ "$DEBUG_GET" ] && get_lg
 	spoiler_head "$TMPFILE.lg.head" "verschiedene Layouts"
 	spoiler_body "$TMPFILE.lg.body"
-	rm -f "$TMPFILE.lg."*
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.lg."*
 
 	echo "toolchain" >&2
-	get_tc
+	[ "$DEBUG_GET" ] && get_tc
 	spoiler_head "$TMPFILE.tc.head" "verschiedene Toolchains"
 	spoiler_body "$TMPFILE.tc.body"
-	rm -f "$TMPFILE.tc."*
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.tc."*
 
 }
 

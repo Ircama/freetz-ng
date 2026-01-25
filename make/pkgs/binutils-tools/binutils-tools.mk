@@ -27,13 +27,24 @@ $(PKG)_LIBRARIES_BUILD_DIR:=$(join $($(PKG)_LIBRARIES_DIR:%=$($(PKG)_DIR)/%/.lib
 $(PKG)_LIBRARIES_TARGET_DIR:=$($(PKG)_LIBRARIES_NAME:%=$($(PKG)_TARGET_LIBDIR)/%)
 $(PKG)_LIBRARIES_STAGING_DIR:=$($(PKG)_LIBRARIES_NAME:%=$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/%)
 
+$(PKG)_CONFIGURE_FILES := $(wildcard $($(PKG)_DIR)/configure $($(PKG)_DIR)/*/configure)
+
+$(PKG)_CONFIGURE_PRE_CMDS += $(call PKG_PREVENT_RPATH_HARDCODING,config.rpath)
+# prevent rpath in all configures in all subdirs
+$(PKG)_CONFIGURE_PRE_CMDS += $(foreach confige,$(BINUTILS_TOOLS_CONFIGURE_FILES:$(BINUTILS_TOOLS_DIR)/%=%),$(call PKG_PREVENT_RPATH_HARDCODING,$(confige)))
+# dont install in subdir with target triplet
+$(PKG)_CONFIGURE_PRE_CMDS += $(SED) 's,/$$$$(host_noncanonical)/$$$$(target_noncanonical)/,/,g' -i */configure;
+
 $(PKG)_CONFIGURE_OPTIONS += --target=$(REAL_GNU_TARGET_NAME)
+$(PKG)_CONFIGURE_OPTIONS += --prefix=/
 $(PKG)_CONFIGURE_OPTIONS += --enable-shared
 $(PKG)_CONFIGURE_OPTIONS += --enable-static
+$(PKG)_CONFIGURE_OPTIONS += --disable-nls
 $(PKG)_CONFIGURE_OPTIONS += --disable-multilib
 $(PKG)_CONFIGURE_OPTIONS += --disable-werror
 $(PKG)_CONFIGURE_OPTIONS += --disable-sim
 $(PKG)_CONFIGURE_OPTIONS += --disable-gdb
+$(PKG)_CONFIGURE_OPTIONS += --without-zstd
 $(PKG)_CONFIGURE_OPTIONS += --without-included-gettext
 $(PKG)_CONFIGURE_OPTIONS += --enable-deterministic-archives
 # Disable gprofng (requires glibc-only features: dlvsym, Dl_serinfo, RTLD_DI_SERINFOSIZE)
@@ -47,9 +58,12 @@ $(PKG_CONFIGURED_CONFIGURE)
 $($(PKG)_SRC_DIR) $($(PKG)_LIBRARIES_BUILD_DIR): $($(PKG)_DIR)/.configured
 	$(SUBMAKE) -C $(BINUTILS_TOOLS_DIR)
 
-# lazy "install", libraries are only available for this package if binaries are selected
 $($(PKG)_LIBRARIES_STAGING_DIR): $($(PKG)_LIBRARIES_BUILD_DIR)
-	@for x in $^; do cp -p $$x $(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/; done
+	$(SUBMAKE) -C $(BINUTILS_TOOLS_DIR) \
+		DESTDIR="$(TARGET_TOOLCHAIN_STAGING_DIR)" \
+		install-libctf \
+		install-libsframe \
+		install-opcodes
 
 $(foreach binary,$($(PKG)_SRC_DIR),$(eval $(call INSTALL_BINARY_STRIP_RULE,$(binary),/usr/bin,,$(patsubst %$($(PKG)_SRC_POSTFIX),%,$(binary)))))
 
@@ -67,11 +81,35 @@ $(pkg)-clean:
 	-$(SUBMAKE) -C $(BINUTILS_TOOLS_DIR) clean
 
 $(pkg)-clean-staging:
-	$(RM) $(BINUTILS_TOOLS_LIBRARIES_STAGING_DIR)
+	$(RM) -r \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libbfd* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libctf.* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libctf-nobfd.* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libsframe.* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/lib/libopcodes* \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ansidecl.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/bfd.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/bfdlink.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ctf.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/ctf-api.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/diagnostics.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/dis-asm.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/plugin-api.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/sframe.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/sframe-api.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/include/symcat.h \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/share/info/bfd.info \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/share/info/ctf-spec.info \
+		$(TARGET_TOOLCHAIN_STAGING_DIR)/usr/share/info/sframe-spec.info
 
 $(pkg)-uninstall:
-	$(RM) $(BINUTILS_TOOLS_DST_DIR)
-	$(RM) $(BINUTILS_TOOLS_LIBRARIES_TARGET_DIR)
+	$(RM) \
+		$(BINUTILS_TOOLS_TARGET_LIBDIR)/libbfd-* \
+		$(BINUTILS_TOOLS_TARGET_LIBDIR)/libctf.* \
+		$(BINUTILS_TOOLS_TARGET_LIBDIR)/libctf-nobfd.* \
+		$(BINUTILS_TOOLS_TARGET_LIBDIR)/libopcodes-* \
+		$(BINUTILS_TOOLS_TARGET_LIBDIR)/libsframe.* \
+		$(BINUTILS_TOOLS_DST_DIR)
 
 $(call PKG_ADD_LIB,libbfd)
 $(call PKG_ADD_LIB,libctf)

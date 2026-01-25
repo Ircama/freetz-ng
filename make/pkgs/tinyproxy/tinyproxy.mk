@@ -8,8 +8,6 @@ $(PKG)_SITE:=https://github.com/tinyproxy/tinyproxy/releases/download/$($(PKG)_V
 ### CVSREPO:=https://github.com/tinyproxy/tinyproxy
 ### SUPPORT:=fda77
 
-$(PKG)_CONFIGURE_PRE_CMDS += ./autogen.sh;
-
 $(PKG)_BINARY:=$($(PKG)_DIR)/src/tinyproxy
 $(PKG)_TARGET_BINARY:=$($(PKG)_DEST_DIR)/usr/sbin/tinyproxy
 
@@ -19,6 +17,8 @@ $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_TINYPROXY_WITH_UPSTREAM
 $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_TINYPROXY_WITH_REVERSE
 $(PKG)_REBUILD_SUBOPTS += FREETZ_PACKAGE_TINYPROXY_STATIC
 
+$(PKG)_CONFIGURE_PRE_CMDS += ./autogen.sh;
+
 $(PKG)_CONFIGURE_ENV += tinyproxy_cv_regex_broken=no
 
 $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_TINYPROXY_WITH_TRANSPARENT_PROXY),--enable-transparent,--disable-transparent)
@@ -27,12 +27,21 @@ $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_TINYPROXY_WITH_UPSTREAM),--ena
 $(PKG)_CONFIGURE_OPTIONS += $(if $(FREETZ_PACKAGE_TINYPROXY_WITH_REVERSE),--enable-reverse,--disable-reverse)
 $(PKG)_CONFIGURE_OPTIONS += --disable-manpage-support
 
+$(PKG)_CFLAGS := $(TARGET_CFLAGS)
+
+$(PKG)_LDFLAGS := $(TARGET_LDFLAGS)
+$(PKG)_LDFLAGS += $(if $(FREETZ_PACKAGE_TINYPROXY_STATIC),LDFLAGS=-static)
+
+
 $(PKG_SOURCE_DOWNLOAD)
 $(PKG_UNPACKED)
 $(PKG_CONFIGURED_CONFIGURE)
 
 $($(PKG)_BINARY): $($(PKG)_DIR)/.configured
-	$(SUBMAKE) -C $(TINYPROXY_DIR) $(if $(FREETZ_PACKAGE_TINYPROXY_STATIC),LDFLAGS=-static) V=1
+	$(SUBMAKE) -C $(TINYPROXY_DIR) \
+		CFLAGS="$(TINYPROXY_CFLAGS)" \
+		LDFLAGS="$(TINYPROXY_LDFLAGS)" \
+		V=1
 
 $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 	$(INSTALL_BINARY_STRIP)
@@ -40,6 +49,7 @@ $($(PKG)_TARGET_BINARY): $($(PKG)_BINARY)
 $(pkg):
 
 $(pkg)-precompiled: $($(PKG)_TARGET_BINARY)
+
 
 $(pkg)-clean:
 	-$(SUBMAKE) -C $(TINYPROXY_DIR) clean

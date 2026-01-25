@@ -105,7 +105,7 @@ jobs:
       options: --user 1001:1001
     needs: matrizifizieren
     strategy:
-      max-parallel: 25
+      max-parallel: 18
       fail-fast: false
       matrix:
         fritz: ${{ fromJson(needs.matrizifizieren.outputs.matrix) }}
@@ -156,7 +156,7 @@ jobs:
           persist-credentials: true
 
       - name: cache_load
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         if: always()
         with:
           path: |

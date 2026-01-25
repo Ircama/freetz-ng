@@ -8,7 +8,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[ACME.sh 3.1.2](../../docs/make/acme.md)<a id='acme'></a>**<br>
     A pure Unix shell script implementing ACME client protocol.
 
-  * **[Apache2 2.4.65 (binary only)](../../docs/make/apache2.md)<a id='apache2'></a>**<br>
+  * **[Apache2 2.4.66 (binary only)](../../docs/make/apache2.md)<a id='apache2'></a>**<br>
     The Apache httpd server
      - [apache.conf](../../docs/make/apache2.md#apacheconf)
      - [Passwortschutz mit .htaccess](../../docs/make/apache2.md#passwortschutz-mit-htaccess)
@@ -63,7 +63,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>bfusb: AVM BlueFRITZ! USB stick support (binary only)</u><a id='bfusb'></a>**<br>
     This package adds support for the AVM BlueFRITZ! USB stick.
 
-  * **[BIND 9.11.37/9.20.15](../../docs/make/bind.md)<a id='bind'></a>**<br>
+  * **[BIND 9.11.37/9.20.17](../../docs/make/bind.md)<a id='bind'></a>**<br>
     BIND is a suite of software for interacting with the Domain Name System (DNS). The name BIND stands for "Berkeley Internet Name Daemon".
      - [named.conf](../../docs/make/bind.md#namedconf)
 
@@ -148,7 +148,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[Ctorrent dnh3.3.2 (binary only) - DEPRECATED](../../docs/make/ctorrent.md)<a id='ctorrent'></a>**<br>
     CTorrent is a BitTorrent client written in the C programming language, known to be a very robust and mature programming language, which produces fast and optimized application.
 
-  * **[Curl 8.12.1/8.17.0 (binary only)](../../docs/make/curl.md)<a id='curl'></a>**<br>
+  * **[Curl 8.12.1/8.18.0 (binary only)](../../docs/make/curl.md)<a id='curl'></a>**<br>
     Curl is a command line tool for transferring files with URL syntax, supporting FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE and LDAP. Curl supports HTTPS certificates, HTTP POST, HTTP PUT, FTP uploading, kerberos, HTTP form based upload, proxies, cookies, user+password authentication, file transfer resume, http proxy tunneling and a busload of other useful tricks.
 
   * **<u>CurlFtpFS 0.9.2 - DEPRECATED</u><a id='curlftpfs'></a>**<br>
@@ -203,7 +203,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
     Dns2tcp is a network tool designed to relay TCP connections through DNS traffic. Encapsulation is done on the TCP level, thus no specific driver is needed (i.e: TUN/TAP).
      - [Using with FreeDNS](../../docs/make/dns2tcp.md#using-with-freedns)
 
-  * **[Dnsmasq 2.80/2.91](../../docs/make/dnsmasq.md)<a id='dnsmasq'></a>**<br>
+  * **[Dnsmasq 2.80/2.92](../../docs/make/dnsmasq.md)<a id='dnsmasq'></a>**<br>
     Combined DHCP, DNS and TFTP server.
      - [Installation](../../docs/make/dnsmasq.md#installation)
      - [Konfiguration](../../docs/make/dnsmasq.md#konfiguration)
@@ -224,7 +224,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>dosfstools 3.0.28 (binary only) - DEPRECATED</u><a id='dosfstools'></a>**<br>
     utilities to create, check and label MS-DOS FAT filesystems
 
-  * **[Dropbear 2025.88](../../docs/make/dropbear.md)<a id='dropbear'></a>**<br>
+  * **[Dropbear 2025.89](../../docs/make/dropbear.md)<a id='dropbear'></a>**<br>
     Dropbear SSH server and client Dropbear is a relatively small SSH 2 server and client. It runs on a variety of POSIX-based platforms. Dropbear is open source software, distributed under a MIT-style license. Dropbear is particularly useful for "embedded"-type Linux (or other Unix) systems, such as wireless routers. Features - A small memory footprint suitable for memory-constrained environments - Dropbear can compile to a 110kB statically linked binary with uClibc on x86 (only minimal options selected) - Dropbear server implements X11 forwarding, and authentication-agent forwarding for OpenSSH clients - Can run from inetd or standalone - Compatible with OpenSSH ~/.ssh/authorized_keys public key authentication - The server, client, keygen, and key converter can be compiled into a single binary (a la busybox) - Features can easily be disabled when compiling to save space TCP forwarding support
      - [Grundbegriffe](../../docs/make/dropbear.md#grundbegriffe)
      - [Web-Config](../../docs/make/dropbear.md#web-config)
@@ -380,7 +380,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[IGMPproxy 0.4](../../docs/make/igmpproxy.md)<a id='igmpproxy'></a>**<br>
     IGMPproxy is a simple dynamic Multicast Routing Daemon using only IGMP signalling. It's intended for simple forwarding of Multicast traffic between networks.
 
-  * **[ImageMagick 7.1.0-62/7.1.2-2 (binary only)](../../docs/make/imagemagick.md)<a id='imagemagick'></a>**<br>
+  * **[ImageMagick 7.1.0-62/7.1.2-12 (binary only)](../../docs/make/imagemagick.md)<a id='imagemagick'></a>**<br>
     ImageMagick is a robust collection of tools and libraries to read, write, and manipulate an image in many image formats, including popular formats like TIFF, JPEG, PNG, PDF, PhotoCD, and GIF. With ImageMagick, you can create images dynamically, making it suitable for Web applications. You can also resize, rotate, sharpen, color-reduce, or add special effects to an image and save your completed work in many different image formats. Image processing operations are available from the command line as well as through C, C++, and PERL-based programming interfaces.
 
   * **[Inadyn-mt 02.28.10 - DEPRECATED](../../docs/make/inadyn-mt.md)<a id='inadyn-mt'></a>**<br>
@@ -556,7 +556,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>Netpbm-tools 10.35.85 (binary only) - DEPRECATED</u><a id='netpbm'></a>**<br>
     Provides the following tools from netpbm-suite: bmptopnm, giftopnm, jpegtopnm, pngtopnm, pnmtojpeg, pnmtopng
 
-  * **[netsnmp: Net-SNMP 5.9.4](../../docs/make/netsnmp.md)<a id='netsnmp'></a>**<br>
+  * **[netsnmp: Net-SNMP 5.9.5.2](../../docs/make/netsnmp.md)<a id='netsnmp'></a>**<br>
     SNMP (Simple Network Management Protocol) daemon. SNMP is a widely used protocol for monitoring the health and welfare of network equipment (eg. routers), computer equipment and even devices like UPSs. Net-SNMP is a suite of applications used to implement SNMP v1, SNMP v2c and SNMP v3.
      - [Creating a Feetz Image with Net-SNMP](../../docs/make/netsnmp.md#creating-a-feetz-image-with-net-snmp)
      - [Setup in Freetz web-interface](../../docs/make/netsnmp.md#setup-in-freetz-web-interface)
@@ -654,6 +654,10 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>phonebook-tools: Phone book tools 1.0</u><a id='phonebook-tools'></a>**<br>
     A set of tools for reading and converting Fritz!Box phone book to such (easy parseable) formats like: - .csv (comma-separated values), or - .tsv (tab-separated values).
 
+  * **[PHP5 5.6.40 (binary only) - DEPRECATED](../../docs/make/php5.md)<a id='php5'></a>**<br>
+    PHP: Hypertext Preprocessor PHP is a widely-used general-purpose scripting language that is especially suited for Web development and can be embedded into HTML. Much of its syntax is borrowed from C, Java and Perl with a couple of unique PHP-specific features thrown in. The goal of the language is to allow web developers to write dynamically generated pages quickly.
+     - [Memory usage](../../docs/make/php5.md#memory-usage)
+
   * **[Pingtunnel 0.72 - DEPRECATED](../../docs/make/pingtunnel.md)<a id='pingtunnel'></a>**<br>
     Ptunnel is an application that allows you to reliably tunnel TCP connections to a remote host using ICMP echo request and reply packets, commonly known as ping requests and replies. At first glance, this might seem like a rather useless thing to do, but it can actually come in handy in some cases.
      - [Setup](../../docs/make/pingtunnel.md#setup)
@@ -691,7 +695,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>privatekeypassword 0.7-git</u><a id='privatekeypassword'></a>**<br>
     Reveals the password for AVM's private key file (/var/flash/websrv_ssl_key.pem), makes it possible to reuse it for other packages.
 
-  * **[Privoxy 4.0.0](../../docs/make/privoxy.md)<a id='privoxy'></a>**<br>
+  * **[Privoxy 4.1.0](../../docs/make/privoxy.md)<a id='privoxy'></a>**<br>
     Privoxy is a web proxy with advanced filtering capabilities for protecting privacy, modifying web page data, managing cookies, controlling access, and removing ads, banners, pop-ups and other obnoxious Internet junk. It can also be used together with Tor Proxy to forward HTTP traffic to Tor as described in the Tor documentation. Open http://config.privoxy.org/show-status for details.
      - [Filter und Aktionen](../../docs/make/privoxy.md#filter-und-aktionen)
      - [Zugriffskontrolle](../../docs/make/privoxy.md#zugriffskontrolle)
@@ -724,13 +728,13 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[psl 0.21.5 (binary only)](../../docs/make/psl.md)<a id='psl'></a>**<br>
     Public Suffix List library functions This includes psl binary and public_suffix_list.dat
 
-  * **[pyLoad 0.4.20/78162d75](../../docs/make/pyload.md)<a id='pyload'></a>**<br>
+  * **[pyLoad 0.4.x - DEPRECATED](../../docs/make/pyload.md)<a id='pyload'></a>**<br>
     pyLoad is a fast, lightweight and full featured download manager for many One-Click-Hoster, container formats like DLC, video sites or just plain http/ftp links.
 
   * **[Python 2.7.18 - DEPRECATED](../../docs/make/python.md)<a id='python'></a>**<br>
     Python is a remarkably powerful dynamic programming language that is used in a wide variety of application domains. CAUTION: Python adds roughly 4 MB to 15.5 MB (depending on your choice of modules) of uncompressed data to your image. In most cases, it should therefore be externalized.
 
-  * **[python3: Python 3.14.0 - EXPERIMENTAL](../../docs/make/python3.md)<a id='python3'></a>**<br>
+  * **[python3: Python 3.14.2 - EXPERIMENTAL](../../docs/make/python3.md)<a id='python3'></a>**<br>
     Python is a remarkably powerful dynamic programming language that is used in a wide variety of application domains. CAUTION: Python adds roughly 4 MB to 15.5 MB (depending on your choice of modules) of uncompressed data to your image. In most cases, it should therefore be externalized.
 
   * **<u>python-bjoern: bjoern 1.3.4 - DEPRECATED</u><a id='python-bjoern'></a>**<br>
@@ -874,7 +878,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>smusbutil 1.1 (binary only)</u><a id='smusbutil'></a>**<br>
     Linux software for setting up the frequency and resetpolarity on WB Electronics ftdi devices. This utility is written and maintained by Carsten Sprung. WB Electronics does not currently provide official support for Linux, please contact the author directly for any support issues.
 
-  * **[socat 1.8.0.3 (binary only)](../../docs/make/socat.md)<a id='socat'></a>**<br>
+  * **[socat 1.8.1.0 (binary only)](../../docs/make/socat.md)<a id='socat'></a>**<br>
     socat is an extended netcat-like utility
 
   * **<u>spawn-fcgi 1.6.3 (binary only) - DEPRECATED</u><a id='spawn-fcgi'></a>**<br>
@@ -934,7 +938,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### T
 
-  * **[tcpdump 4.1.1/4.99.5 (binary only)](../../docs/make/tcpdump.md)<a id='tcpdump'></a>**<br>
+  * **[tcpdump 4.1.1/4.99.6 (binary only)](../../docs/make/tcpdump.md)<a id='tcpdump'></a>**<br>
     Network monitoring and data acquisition tool
      - [Warning](../../docs/make/tcpdump.md#warning)
 
@@ -963,7 +967,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [URL blocking](../../docs/make/tinyproxy.md#url-blocking)
      - [Memory usage](../../docs/make/tinyproxy.md#memory-usage)
 
-  * **[tmux 3.6 (binary only)](../../docs/make/tmux.md)<a id='tmux'></a>**<br>
+  * **[tmux 3.6a (binary only)](../../docs/make/tmux.md)<a id='tmux'></a>**<br>
     tmux, a BSD-licensed alternative to GNU screen. Uses ncurses.
 
   * **[Tor 0.4.8.21](../../docs/make/tor.md)<a id='tor'></a>**<br>
@@ -1023,7 +1027,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
 
 ### V
 
-  * **[Vim 9.1.1275 (binary only)](../../docs/make/vim.md)<a id='vim'></a>**<br>
+  * **[Vim 9.1.1952 (binary only)](../../docs/make/vim.md)<a id='vim'></a>**<br>
     An improved version of VI
 
   * **[VLMCSD svn1113](../../docs/make/vlmcsd.md)<a id='vlmcsd'></a>**<br>
@@ -1124,7 +1128,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Log-Datei regelmäßig konsolidieren, um Platz zu sparen](../../docs/make/inotify-tools.md#log-datei-regelmäßig-konsolidieren-um-platz-zu-sparen)
      - [Schlußwort](../../docs/make/inotify-tools.md#schlußwort)
 
-  * **[ldd 0.1/1.0.55 (binary only)](../../docs/make/ldd.md)<a id='ldd'></a>**<br>
+  * **[ldd 0.1/1.0.56 (binary only)](../../docs/make/ldd.md)<a id='ldd'></a>**<br>
     ldd prints the shared libraries required by each program or shared library specified on the command line.
 
   * **[lsof 4.89 (binary only) - DEPRECATED](../../docs/make/lsof.md)<a id='lsof'></a>**<br>
@@ -1144,7 +1148,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[pciutils 3.1.7 (binary only) - DEPRECATED](../../docs/make/pciutils.md)<a id='pciutils'></a>**<br>
     The PCI Utilities are a collection of programs for inspecting and manipulating configuration of PCI devices, all based on a common portable library libpci which offers access to the PCI configuration space on a variety of operating systems. lspci displays detailed information about all PCI buses and devices in the system. setpci allows reading from and writing to PCI device configuration registers. For example, you can adjust the latency timers with it.
 
-  * **[strace 4.9/5.0/6.17 (binary only)](../../docs/make/strace.md)<a id='strace'></a>**<br>
+  * **[strace 4.9/5.0/6.18 (binary only)](../../docs/make/strace.md)<a id='strace'></a>**<br>
     strace - trace system calls and signals strace is a system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program.
      - [Tip: Vermeiden von "unfinished" und "resumed" in strace-Logs](../../docs/make/strace.md#tip-vermeiden-von-unfinished-und-resumed-in-strace-logs)
 

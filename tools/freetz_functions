@@ -16,6 +16,18 @@ supervisor_delete_service() {
 	supervisor_remove_dependency "${service}"
 }
 
+# replace file of supervisor service "$1.service" with a dummy & remove dependencies
+supervisor_replace_service() {
+	local service="${1%.service}.service"
+cat > "${FILESYSTEM_MOD_DIR}/lib/systemd/system/${service}" <<'EOX'
+[Unit]
+ExecStart=/bin/true
+Type=oneshot
+DefaultDependencies=no
+EOX
+	supervisor_remove_dependency "${service}"
+}
+
 
 # removes a div by id name in all cock pits (since fos8)
 cockpit_pruner() {
@@ -57,6 +69,18 @@ quickstart_remove() {
 	done
 }
 
+#htmltab_remove <file> <href>
+#removes a html-tab with destination href in file
+htmltab_remove() {
+	local file="$HTML_LANG_MOD_DIR$1"
+	local HREF="href=\\\"#${2//\//\\\/}\\\""
+	local TAG="a"
+	local TAG_S="<$TAG "
+	local TAG_E="<\/$TAG>"
+	[ -e "$file" ] || return
+	modsed '/'"$TAG_S"'/{:x;N;/'"$TAG_E"'/!bx};/'"$HREF"'/d' "$file"
+}
+
 #modern_remove <menu-item>
 #removes liks within menu_data.lua (left menu, responsive)
 modern_remove() {
@@ -76,7 +100,7 @@ menulua_remove() {
 		# the  ["show"] line is either one or two lines before
 		modsed -r \
 		  "$((${matchLine}-2)),$((${matchLine}-1))"' {
-		      s!^(\["show"\] = ).+,$!\1false,!
+		      s/^( *\["show"\] = ).+,$/\1false,/
 		  }' \
 		  "$file"
 	else

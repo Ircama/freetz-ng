@@ -88,6 +88,10 @@ endif
 		echo "#fixing ncurses detection bug" $(SILENT); \
 		$(SED) 's/^main()/int &/' -i $(KERNEL_SOURCE_DIR)/scripts/kconfig/lxdialog/check-lxdialog.sh; \
 	fi;
+	@if [ -e "$(KERNEL_SOURCE_DIR)/scripts/unifdef.c" ]; then \
+		echo "#fixing constexpr keyword" $(SILENT); \
+		$(SED) 's/constexpr/constexpression/g' -i $(KERNEL_SOURCE_DIR)/scripts/unifdef.c; \
+	fi;
 	@echo "#fixing hardcoded depmod path" $(SILENT); \
 	find $(KERNEL_SOURCE_DIR)/ -name Makefile | while read -r file; do \
 		grep -q '/sbin/depmod' "$${file}" || continue; \
