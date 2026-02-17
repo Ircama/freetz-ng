@@ -87,8 +87,9 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
     - [source-files-FRITZ.Box_4060-07.59.tar.gz](https://osp.avm.de/fritzbox/fritzbox-4060/source-files-FRITZ.Box_4060-07.59.tar.gz)
     - [source-files-FRITZ.Box_4060-08.02.tar.gz](https://osp.avm.de/fritzbox/fritzbox-4060/source-files-FRITZ.Box_4060-08.02.tar.gz)
   * fritzbox-4630/
-    - [source-files-FRITZ.Box_4630.tar.gz](https://osp.avm.de/fritzbox/fritzbox-4630/source-files-FRITZ.Box_4630.tar.gz)
+    - [source-files-FRITZ.Box_4630-08.21.tar.gz](https://osp.avm.de/fritzbox/fritzbox-4630/source-files-FRITZ.Box_4630-08.21.tar.gz)
   * fritzbox-4690/
+    - [source-files-FRITZ.Box_4690-08.03.tar.gz](https://osp.avm.de/fritzbox/fritzbox-4690/source-files-FRITZ.Box_4690-08.03.tar.gz)
     - [source-files-FRITZ.Box_4690-08.21.tar.gz](https://osp.avm.de/fritzbox/fritzbox-4690/source-files-FRITZ.Box_4690-08.21.tar.gz)
   * fritzbox-5490/
     - [source-files-FRITZ.Box_5490-06.51.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5490/source-files-FRITZ.Box_5490-06.51.tar.gz)
@@ -121,12 +122,14 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
     - [source-files-FRITZ.Box_5590_Fiber-prxI-07.81.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-prxI-07.81.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-prxI-08.00.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-prxI-08.00.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-prxI-08.02.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-prxI-08.02.tar.gz)
+    - [source-files-FRITZ.Box_5590_Fiber-prxI-08.20.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-prxI-08.20.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.50.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.50.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.56.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.56.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.80.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.80.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.81.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-07.81.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-08.00.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-08.00.tar.gz)
     - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-08.02.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-08.02.tar.gz)
+    - [source-files-FRITZ.Box_5590_Fiber-qcaarmv8-08.20.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5590-fiber/source-files-FRITZ.Box_5590_Fiber-qcaarmv8-08.20.tar.gz)
   * fritzbox-5690/
     - [source-files-FRITZ.Box_5690-08.03.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690/source-files-FRITZ.Box_5690-08.03.tar.gz)
     - [source-files-FRITZ.Box_5690-08.04.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690/source-files-FRITZ.Box_5690-08.04.tar.gz)
@@ -134,9 +137,13 @@ Content: [FritzBox](#fritzbox) - [FritzDect](#fritzdect) - [FritzPowerline](#fri
     - [source-files-FRITZ.Box_5690_Pro-alder-07.62.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-alder-07.62.tar.gz)
     - [source-files-FRITZ.Box_5690_Pro-alder-08.01.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-alder-08.01.tar.gz)
     - [source-files-FRITZ.Box_5690_Pro-alder-08.03.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-alder-08.03.tar.gz)
+    - [source-files-FRITZ.Box_5690_Pro-alder-08.20.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-alder-08.20.tar.gz)
     - [source-files-FRITZ.Box_5690_Pro-rtl9601-07.62.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-rtl9601-07.62.tar.gz)
     - [source-files-FRITZ.Box_5690_Pro-rtl9601-08.01.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-rtl9601-08.01.tar.gz)
     - [source-files-FRITZ.Box_5690_Pro-rtl9601-08.03.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-rtl9601-08.03.tar.gz)
+    - [source-files-FRITZ.Box_5690_Pro-rtl9601-08.20.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-pro/source-files-FRITZ.Box_5690_Pro-rtl9601-08.20.tar.gz)
+  * fritzbox-5690-xgs/
+    - [source-files-FRITZ.Box_5690_XGS-airoha01-08.20.tar.gz](https://osp.avm.de/fritzbox/fritzbox-5690-xgs/source-files-FRITZ.Box_5690_XGS-airoha01-08.20.tar.gz)
   * fritzbox-6360/
     - [fritzbox6360-source-files-04.91.tar.gz](https://osp.avm.de/fritzbox/fritzbox-6360/fritzbox6360-source-files-04.91.tar.gz)
     - [fritzbox6360-source-files-05.29.tar.gz](https://osp.avm.de/fritzbox/fritzbox-6360/fritzbox6360-source-files-05.29.tar.gz)
