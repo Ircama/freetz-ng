@@ -1,1 +1,6 @@
-[ "$EXTERNAL_FREETZ_LIB_libyaml" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libyaml-0.so.2.0.9"
+if [ "$EXTERNAL_FREETZ_LIB_libyaml" == "y" ]; then
+	LIBYAML_LIB=$(find "$FILESYSTEM_MOD_DIR/usr/lib/freetz" -maxdepth 1 -type f -name 'libyaml-0.so.*.*' \
+		| grep -v '\.a$' | head -1)
+	[ -z "$LIBYAML_LIB" ] && echo "ERROR: libyaml library not found in $FILESYSTEM_MOD_DIR/usr/lib/freetz" && exit 1
+	[ -n "$LIBYAML_LIB" ] && EXTERNAL_FILES+=" $(echo "$LIBYAML_LIB" | sed "s|^$FILESYSTEM_MOD_DIR||")"
+fi
