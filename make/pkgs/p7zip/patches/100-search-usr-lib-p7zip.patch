@@ -1,0 +1,16 @@
+--- a/CPP/7zip/UI/Common/LoadCodecs.cpp
++++ b/CPP/7zip/UI/Common/LoadCodecs.cpp
+@@ -214,6 +214,13 @@ bool CCodecLib::CreateObject(const GUID
+ 
+ static FString GetBaseFolderPrefixFromRegistry()
+ {
++  // Try /usr/lib/p7zip/ first (for freetz-ng)
++  FString p7zipPath = FTEXT("/usr/lib/p7zip/");
++  if (NFind::DoesFileExist(p7zipPath + kMainDll) ||
++      NFind::DoesDirExist(p7zipPath + kCodecsFolderName) ||
++      NFind::DoesDirExist(p7zipPath + kFormatsFolderName))
++    return p7zipPath;
++
+   FString moduleFolderPrefix = NDLL::GetModuleDirPrefix();
+   #ifdef _WIN32
+   if (!NFind::DoesFileExist(moduleFolderPrefix + kMainDll) &&

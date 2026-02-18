@@ -43,7 +43,7 @@ $(pkg)-precompiled: $($(PKG)_LIB_TARGET_DIR) $($(PKG)_CODECS_TARGET_DIR) $($(PKG
 
 
 $(pkg)-clean:
-	-$(SUBMAKE) -C $(P7ZIP_DIR) -f makefile clean
+	-[ -d $(P7ZIP_DIR) ] && $(MAKE) -C $(P7ZIP_DIR) -f makefile clean $(SILENT)
 
 $(pkg)-uninstall:
 	$(RM) $(P7ZIP_TARGET_BINARY) $(P7ZIP_LIB_TARGET_DIR) $(P7ZIP_CODECS_TARGET_DIR)
