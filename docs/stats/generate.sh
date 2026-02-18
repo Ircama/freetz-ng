@@ -56,6 +56,17 @@ get_hr() {
 	) > "$TMPFILE.hr.body"
 }
 
+get_pd() {
+#	file="config/.img/separate/*.in"
+	(
+		table_head "Name" "Produkte"
+		"$PARENT/tools/layoutGens.sh" "produkt" | grep -v '^#' | sort -n | while read -r line; do
+			echo "$line" | sed -rn 's/(.*) - (.*)/@ \1 @ \2 @/p'
+			echo >> "$TMPFILE.pd.head"
+		done
+	) > "$TMPFILE.pd.body"
+}
+
 get_hw() {
 	area='Hardware type'
 	file="config/ui/firmware.in"
@@ -170,6 +181,12 @@ main() {
 	spoiler_head "$TMPFILE.hr.head" "verschiedene HWR"
 	spoiler_body "$TMPFILE.hr.body"
 	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.hr."*
+
+	echo "prod" >&2
+	[ "$DEBUG_GET" ] && get_pd
+	spoiler_head "$TMPFILE.pd.head" "verschiedene Produkte"
+	spoiler_body "$TMPFILE.pd.body"
+	[ "$DEBUG_DEL" ] && rm -f "$TMPFILE.pd."*
 
 	echo "hardware" >&2
 	[ "$DEBUG_GET" ] && get_hw
