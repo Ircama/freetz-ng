@@ -91,7 +91,7 @@ config FREETZ_PACKAGE_PHP_WITH_CURL
 
 config FREETZ_PACKAGE_PHP_WITH_DOM
 	bool "DOM support (libxml2.so.16)"
-	depends on FREETZ_PACKAGE_PHP_WITH_LIBXML
+	select FREETZ_PACKAGE_PHP_WITH_LIBXML
 	select FREETZ_LIB_libxml2_WITH_RELAXNG if !FREETZ_PACKAGE_PHP_STATIC
 	default n
 	help
@@ -272,7 +272,7 @@ menu "Build options"
 
 config FREETZ_PACKAGE_PHP_WITH_LIBXML2_FULL
 	bool "Enable libxml2 full feature set"
-	select FREETZ_LIB_libxml2_WITH_FULL_FEATURES if !FREETZ_PACKAGE_PHP_STATIC
+	select FREETZ_LIB_libxml2_WITH_RELAXNG if !FREETZ_PACKAGE_PHP_STATIC
 	default y
 	help
 		Build libxml2 with full feature set (--with-minimum=no).
