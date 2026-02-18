@@ -177,6 +177,7 @@ Latest changes
     * ncursesw 6.6
     * openjp2 2.5.4
     * pcre2 10.47
+    * zlib 1.3.2
 
   - Firmware updates:
     * Please see [FIRMWARES](FIRMWARES.md) for the list of currently supported devices and firmwares.
