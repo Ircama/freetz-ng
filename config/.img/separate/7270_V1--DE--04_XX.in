@@ -12,8 +12,9 @@ config FREETZ_AVM_PROP_HWREV
 	string
 	default "122"
 
-config FREETZ_AVM_HAS_SIGNATURE
-	def_bool y
+config FREETZ_AVM_PROP_PRODUKT
+	string
+	default "Fritz_Box_7270"
 
 config FREETZ_AVM_HAS_MULTIPLE_BRANDINGS
 	def_bool y
@@ -46,6 +47,9 @@ config FREETZ_AVM_HAS_PLUGIN_TAM
 	def_bool y
 
 config FREETZ_AVM_HAS_PLUGIN_WEBDAV
+	def_bool y
+
+config FREETZ_AVM_HAS_SIGNATURE
 	def_bool y
 
 config FREETZ_AVM_SERIAL_CONSOLE_DEVICE

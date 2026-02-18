@@ -12,6 +12,10 @@ config FREETZ_AVM_PROP_HWREV
 	string
 	default "61"
 
+config FREETZ_AVM_PROP_PRODUKT
+	string
+	default "Fritz_Box_WLAN"
+
 config FREETZ_AVM_HAS_MULTIPLE_BRANDINGS
 	def_bool y
 

@@ -12,6 +12,10 @@ config FREETZ_AVM_PROP_HWREV
 	string
 	default "73"
 
+config FREETZ_AVM_PROP_PRODUKT
+	string
+	default "Fritz_Box_WLAN_AnnexA"
+
 config FREETZ_AVM_HAS_BRANDING_avme
 	def_bool y
 
