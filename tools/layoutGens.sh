@@ -3,7 +3,13 @@
 MYPWD="$(dirname $(realpath $0))"
 
 TWS="$(printf '\342\200\212')"
-[ -z "$1" ] && SORT="cat" || SORT="sort -t- -k2"
+case "$1" in
+	p|produkt)	SORT="cat" ;;
+	s|stats)	SORT="sort -t- -k2" ;;
+	"")		SORT="cat" ;;
+	*)		echo "Usage: ${0##*/} [produkt|stats]"; exit 1 ;;
+esac
+
 for FWL in $(sed -rn 's/.* FREETZ_AVM_HAS_FWLAYOUT_//p' "$MYPWD/../config/.img/separate/"*.in | sort -u); do
 	echo "# Gen$FWL"
 	for IN in $(grep FREETZ_AVM_HAS_FWLAYOUT_$FWL "$MYPWD/../config/.img/separate/"*.in -l); do
@@ -14,12 +20,14 @@ for FWL in $(sed -rn 's/.* FREETZ_AVM_HAS_FWLAYOUT_//p' "$MYPWD/../config/.img/s
 			[ -z "$HWREV" ] && echo "BAD: $INN" && continue
 			NAME="$(grep " FREETZ_AVM_PROP_NAME$" -A2 ${INN%.in}*.in | sed -rn 's/.* "(.*)"$/\1/p' | tail -n1)"
 			[ -z "$NAME" ] && echo "NON: $INN" && continue
-			if [ -z "$1" ]; then
-				echo "$HWREV - $NAME" | sed "s/$TWS/ /g"
-			else
-				SYMB="$(grep "^if " "${INN}" | sed -rn 's/^if \(*([^ ]*).*/\1/p')"
-				echo "$SYMB - $NAME" | sed "s/$TWS/ /g"
-			fi
+			PRODUKT="$(grep " FREETZ_AVM_PROP_PRODUKT$" -A2 ${INN%.in}*.in | sed -rn 's/.* "(.*)"$/\1/p' | tail -n1)"
+			[ -z "$PRODUKT" ] && echo "NON: $INN" && continue
+			SYMB="$(grep "^if " "${INN}" | sed -rn 's/^if \(*([^ ]*).*/\1/p')"
+			case "$1" in
+				p|produkt)	echo "${PRODUKT%x} - $NAME" | sed "s/$TWS/ /g" ;;
+				s|stats)	echo "$SYMB - $NAME" | sed "s/$TWS/ /g" ;;
+				"")		echo "$HWREV - $NAME" | sed "s/$TWS/ /g" ;;
+			esac
 			break
 		done
 	done | sort -n | uniq |  tac|awk -F"[. ]" '!a[$1]++'|tac | $SORT
