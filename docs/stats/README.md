@@ -161,6 +161,145 @@
 </tbody></table>
 </details>
 
+<details><summary>130 verschiedene Produkte</summary>
+
+<table>
+<caption style='background-color:gray'>&nbsp;</caption>
+<thead><tr><th style='width:450px'>Name</th><th style='width:300px'>Produkte</th></tr></thead>
+<tbody>
+<tr><td>FRITZ!Box 2170</td><td>Fritz_Box_2170</td></tr>
+<tr><td>FRITZ!Box WLAN 3030</td><td>Fritz_Box_3030</td></tr>
+<tr><td>FRITZ!Box WLAN 3130</td><td>Fritz_Box_3130</td></tr>
+<tr><td>FRITZ!Box WLAN 3131</td><td>Fritz_Box_3131</td></tr>
+<tr><td>FRITZ!Box WLAN 3170</td><td>Fritz_Box_3170</td></tr>
+<tr><td>FRITZ!Box WLAN 3270</td><td>Fritz_Box_3270</td></tr>
+<tr><td>FRITZ!Box WLAN 3270 v3</td><td>Fritz_Box_3270v3</td></tr>
+<tr><td>FRITZ!Box WLAN 3370</td><td>Fritz_Box_3370</td></tr>
+<tr><td>FRITZ!Box Fon 5010 Annex A</td><td>Fritz_Box_5010_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon 5050</td><td>Fritz_Box_5050</td></tr>
+<tr><td>FRITZ!Box Fon 5124 Annex A</td><td>Fritz_Box_5124_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon 5124</td><td>Fritz_Box_5124</td></tr>
+<tr><td>FRITZ!Box Fon 5140</td><td>Fritz_Box_5140</td></tr>
+<tr><td>FRITZ!Box 6320 Cable</td><td>Fritz_Box_6312</td></tr>
+<tr><td>FRITZ!Box 6810 LTE</td><td>Fritz_Box_6810</td></tr>
+<tr><td>FRITZ!Box 6840 LTE</td><td>Fritz_Box_6840</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7050</td><td>Fritz_Box_7050</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7112</td><td>Fritz_Box_7112</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7113 Annex A</td><td>Fritz_Box_7113_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7113</td><td>Fritz_Box_7113</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7140 Annex A</td><td>Fritz_Box_7140_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7140</td><td>Fritz_Box_7140</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7141</td><td>Fritz_Box_7141</td></tr>
+<tr><td>FRITZ!Fon 7150</td><td>Fritz_Box_7150</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7170 Annex A</td><td>Fritz_Box_7170_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7170</td><td>Fritz_Box_7170</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7240</td><td>Fritz_Box_7240</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7270 v2</td><td>Fritz_Box_7270_16</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7270 v1</td><td>Fritz_Box_7270</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7270 v3</td><td>Fritz_Box_7270plus</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7320</td><td>Fritz_Box_7320</td></tr>
+<tr><td>FRITZ!Box 7330</td><td>Fritz_Box_7322</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7340</td><td>Fritz_Box_7340</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7360 SL</td><td>Fritz_Box_7360</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7390</td><td>Fritz_Box_7390</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7570 vDSL</td><td>Fritz_Box_7570</td></tr>
+<tr><td>FRITZ!Box Fon Annex A</td><td>Fritz_Box_FON_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon</td><td>Fritz_Box_FON</td></tr>
+<tr><td>FRITZ!Box 6320 v2 Cable</td><td>Fritz_Box_HW182</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7360</td><td>Fritz_Box_HW183</td></tr>
+<tr><td>FRITZ!Box 7490</td><td>Fritz_Box_HW185</td></tr>
+<tr><td>FRITZ!Box 6340 Cable</td><td>Fritz_Box_HW187</td></tr>
+<tr><td>FRITZ!Box 7330 SL</td><td>Fritz_Box_HW188</td></tr>
+<tr><td>FRITZ!Box 7312</td><td>Fritz_Box_HW189</td></tr>
+<tr><td>FRITZ!Powerline 546E</td><td>Fritz_Box_HW190</td></tr>
+<tr><td>FRITZ!Box 7369</td><td>Fritz_Box_HW191</td></tr>
+<tr><td>FRITZ!Box 7272</td><td>Fritz_Box_HW192</td></tr>
+<tr><td>FRITZ!Box 3390</td><td>Fritz_Box_HW193</td></tr>
+<tr><td>FRITZ!WLAN Repeater 310</td><td>Fritz_Box_HW194</td></tr>
+<tr><td>FRITZ!Box 6842 LTE</td><td>Fritz_Box_HW195</td></tr>
+<tr><td>FRITZ!Box Fon WLAN 7360</td><td>Fritz_Box_HW196</td></tr>
+<tr><td>FRITZ!Box WLAN 3270 v3 Edition Italia</td><td>Fritz_Box_HW197</td></tr>
+<tr><td>FRITZ!Box 3272</td><td>Fritz_Box_HW198</td></tr>
+<tr><td>FRITZ!WLAN Repeater 450E</td><td>Fritz_Box_HW200</td></tr>
+<tr><td>FRITZ!Powerline 540E</td><td>Fritz_Box_HW201</td></tr>
+<tr><td>FRITZ!Box 7362 SL</td><td>Fritz_Box_HW203</td></tr>
+<tr><td>FRITZ!WLAN Repeater DVB-C</td><td>Fritz_Box_HW205</td></tr>
+<tr><td>FRITZ!WLAN Repeater 1750E</td><td>Fritz_Box_HW206</td></tr>
+<tr><td>FRITZ!Box 7412</td><td>Fritz_Box_HW209</td></tr>
+<tr><td>FRITZ!Box 3490</td><td>Fritz_Box_HW212</td></tr>
+<tr><td>FRITZ!Box 6490 Cable</td><td>Fritz_Box_HW213</td></tr>
+<tr><td>FRITZ!Box 6820 LTE</td><td>Fritz_Box_HW214</td></tr>
+<tr><td>FRITZ!WLAN Repeater 310</td><td>Fritz_Box_HW215</td></tr>
+<tr><td>FRITZ!WLAN Repeater 1160</td><td>Fritz_Box_HW216</td></tr>
+<tr><td>FRITZ!Box 7430</td><td>Fritz_Box_HW218</td></tr>
+<tr><td>FRITZ!Box 4020</td><td>Fritz_Box_HW219</td></tr>
+<tr><td>FRITZ!Box 6590 Cable</td><td>Fritz_Box_HW220</td></tr>
+<tr><td>FRITZ!Box 7560</td><td>Fritz_Box_HW221</td></tr>
+<tr><td>FRITZ!Powerline 1240E</td><td>Fritz_Box_HW222</td></tr>
+<tr><td>FRITZ!Box 5490</td><td>Fritz_Box_HW223</td></tr>
+<tr><td>FRITZ!Box 7581</td><td>Fritz_Box_HW224</td></tr>
+<tr><td>FRITZ!Box 7580</td><td>Fritz_Box_HW225</td></tr>
+<tr><td>FRITZ!Box 7590</td><td>Fritz_Box_HW226</td></tr>
+<tr><td>FRITZ!Box 4040</td><td>Fritz_Box_HW227</td></tr>
+<tr><td>FRITZ!Box 7582</td><td>Fritz_Box_HW228</td></tr>
+<tr><td>FRITZ!Powerline 1260E</td><td>Fritz_Box_HW229</td></tr>
+<tr><td>FRITZ!Box 6430 Cable</td><td>Fritz_Box_HW231</td></tr>
+<tr><td>FRITZ!Box 6591 Cable</td><td>Fritz_Box_HW233</td></tr>
+<tr><td>FRITZ!Box 6890 LTE</td><td>Fritz_Box_HW234</td></tr>
+<tr><td>FRITZ!Box 7530</td><td>Fritz_Box_HW236</td></tr>
+<tr><td>FRITZ!Box 7583</td><td>Fritz_Box_HW239</td></tr>
+<tr><td>FRITZ!Repeater 600</td><td>Fritz_Box_HW240</td></tr>
+<tr><td>FRITZ!Repeater 2400</td><td>Fritz_Box_HW241</td></tr>
+<tr><td>FRITZ!Box 5491</td><td>Fritz_Box_HW243</td></tr>
+<tr><td>FRITZ!Repeater 1200</td><td>Fritz_Box_HW244</td></tr>
+<tr><td>FRITZ!Repeater 3000</td><td>Fritz_Box_HW246</td></tr>
+<tr><td>FRITZ!Box 7520</td><td>Fritz_Box_HW247</td></tr>
+<tr><td>FRITZ!Powerline 1260</td><td>Fritz_Box_HW249</td></tr>
+<tr><td>FRITZ!Box 6660 Cable</td><td>Fritz_Box_HW252</td></tr>
+<tr><td>FRITZ!Repeater 6000</td><td>Fritz_Box_HW253</td></tr>
+<tr><td>FRITZ!Box 6820v3 LTE</td><td>Fritz_Box_HW254</td></tr>
+<tr><td>FRITZ!Box 7530 AX</td><td>Fritz_Box_HW256</td></tr>
+<tr><td>FRITZ!Box 5530 Fiber</td><td>Fritz_Box_HW257</td></tr>
+<tr><td>FRITZ!Box 6850 5G</td><td>Fritz_Box_HW258</td></tr>
+<tr><td>FRITZ!Box 7590 AX</td><td>Fritz_Box_HW259</td></tr>
+<tr><td>FRITZ!Box 7583 VDSL</td><td>Fritz_Box_HW260</td></tr>
+<tr><td>FRITZ!Box 4060</td><td>Fritz_Box_HW261</td></tr>
+<tr><td>FRITZ!Box 6850 LTE</td><td>Fritz_Box_HW262</td></tr>
+<tr><td>FRITZ!Repeater 600</td><td>Fritz_Box_HW263</td></tr>
+<tr><td>FRITZ!Smart Gateway</td><td>Fritz_Box_HW265</td></tr>
+<tr><td>FRITZ!Box 6690 Cable</td><td>Fritz_Box_HW267</td></tr>
+<tr><td>FRITZ!Repeater 1200 AX</td><td>Fritz_Box_HW268</td></tr>
+<tr><td>FRITZ!Repeater 3000 AX</td><td>Fritz_Box_HW270</td></tr>
+<tr><td>FRITZ!Box 7510</td><td>Fritz_Box_HW271</td></tr>
+<tr><td>FRITZ!Box 5590 Fiber</td><td>Fritz_Box_HW272</td></tr>
+<tr><td>FRITZ!Powerline 1240 AX</td><td>Fritz_Box_HW275</td></tr>
+<tr><td>FRITZ!Box 7520</td><td>Fritz_Box_HW276</td></tr>
+<tr><td>FRITZ!Box 6860 5G</td><td>Fritz_Box_HW277</td></tr>
+<tr><td>FRITZ!Box 7530 AX</td><td>Fritz_Box_HW278</td></tr>
+<tr><td>FRITZ!Box 5690 Pro</td><td>Fritz_Box_HW279</td></tr>
+<tr><td>FRITZ!Box 6670 Cable</td><td>Fritz_Box_HW284</td></tr>
+<tr><td>FRITZ!Box 7690</td><td>Fritz_Box_HW285</td></tr>
+<tr><td>FRITZ!Box 7682</td><td>Fritz_Box_HW286</td></tr>
+<tr><td>FRITZ!Box 4050</td><td>Fritz_Box_HW287</td></tr>
+<tr><td>FRITZ!Repeater 1700</td><td>Fritz_Box_HW290</td></tr>
+<tr><td>FRITZ!Box 4690</td><td>Fritz_Box_HW291</td></tr>
+<tr><td>FRITZ!Box 5690 XGS</td><td>Fritz_Box_HW295</td></tr>
+<tr><td>FRITZ!Repeater 1200 AX v2</td><td>Fritz_Box_HW296</td></tr>
+<tr><td>FRITZ!Box 5690</td><td>Fritz_Box_HW298</td></tr>
+<tr><td>FRITZ!Repeater 2700</td><td>Fritz_Box_HW301</td></tr>
+<tr><td>FRITZ!Box 7632</td><td>Fritz_Box_HW303</td></tr>
+<tr><td>FRITZ!Repeater 1610 Outdoor</td><td>Fritz_Box_HW305</td></tr>
+<tr><td>FRITZ!Box 4630</td><td>Fritz_Box_HW307</td></tr>
+<tr><td>FRITZ!WLAN Repeater 300E</td><td>Fritz_Box_Neon</td></tr>
+<tr><td>FRITZ!Box 6360 Cable</td><td>Fritz_Box_Puma</td></tr>
+<tr><td>FRITZ!Box SL WLAN</td><td>Fritz_Box_SL_WLAN</td></tr>
+<tr><td>Speedport W 501V</td><td>Fritz_Box_SpeedportW501V</td></tr>
+<tr><td>FRITZ!Box Fon WLAN Annex A</td><td>Fritz_Box_WLAN_AnnexA</td></tr>
+<tr><td>FRITZ!Box Fon WLAN</td><td>Fritz_Box_WLAN</td></tr>
+<tr><td>FRITZ!WLAN Repeater N/G</td><td>Fritz_Box_WLAN_Repeater</td></tr>
+</tbody></table>
+</details>
+
 <details><summary>126 verschiedene Geräte</summary>
 
 <table>
