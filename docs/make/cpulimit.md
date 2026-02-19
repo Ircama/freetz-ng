@@ -6,3 +6,15 @@
   - Package: [master/make/pkgs/cpulimit/](https://github.com/Freetz-NG/freetz-ng/tree/master/make/pkgs/cpulimit/)
   - Maintainer: [@freetz-ng](https://github.com/freetz-ng)
 
+Usage examples:
+```
+  Limit process by PID:
+    cpulimit -p 1234 -l 50
+  
+  Launch and limit command:
+    cpulimit -l 25 -- /mod/usr/bin/rtorrent
+  
+  Limit by process name:
+    cpulimit -e rtorrent -l 30
+```
+
