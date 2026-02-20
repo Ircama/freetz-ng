@@ -140,7 +140,7 @@ config FREETZ_SYSTEM_TYPE_IPQ40xx
 		FREETZ_TYPE_7520_V2 || \
 		FREETZ_TYPE_7530_W5
 
-config FREETZ_SYSTEM_TYPE_AIROHA
+config FREETZ_SYSTEM_TYPE_AIROHA01
 	bool
 	default y
 	depends on \
@@ -280,7 +280,7 @@ config FREETZ_SYSTEM_TYPE
 	default "brcm6764"      if FREETZ_SYSTEM_TYPE_BRCM6764
 	default "brcm6766"      if FREETZ_SYSTEM_TYPE_BRCM6766
 	default "brcma9"        if FREETZ_SYSTEM_TYPE_BRCMA9
-	default "airoha"        if FREETZ_SYSTEM_TYPE_AIROHA
+	default "airoha01"      if FREETZ_SYSTEM_TYPE_AIROHA01
 	default "grx5"          if FREETZ_SYSTEM_TYPE_GRX5
 	default "iks"           if FREETZ_SYSTEM_TYPE_IKS
 	default "ipq40xx"       if FREETZ_SYSTEM_TYPE_IPQ40xx
@@ -351,7 +351,7 @@ config FREETZ_CPU_MODEL_ARM_cortex_a53
 	bool
 	default y
 	depends on \
-		FREETZ_SYSTEM_TYPE_AIROHA || \
+		FREETZ_SYSTEM_TYPE_AIROHA01 || \
 		FREETZ_SYSTEM_TYPE_MAPLE || \
 		FREETZ_SYSTEM_TYPE_MIAMI || \
 		FREETZ_SYSTEM_TYPE_QCAARMv8
