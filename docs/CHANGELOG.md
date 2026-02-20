@@ -159,7 +159,7 @@ Latest changes
     * tcpdump 4.1.1/4.99.6
     * tmux 3.6a
     * Tor 0.4.8.22
-    * Transmission 3.00/4.1.0
+    * Transmission 3.00/4.1.1
     * Unbound 1.24.2
     * UnRAR 6.1.7/7.2.1
     * Vim 9.2.0000
