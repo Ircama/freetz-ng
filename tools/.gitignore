@@ -70,5 +70,5 @@
 /xargs
 /xdelta3
 /xz
-/translate_cache/*.json-backup*
+/translate_cache/*.backup-*
 
