@@ -103,6 +103,8 @@ Latest changes
     * 1240 AX  8.20 - 5.4.213
     * 2400     8.20 - 4.4.271
     * 3000 AX  8.20 - 5.4.213
+    * 5590     8.20 - 5.4.213
+    * 5690 XGS 8.20 - 5.4.293
     * 6000     8.20 - 5.4.213
     * 6850 5G  8.20 - 4.4.271
     * 6860 5G  8.20 - 5.4.213
@@ -127,16 +129,17 @@ Latest changes
     * Binutils 2.45.1
     * Bzip2 1.0.8
     * CA-bundle 2025-12-02
+    * cpulimit 0.2
     * Curl 8.12.1/8.18.0
     * Dnsmasq 2.80/2.92
     * Dropbear 2025.89
     * file 5.46
-    * GNU Make 4.2.1/4.4.1
     * hostapd_cli 2.7/2.10/2.11
     * ImageMagick 7.1.0-62/7.1.2-12
     * Info-ZIP 3.0
     * iPerf3 3.3/3.20
     * ldd 0.1/1.0.56
+    * Make 4.2.1/4.4.1
     * MTR 0.80/0.96
     * Nano 8.7.1
     * Net-SNMP 5.9.5.2
@@ -152,11 +155,11 @@ Latest changes
     * socat 1.8.1.0
     * sslh 2.2.4/2.3.0
     * strace 4.9/5.0/6.19
-    * Stunnel 5.76
+    * Stunnel 5.77
     * tcpdump 4.1.1/4.99.6
     * tmux 3.6a
     * Tor 0.4.8.22
-    * Transmission 3.00/4.1.0
+    * Transmission 3.00/4.1.1
     * Unbound 1.24.2
     * UnRAR 6.1.7/7.2.1
     * Vim 9.2.0000

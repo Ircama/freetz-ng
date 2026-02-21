@@ -18,3 +18,4 @@ if [ "$EXTERNAL_FREETZ_PACKAGE_PROCPS_NG" == "y" ] ; then
 	[ "$EXTERNAL_FREETZ_PACKAGE_PROCPS_NG_WATCH"   == "y" ] && EXTERNAL_FILES+=" /usr/bin/watch-ng"
 	[ "$EXTERNAL_FREETZ_PACKAGE_PROCPS_NG_W"       == "y" ] && EXTERNAL_FILES+=" /usr/bin/w-ng"
 fi
+

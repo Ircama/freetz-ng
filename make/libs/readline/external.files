@@ -2,3 +2,4 @@
 
 [ "$EXTERNAL_FREETZ_LIB_libhistory" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libhistory.so.$ELIBVER"
 [ "$EXTERNAL_FREETZ_LIB_libreadline" == "y" ] && EXTERNAL_FILES+=" ${FREETZ_LIBRARY_DIR}/libreadline.so.$ELIBVER"
+

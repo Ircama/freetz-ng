@@ -142,6 +142,9 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
     With a patched kernel and this tool it is possible to configure the ADM6996L switch (at least FB 7170, maybe other FBs with 4 LAN ports work too) to support VLANs and/or to split the LAN ports into different subnets. It is also possible to view or set each ports power configuration and to disable auto media detection and to force a given media type for each port (10/100 Mbit, Half-/Full-Duplex). Some features are only available when Replace Kernel is selected. Since version 0.6 cpmaccfg detects the tantos switches used i.e. in F!B 7270. However, since there is not enough documentation (freely) available yet, it is not yet possible to configure this chipset.
      - [cpmaccfg-cgi](../../docs/make/cpmaccfg.md#cpmaccfg-cgi)
 
+  * **[cpulimit 0.2](../../docs/make/cpulimit.md)<a id='cpulimit'></a>**<br>
+    cpulimit is a tool which limits the CPU usage of a process (expressed in percentage, not in CPU time). It is useful to control batch jobs, when you don't want them to eat too many CPU cycles. The goal is to prevent a process from running for more than a specified time ratio. It does not change the nice value or other scheduling priority settings, but the real CPU usage. Also, it is able to adapt itself to the overall system load, dynamically and quickly. The control of the used CPU amount is done sending SIGSTOP and SIGCONT POSIX signals to processes. All the children processes and threads of the specified process will share the same percentage of CPU.
+
   * **<u>cryptsetup 1.7.5 (binary only) - DEPRECATED</u><a id='cryptsetup'></a>**<br>
     cryptsetup is used to conveniently setup dm-crypt managed block devices under Linux. Hint: Don't forget to insmod all selected modules.
 
@@ -317,7 +320,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **<u>gntpsend 0.3.2-git (binary only) - DEPRECATED</u><a id='gntpsend'></a>**<br>
     Growl is a notification system for the Mac OS X. Applications can use Growl to display small notifications about events which the user deems important, in a consistent manner. This package provides a tool 'gntp-send' which allows to send notifications to Growl.
 
-  * **<u>GNU Make 4.2.1/4.4.1 (binary only)</u><a id='gnu-make'></a>**<br>
+  * **<u>gnu-make: Make 4.2.1/4.4.1 (binary only)</u><a id='gnu-make'></a>**<br>
     Make is a tool which controls the generation of executables and other non-source files of a program from the program's source files.
 
   * **[GnuTLS 3.7.8 (binary only) - DEPRECATED](../../docs/make/gnutls.md)<a id='gnutls'></a>**<br>
@@ -906,7 +909,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
     Streamripper records mp3 and ogg streams. For shoutcast style streams it finds the "meta data" or track separation data, and uses that as a marker for where the track should be separated.
      - [Verwendete Bibliotheken](../../docs/make/streamripper.md#verwendete-bibliotheken)
 
-  * **[Stunnel 5.76](../../docs/make/stunnel.md)<a id='stunnel'></a>**<br>
+  * **[Stunnel 5.77](../../docs/make/stunnel.md)<a id='stunnel'></a>**<br>
     Stunnel universal SSL proxy
      - [Konfiguration](../../docs/make/stunnel.md#konfiguration)
      - [Erweitert](../../docs/make/stunnel.md#erweitert)
@@ -983,7 +986,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
      - [Abhängigkeiten](../../docs/make/tor.md#abhängigkeiten)
      - [Diskussion](../../docs/make/tor.md#diskussion)
 
-  * **[Transmission 3.00/4.1.0 (binary only)](../../docs/make/transmission.md)<a id='transmission'></a>**<br>
+  * **[Transmission 3.00/4.1.1 (binary only)](../../docs/make/transmission.md)<a id='transmission'></a>**<br>
     If needed, remember to change the base directory as well as the installation directory on the webif.
      - [Blocklist](../../docs/make/transmission.md#blocklist)
      - [Number of peers](../../docs/make/transmission.md#number-of-peers)
@@ -1116,7 +1119,7 @@ Index: [A](#a) - [B](#b) - [C](#c) - [D](#d) - [E](#e) - [F](#f) - [G](#g) - [H]
   * **[file 5.46 (binary only)](../../docs/make/file.md)<a id='file'></a>**<br>
     file - determine file type The file command is used to identify a particular file according to the type of data contained by the file. File can identify many different file types, including ELF binaries, system libraries, RPM packages, and many different graphics formats. This utility is essential for analyzing binaries and file formats on the target system, especially useful for debugging cross-compilation issues.
 
-  * **<u>gdb GNU debugger 6.8/7.9.1 (binary only) - DEPRECATED</u><a id='gdb'></a>**<br>
+  * **<u>gdb 6.8/7.9.1 (binary only) - DEPRECATED</u><a id='gdb'></a>**<br>
     Select the version of gdb you wish to use.
 
   * **[inotify-tools 3.14 (binary only) - DEPRECATED](../../docs/make/inotify-tools.md)<a id='inotify-tools'></a>**<br>
