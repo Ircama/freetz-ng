@@ -1,6 +1,7 @@
 $(call PKG_INIT_LIB, 0.4.41)
 $(PKG)_LIB_VERSION:=0.0.0
-$(PKG)_SOURCE:=v$($(PKG)_VERSION).tar.gz
+$(PKG)_SOURCE:=ZenLib-v$($(PKG)_VERSION).tar.gz
+$(PKG)_SOURCE_DOWNLOAD_NAME:=v$($(PKG)_VERSION).tar.gz
 $(PKG)_HASH:=45d5173fa0278f5264daa6836ae297aa303984482227d00b35c4f03929494c8f
 $(PKG)_SITE:=https://github.com/MediaArea/ZenLib/archive/refs/tags
 ### WEBSITE:=https://mediaarea.net/en/ZenLib
