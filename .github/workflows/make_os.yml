@@ -85,6 +85,8 @@ concurrency:
 
 jobs:
   dockerfizieren:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     if: github.repository == 'freetz-ng/freetz-ng' || github.event_name == 'workflow_dispatch'
 

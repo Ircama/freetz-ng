@@ -80,6 +80,8 @@ concurrency:
 jobs:
 
   parse_matrix:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
 
     outputs:
@@ -635,6 +637,8 @@ jobs:
           printf "matrix=%s\n" '${{ steps.parse.outputs.matrix }}' | sed 's/\[{/\[\n{/;s/},{/},\n{/g;s/},\]/},\n\]/'
 
   build:
+    permissions:
+      contents: read
     needs: parse_matrix
     strategy:
       max-parallel: 16
@@ -1632,6 +1636,8 @@ jobs:
 #         key: ${{ env.CACHE_KEY }}
 
   config_summary:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     needs: [build, parse_matrix]
     if: always() && needs.build.result == 'success'
