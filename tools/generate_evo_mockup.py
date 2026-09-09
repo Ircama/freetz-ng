@@ -8,6 +8,8 @@ fully self-contained single-file HTML mockup suitable for GitHub Pages
 (or any static host) — no server required to view it.
 
 Usage:
+  python3 tools/generate_evo_mockup.py --newlogin --password <pwd> --output docs/screenshots/evo-demo.html --lang it
+  python3 tools/generate_evo_mockup.py --newlogin --password <pwd> --output docs/screenshots/evo-demo.html --lang it --verbose --depth 2
   tools/generate_evo_mockup.py --host 192.168.178.1 --password <pwd>
   tools/generate_evo_mockup.py --host 192.168.178.1 --password <pwd> \\
       --output docs/screenshots/evo-demo.html
