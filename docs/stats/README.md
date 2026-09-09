@@ -521,7 +521,7 @@
 </tbody></table>
 </details>
 
-<details><summary>414 verschiedene Images</summary>
+<details><summary>413 verschiedene Images</summary>
 
 <table>
 <caption style='background-color:gray'>&nbsp;</caption>
@@ -723,8 +723,7 @@
 <tr><td>FRITZ.Box_6690_Cable-07.57-V2.image/FRITZ.Box_6690_Cable-07.57.image</td><td>FREETZ_TYPE_6690_NIX &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_07_5X</td></tr>
 <tr><td>FRITZ.Box_6690_Cable-08.03.image</td><td>FREETZ_TYPE_6690_NIX &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_0X</td></tr>
 <tr><td>FRITZ.Box_6690_Cable-08.25.image</td><td>FREETZ_TYPE_6690_NIX &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
-<tr><td>FRITZ.Box_6690_Pro-08.24-130508-Inhaus.image</td><td>FREETZ_TYPE_6690_PRO &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
-<tr><td>FRITZ.Box_6690_Pro-08.40-136013-Inhaus.image</td><td>FREETZ_TYPE_6690_PRO &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_5X</td></tr>
+<tr><td>FRITZ.Box_6690_Pro-08.26.image</td><td>FREETZ_TYPE_6690_PRO &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_2X</td></tr>
 <tr><td>FRITZ.Repeater_6700_Pro-08.40-136004-Inhaus.image</td><td>FREETZ_TYPE_6700 &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_08_5X</td></tr>
 <tr><td>FRITZ.Box_6810_LTE.108.06.35.image</td><td>FREETZ_TYPE_6810 &amp;&amp;<br> FREETZ_TYPE_LANG_DE &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_06_2X</td></tr>
 <tr><td>FRITZ.Box_6810_LTE.en-de-es-it-fr.108.06.35.image</td><td>FREETZ_TYPE_6810 &amp;&amp;<br> FREETZ_TYPE_LANG_EN &amp;&amp;<br> FREETZ_TYPE_FIRMWARE_06_2X</td></tr>

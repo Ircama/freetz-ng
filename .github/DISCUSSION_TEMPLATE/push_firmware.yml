@@ -1,0 +1,166 @@
+title: "[push_firmware] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Problem with `tools/push_firmware`
+
+        Please fill out the form as completely as possible.
+
+        **Especially important for troubleshooting:**
+        - attach the `.config` used as a file
+        - provide the complete output of `push_firmware`
+        - specify the device and FRITZ!OS version
+
+  - type: input
+    id: device
+    attributes:
+      label: FRITZ!Box / Device
+      description: Which device are you trying to flash?
+      placeholder: "e.g. FRITZ!Box 7590"
+    validations:
+      required: true
+
+  - type: input
+    id: fritzos
+    attributes:
+      label: FRITZ!OS Version
+      placeholder: "e.g. 8.00"
+    validations:
+      required: true
+
+  - type: input
+    id: freetz-version
+    attributes:
+      label: Freetz-NG Version / Commit
+      description: "e.g. output of: git rev-parse --short HEAD"
+      placeholder: "e.g. abc1234"
+    validations:
+      required: true
+
+  - type: input
+    id: build-system
+    attributes:
+      label: Build System
+      description: Operating system or environment in which Freetz-NG was built.
+      placeholder: "e.g. Debian 12 / Ubuntu 24.04 / Docker"
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Freetz-NG ".config"
+      description: |
+        **Please make sure to attach the `.config` file used for the build.**
+
+        The file is located in the root directory of your Freetz-NG build.
+        You can drag and drop the file into this field.
+
+        Please do not provide a screenshot of the `.config` file.
+      placeholder: |
+        Attach the ".config" file here ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: '"push_firmware" Command Used'
+      description: Please provide the complete command.
+      placeholder: |
+        tools/push_firmware
+
+        or e.g.
+        tools/push_firmware ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Complete Output
+      description: |
+        Please provide the complete console output of `push_firmware`.
+        Do not provide only the final error message.
+      placeholder: |
+        $ tools/push_firmware
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happens when running "push_firmware"?
+      placeholder: |
+        Describe the problem as precisely as possible:
+        - Where does the process stop?
+        - What error message is displayed?
+        - Does the FRITZ!Box reboot?
+        - Is the box still reachable afterwards?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: |
+        The Freetz-NG image should be successfully transferred to the FRITZ!Box
+        and then booted.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: tests
+    attributes:
+      label: Already Tried
+      options:
+        - label: Ran push_firmware again
+          required: false
+        - label: Tested push_firmware without additional parameters
+          required: false
+        - label: Tested a different Freetz-NG image
+          required: false
+        - label: Performed an AVM recovery
+          required: false
+        - label: Tested a different LAN cable
+          required: false
+
+  - type: textarea
+    id: more_tests
+    attributes:
+      label: Other Things Tried
+      description: What other troubleshooting steps have already been performed?
+      placeholder: |
+        - ...
+        - ...
+        - ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Additional logs, screenshots, or other information.
+      placeholder: |
+        Additional information ...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I have provided the complete output of "push_firmware".
+          required: true
+        - label: I have attached the ".config" used as a file.
+          required: true
+        - label: I have searched for existing Discussions about this issue.
+          required: true

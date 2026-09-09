@@ -72,7 +72,7 @@ Latest changes
     * busybox 1.38.0
     * autoconf 2.73
     * ca-bundle 2026-08-13
-    * cmake 4.4.2
+    * cmake 4.4.3
     * config 4286648
     * dos2unix 7.5.6
     * dtc 1.8.1
@@ -83,7 +83,7 @@ Latest changes
     * libtool 2.6.2
     * meson 1.12.0
     * mklibs 0.1.46
-    * openssl 3.5.7
+    * openssl 3.5.8
     * patchelf 0.14.5/0.19.1
     * patch 2.8
     * pkgconf 3.0.1
@@ -119,7 +119,7 @@ Latest changes
     * BusyBox 1.27.2/1.38.0
     * CA-bundle 2026-08-13
     * CCID 1.8.2
-    * Curl 8.12.1/8.21.0
+    * Curl 8.12.1/8.22.0
     * davfs2 1.5.2/1.7.3
     * Dnsmasq 2.80/2.93
     * Dropbear 2026.94
@@ -129,7 +129,7 @@ Latest changes
     * HAProxy 2.6.29
     * htop 1.0.3/3.5.3
     * htpdate 2.0.2
-    * ImageMagick 7.1.0-62/7.1.2-30
+    * ImageMagick 7.1.0-62/7.1.2-31
     * iPerf3 3.3/3.21
     * jq 1.8.2
     * juis_bearer 1.0
@@ -139,14 +139,14 @@ Latest changes
     * ldd 0.1/1.0.59
     * Lighttpd 1.4.85
     * ltrace 0.7.3-git/0.8.1
-    * mini-snmpd 1.7/2.0
+    * mini-snmpd 1.7/2.1
     * Minicom 2.11.1
     * Mosquitto 2.0.23/2.1.2
     * Nano 9.2
-    * Nmap 4.76/5.51/7.99
+    * Nmap 4.76/5.51/7.991
     * OpenSSH 9.3p2/10.5p1
-    * OpenSSL 0.9.8zh/1.0.2u/1.1.1w/3.0.21/3.5.7
-    * OpenVPN 2.4.12/2.5.11/2.6.22/2.7.6
+    * OpenSSL 0.9.8zh/1.0.2u/1.1.1w/3.0.22/3.5.8
+    * OpenVPN 2.4.12/2.5.11/2.6.22/2.7.7
     * PatchELF 0.19.1
     * PCSC-lite 1.9.5/2.5.1
     * PHP 5.6.40/8.2.33/8.3.33/8.4.25/8.5.10
@@ -176,11 +176,11 @@ Latest changes
     * XZ 5.8.3
 
   - Libraries:
-    * expat 2.7.5/2.8.3
+    * expat 2.7.5/2.8.4
     * FreeType 2.14.3
     * gettext 1.0
     * GLib2 2.32.4/2.88.3
-    * harfbuzz 14.3.1
+    * harfbuzz 14.4.0
     * libcap 2.49/2.78
     * libcap-ng 0.9.3
     * libcjson 1.7.19
@@ -189,17 +189,19 @@ Latest changes
     * libexif 0.6.26
     * libffi 3.8.0
     * libmaxminddb 1.13.3
+    * libpcap 1.1.1/1.10.7
     * libpng 1.6.58
     * libusb(-compat) 0.1.12/0.1.9
     * libusb1 1.0.23/1.0.30
     * libuv 1.44.2/1.52.1
-    * libxml2 2.15.3
+    * libxml2 2.15.4
     * libzip 1.11.4
     * MbedTLS 2.7.19/2.28.10/3.6.7
     * mpc 1.4.1
     * mpfr 4.2.2
     * neon 0.30.2/0.37.0
     * pango 1.58.2
+    * pcre2 10.48
 
   - Firmware updates:
     * Please see [FIRMWARES](FIRMWARES.md) for the list of currently supported devices and firmwares.

@@ -1,0 +1,176 @@
+title: "[Problem] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Open Problem
+
+        Do you have a problem with Freetz-NG for which you have not yet found a solution?
+        Please describe the problem as completely as possible so that other users can help with troubleshooting.
+
+        **Please check beforehand:**
+        - Has the problem already been described in the Discussions or Issues?
+        - Are you using the most recent Freetz-NG version possible?
+        - Have you checked the available documentation and known issues?
+
+  - type: input
+    id: freetz-version
+    attributes:
+      label: Freetz-NG Version
+      description: Which Freetz-NG version or commit are you using?
+      placeholder: "e.g. master / commit abc1234"
+    validations:
+      required: true
+
+  - type: input
+    id: fritzbox-model
+    attributes:
+      label: FRITZ!Box Model
+      description: Which FRITZ!Box model is affected?
+      placeholder: "e.g. FRITZ!Box 7590"
+    validations:
+      required: true
+
+  - type: input
+    id: firmware-version
+    attributes:
+      label: FRITZ!OS Version
+      description: Which original FRITZ!OS version is running on the box?
+      placeholder: "e.g. 8.20"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: problem-area
+    attributes:
+      label: Affected Area
+      description: Which area of Freetz-NG is primarily affected?
+      options:
+        - Build / Freetz-NG Image
+        - Installation / Flashing
+        - Network
+        - Wi-Fi
+        - Telephony / DECT
+        - DSL / WAN
+        - USB
+        - Packages / Add-ons
+        - Web Interface
+        - Services
+        - Kernel / Drivers
+        - Boot / Recovery
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-theory-description
+    attributes:
+      label: Expected Behavior
+      description: What exactly is not working? What did you expect to happen?
+      placeholder: |
+        ...
+
+        Actual behavior:
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-real-description
+    attributes:
+      label: Actual Behavior
+      description: What exactly is not working? What happens instead?
+      placeholder: |
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can the problem be reproduced?
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs / Error Messages
+      description: Include relevant log output or error messages. Please remove personal data, passwords, and public IP addresses.
+      placeholder: |
+        ```
+        Insert logs or error messages here
+        ```
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: troubleshooting
+    attributes:
+      label: Troubleshooting Steps Already Tried
+      description: What have you already tried and what was the result?
+      placeholder: |
+        - Approach 1: ...
+          Result: ...
+
+        - Approach 2: ...
+          Result: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Freetz-NG ".config"
+      description: |
+        **If this is a Freetz build problem, please make sure to attach the `.config` file that was used.**
+
+        The file is located in the root directory of your Freetz-NG build.
+        You can drag and drop the file into this field.
+
+        Please do not provide a screenshot of the `.config` file.
+      placeholder: |
+        Attach the ".config" file here ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Other Relevant Configuration
+      description: If relevant, include the affected settings or configuration snippets.
+      placeholder: |
+        ```
+        Relevant configuration
+        ```
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Anything else that could help with the analysis.
+      placeholder: "Additional information, links, screenshots, or notes ..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before Submitting
+      options:
+        - label: I have searched for existing Discussions/Issues related to this problem.
+          required: true
+        - label: I have not published any confidential data, passwords, or credentials.
+          required: true
+        - label: I have provided the available information as completely as possible.
+          required: true

@@ -227,8 +227,7 @@ Currently supported devices and firmwares
     - 267.08.03 rev118555 {GER} [Smart24 P1 NL1]
     - 267.08.25 rev132475 {GER} [Smart24 P2 NL1]
   * __Fritz!Box 6690 PRO (UNTESTED)__
-    - 308.08.24 rev130508 {GER} [Smart24 P2 NL1] (Inhaus)
-    - 308.08.40 rev136013 {GER} [MyFRITZOS P1] (Inhaus)
+    - 308.08.26 rev135073 {GER} [Smart24 P2 NL1]
 
 ### Fritz!Box LTE/4G/5G (68xx)
 
