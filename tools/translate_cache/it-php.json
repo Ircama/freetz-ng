@@ -40,5 +40,12 @@
     "timestamp": "2026-08-20T04:26:08Z",
     "service": "deepl",
     "github_user": "Ircama"
+  },
+  "deepl:No PHP binary found": {
+    "original": "No PHP binary found",
+    "translation": "Nessun file binario PHP trovato",
+    "timestamp": "2026-09-09T11:56:15Z",
+    "service": "deepl",
+    "github_user": "Ircama"
   }
 }

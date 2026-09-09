@@ -1552,7 +1552,15 @@ def _save_multilang_mockup(output_path: str, lang: str, html_doc: str):
     else:
         docs = OrderedDict(sorted(dict(docs, **{lang: html_doc}).items()))
 
-    default_lang = lang if lang else (prev_default or (next(iter(docs), "en")))
+    # English is always preferred as default when present, regardless of
+    # which --lang was generated last; otherwise keep the previous default,
+    # falling back to the just-generated (or first available) language.
+    if "en" in docs:
+        default_lang = "en"
+    elif prev_default in docs:
+        default_lang = prev_default
+    else:
+        default_lang = lang if lang in docs else next(iter(docs), "en")
     final_html = _render_multilang_mockup(docs, default_lang)
     out.write_text(final_html, encoding="utf-8")
     size_kb = out.stat().st_size // 1024
