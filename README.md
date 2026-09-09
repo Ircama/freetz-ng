@@ -48,8 +48,6 @@ Packages available only in Freetz-EVO, and not in Freetz-NG, are compiled for MI
 
 All Freetz-EVO-only packages are currently developed and tested on an AVM FRITZ!Box 7590 AX running FRITZ!OS 8.25.
 
-Freetz-EVO is still under development.
-
 #### UX and Web Interface
 
 Freetz-EVO features a fully responsive, mobile-first EVO skin with dark mode, PWA support, hardened form-based session login (CSPRNG cookie, HttpOnly, SameSite=Strict), and the `freetz_proxy` HTTPS reverse proxy for remote access via MyFRITZ!. See [docs/EVO-SKIN.md](docs/EVO-SKIN.md) for details, or try the [interactive UI mockup](screenshots/evo-demo.html).
